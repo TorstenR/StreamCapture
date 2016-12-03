@@ -19,15 +19,19 @@ namespace WebRequest
         {
             if(args.Length < 3)
             {
-                Console.WriteLine($"[channel] [minutes] [filename]");
+                Console.WriteLine($"[channel] [minutes] [filename] [[ffmpeg args]]");
                 Environment.Exit(1);
             }
+                        
+            string ffmpegArgs = "";
+            if(args.Length>=4)
+                ffmpegArgs=args[3];
 
             int minutes = Convert.ToInt32(args[1]);
-            SendRequest(args[0],minutes,args[2]).Wait();
+            SendRequest(args[0],minutes,args[2],ffmpegArgs).Wait();
         }
         
-        private static async Task SendRequest(string channel,int minutes,string filename)
+        private static async Task SendRequest(string channel,int minutes,string filename,string ffmpegArgs)
         {
             string hashValue=null;
 
@@ -38,7 +42,7 @@ namespace WebRequest
                     //http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php?username=mwilkie&password=123lauve&site=view247
                     Uri uri = new Uri("http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php");
                     client.BaseAddress = uri;
-                    var response = await client.GetAsync("?username=----&password=----&site=view247");
+                    var response = await client.GetAsync("?username=mwilkie&password=123lauve&site=view247");
                     response.EnsureSuccessStatusCode(); // Throw in not success
 
                     string stringResponse = await response.Content.ReadAsStringAsync();
@@ -73,7 +77,7 @@ namespace WebRequest
 
                 //Build ffmpeg command line
                 string exe=@"ffmpeg\bin\ffmpeg";
-                string args=@"-i " + vidURI + " -c copy ";
+                string args=@"-xerror -i " + vidURI + " -c copy ";
 
                 Console.WriteLine($"Waiting {minutes} minutes...");
                 Process p=null;
@@ -84,7 +88,7 @@ namespace WebRequest
                     //start process if not started already
                     if(p==null || p.HasExited)
                     {
-                        Console.WriteLine("Command Line: {0} {1}", exe, args + @filename + loopNum + ".ts");
+                        Console.WriteLine("Command Line: {0} {1}", exe, args + @filename + loopNum + ".ts" + " " + ffmpegArgs + " > out.txt 2> err.txt");
                         p = Process.Start(exe, args + @filename + loopNum + ".ts");
                     }
 
