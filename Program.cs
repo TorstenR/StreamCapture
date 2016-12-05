@@ -19,7 +19,7 @@ namespace WebRequest
         {
             if(args.Length < 3)
             {
-                Console.WriteLine($"[channel] [minutes] [filename] [[ffmpeg args]]");
+                Console.WriteLine($"[channel1|channle2|...] [minutes] [filename] [[ffmpeg args]]");
                 Environment.Exit(1);
             }
                         
@@ -70,19 +70,25 @@ namespace WebRequest
                     Console.WriteLine($"Request exception: {e.Message}");
                 }
 
-                //C:\Users\mark\Desktop\ffmpeg\bin\ffmpeg -i "http://dnaw1.smoothstreams.tv:9100/view247/ch01q1.stream/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvMS8yMDE2IDM6NDA6MTcgUE0maGFzaF92YWx1ZT1xVGxaZmlzMkNYd0hFTEJlaTlzVVJ3PT0mdmFsaWRtaW51dGVzPTcyMCZpZD00MzM=" -c copy t.ts
+                //Assume there's a list of channels
+                string[] channels = channel.Split(',');
 
-                //Build video capture URL
-                string vidURI = "http://dnaw1.smoothstreams.tv:9100/view247/ch"+ channel + "q1.stream/playlist.m3u8?wmsAuthSign=" + hashValue;
-
-                //Build ffmpeg command line
+                //Build ffmpeg command line with first channel
                 string exe=@"ffmpeg\bin\ffmpeg";
-                string args=@"-xerror -i " + vidURI + " -c copy ";
+                string args=BuildCaptureArgs(channels[0],hashValue);
 
                 Console.WriteLine($"Waiting {minutes} minutes...");
                 Process p=null;
 
                 //Loop in case connection is flaky
+
+                // Keep track of failure ratio for 5 minutes, then choose best channel
+                //
+                int currentChannel = 0;
+                int startingMinute = 0;
+                int channelFailureCount = 0;  
+                int bestChannelIdx = -1;
+                double[] qualityRatio = new double[channels.Length];
                 for(int loopNum=0;loopNum<(minutes);loopNum++)
                 {
                     //start process if not started already
@@ -90,6 +96,43 @@ namespace WebRequest
                     {
                         Console.WriteLine("Command Line: {0} {1}", exe, args + @filename + loopNum + ".ts" + " " + ffmpegArgs + " > out.txt 2> err.txt");
                         p = Process.Start(exe, args + @filename + loopNum + ".ts");
+
+                        //Check for quality if more than 5 minutes, and go to next channel unless we've already selected best channel
+                        if(loopNum>=(startingMinute+5) && bestChannelIdx < 0)
+                        {
+                            //increment failure count 
+                            channelFailureCount++;
+
+                            //Set quality ratio for current channel
+                            qualityRatio[currentChannel]=(loopNum-startingMinute)/channelFailureCount;
+                            Console.WriteLine("Setting quality ratio {0} for channel {1}", qualityRatio[currentChannel],channels[currentChannel]);
+
+                            //Goto next channel if exist.  Otherwise, just use best channel
+                            currentChannel++;
+                            if(currentChannel < channels.Length)
+                            {
+                                Console.WriteLine("Switching to channel {0}", currentChannel);
+                                channelFailureCount=0;  
+                                args=BuildCaptureArgs(channels[currentChannel],hashValue);
+                            }
+                            else
+                            {
+                                //grab best channel by grabbing the best ratio  
+                                double ratio=0;
+                                for(int b=0;b<channels.Length;b++)
+                                {
+                                    if(qualityRatio[b]>ratio)
+                                    {
+                                        ratio=qualityRatio[b];
+                                        bestChannelIdx=b;
+                                    }
+                                }
+
+                                //Now set channel
+                                args=BuildCaptureArgs(channels[bestChannelIdx],hashValue);
+                                Console.WriteLine("Determined that channel {0} is best with ratio of {1}", channels[bestChannelIdx],qualityRatio[bestChannelIdx]);
+                            }
+                        }
                     }
 
                     //Wait
@@ -103,6 +146,16 @@ namespace WebRequest
                 p.Kill();
                 p.WaitForExit();
             }
+        }
+
+        private static string BuildCaptureArgs(string channel,string hashValue)
+        {
+            //C:\Users\mark\Desktop\ffmpeg\bin\ffmpeg -i "http://dnaw1.smoothstreams.tv:9100/view247/ch01q1.stream/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvMS8yMDE2IDM6NDA6MTcgUE0maGFzaF92YWx1ZT1xVGxaZmlzMkNYd0hFTEJlaTlzVVJ3PT0mdmFsaWRtaW51dGVzPTcyMCZpZD00MzM=" -c copy t.ts
+
+            string vidURI = "http://dnaw1.smoothstreams.tv:9100/view247/ch"+ channel + "q1.stream/playlist.m3u8?wmsAuthSign=" + hashValue;
+            string args=@"-xerror -i " + vidURI + " -c copy ";
+
+            return args;
         }
     }
 }
