@@ -19,10 +19,13 @@ namespace WebRequest
         {
             if(args.Length < 3)
             {
-                Console.WriteLine($"[channel1|channle2|...] [minutes] [filename] [[ffmpeg args]]");
+                Console.WriteLine($"[channel1+channle2+...] [minutes] [filename] [[ffmpeg args]]");
                 Environment.Exit(1);
             }
-                        
+
+            foreach(string arg in args)
+                Console.WriteLine($"arg: {arg}",arg);
+
             string ffmpegArgs = "";
             if(args.Length>=4)
                 ffmpegArgs=args[3];
@@ -71,7 +74,7 @@ namespace WebRequest
                 }
 
                 //Assume there's a list of channels
-                string[] channels = channel.Split(',');
+                string[] channels = channel.Split('+');
 
                 //Build ffmpeg command line with first channel
                 string exe=@"ffmpeg\bin\ffmpeg";
@@ -105,13 +108,14 @@ namespace WebRequest
 
                             //Set quality ratio for current channel
                             qualityRatio[currentChannel]=(loopNum-startingMinute)/channelFailureCount;
+                            startingMinute=loopNum; //reset
                             Console.WriteLine("Setting quality ratio {0} for channel {1}", qualityRatio[currentChannel],channels[currentChannel]);
 
                             //Goto next channel if exist.  Otherwise, just use best channel
                             currentChannel++;
                             if(currentChannel < channels.Length)
                             {
-                                Console.WriteLine("Switching to channel {0}", currentChannel);
+                                Console.WriteLine("Switching to channel {0}", channels[currentChannel]);
                                 channelFailureCount=0;  
                                 args=BuildCaptureArgs(channels[currentChannel],hashValue);
                             }
@@ -151,8 +155,11 @@ namespace WebRequest
         private static string BuildCaptureArgs(string channel,string hashValue)
         {
             //C:\Users\mark\Desktop\ffmpeg\bin\ffmpeg -i "http://dnaw1.smoothstreams.tv:9100/view247/ch01q1.stream/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvMS8yMDE2IDM6NDA6MTcgUE0maGFzaF92YWx1ZT1xVGxaZmlzMkNYd0hFTEJlaTlzVVJ3PT0mdmFsaWRtaW51dGVzPTcyMCZpZD00MzM=" -c copy t.ts
-
-            string vidURI = "http://dnaw1.smoothstreams.tv:9100/view247/ch"+ channel + "q1.stream/playlist.m3u8?wmsAuthSign=" + hashValue;
+            
+            
+            //string vidURI = "http://dnaw1.smoothstreams.tv:9100/view247/ch"+ channel + "q1.stream/playlist.m3u8?wmsAuthSign=" + hashValue;  //West coast server
+            string vidURI = "http://deu.uk1.SmoothStreams.tv:9100/view247/ch"+ channel + "q1.stream/playlist.m3u8?wmsAuthSign=" + hashValue;  //london1 server
+            
             string args=@"-xerror -i " + vidURI + " -c copy ";
 
             return args;
