@@ -79,8 +79,6 @@ namespace WebRequest
                 //Build ffmpeg command line with first channel
                 string exe=@"ffmpeg\bin\ffmpeg";
                 string args=BuildCaptureArgs(channels[0],hashValue);
-
-                Console.WriteLine($"Waiting {minutes} minutes...");
                 Process p=null;
 
                 //Loop in case connection is flaky
@@ -90,6 +88,7 @@ namespace WebRequest
                 int currentChannel = 0;
                 int startingMinute = 0;
                 int channelFailureCount = 0;  
+                int lastChannelFailure = 0;
                 int bestChannelIdx = -1;
                 double[] qualityRatio = new double[channels.Length];
                 for(int loopNum=0;loopNum<(minutes);loopNum++)
@@ -97,11 +96,15 @@ namespace WebRequest
                     //start process if not started already
                     if(p==null || p.HasExited)
                     {
-                        Console.WriteLine("Command Line: {0} {1}", exe, args + @filename + loopNum + ".ts" + " " + ffmpegArgs + " > out.txt 2> err.txt");
+                        lastChannelFailure = loopNum;  //know when we last failed
+                        if(lastChannelFailure>0)
+                            Console.WriteLine("Capture Failed for channel {0} at minute {1}", channels[currentChannel],loopNum);
+
+                        Console.WriteLine("Starting Capture: {0} {1}", exe, args + @filename + loopNum + ".ts" + " " + ffmpegArgs + " > out.txt 2> err.txt");
                         p = Process.Start(exe, args + @filename + loopNum + ".ts");
 
-                        //Check for quality if more than 5 minutes, and go to next channel unless we've already selected best channel
-                        if(loopNum>=(startingMinute+5) && bestChannelIdx < 0)
+                        //Check for quality if more than 3 minutes, and go to next channel unless we've already selected best channel OR channel has been doing fine (stays alive for 15 minutes)
+                        if( (loopNum>=(startingMinute+3)) && ((loopNum-lastChannelFailure)<=10) && bestChannelIdx < 0)
                         {
                             //increment failure count 
                             channelFailureCount++;
