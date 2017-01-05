@@ -100,7 +100,7 @@ namespace WebRequest
                         if(lastChannelFailure>0)
                             Console.WriteLine("Capture Failed for channel {0} at minute {1}", channels[currentChannel],loopNum);
 
-                        Console.WriteLine("Starting Capture: {0} {1}", exe, args + @filename + loopNum + ".ts" + " " + ffmpegArgs + " > out.txt 2> err.txt");
+                        Console.WriteLine("Starting Capture: {0} {1}", exe, args + @filename + loopNum + ".ts" + " -stimeout 30000 " + ffmpegArgs + " > out.txt 2> err.txt");
                         p = Process.Start(exe, args + @filename + loopNum + ".ts");
 
                         //Check for quality if more than 3 minutes, and go to next channel unless we've already selected best channel OR channel has been doing fine (stays alive for 15 minutes)
@@ -163,7 +163,7 @@ namespace WebRequest
             //string vidURI = "http://dnaw1.smoothstreams.tv:9100/view247/ch"+ channel + "q1.stream/playlist.m3u8?wmsAuthSign=" + hashValue;  //West coast server
             string vidURI = "http://deu.uk1.SmoothStreams.tv:9100/view247/ch"+ channel + "q1.stream/playlist.m3u8?wmsAuthSign=" + hashValue;  //london1 server
             
-            string args=@"-xerror -i " + vidURI + " -c copy ";
+            string args=@"-i " + vidURI + " -c copy ";
 
             return args;
         }
