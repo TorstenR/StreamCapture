@@ -96,7 +96,11 @@ namespace WebRequest
                     //start process if not started already
                     if(p==null || p.HasExited)
                     {
-                        Console.WriteLine("Starting Capture: {0} {1}", exe, args + @filename + loopNum + ".ts" + " " + ffmpegArgs + " > out.txt 2> err.txt");
+                        lastChannelFailure = loopNum;  //know when we last failed
+                        if(lastChannelFailure>0)
+                            Console.WriteLine("Capture Failed for channel {0} at minute {1}", channels[currentChannel],loopNum);
+
+                        Console.WriteLine("Starting Capture: {0} {1}", exe, args + @filename + loopNum + ".ts" + " -stimeout 30000 " + ffmpegArgs + " > out.txt 2> err.txt");
                         p = Process.Start(exe, args + @filename + loopNum + ".ts");
 
                         lastChannelFailure = loopNum;  //know when we last failed
@@ -162,7 +166,7 @@ namespace WebRequest
             //string vidURI = "http://dnaw1.smoothstreams.tv:9100/view247/ch"+ channel + "q1.stream/playlist.m3u8?wmsAuthSign=" + hashValue;  //West coast server
             string vidURI = "http://deu.uk1.SmoothStreams.tv:9100/view247/ch"+ channel + "q1.stream/playlist.m3u8?wmsAuthSign=" + hashValue;  //london1 server
             
-            string args=@"-xerror -i " + vidURI + " -c copy ";
+            string args=@"-i " + vidURI + " -c copy ";
 
             return args;
         }
