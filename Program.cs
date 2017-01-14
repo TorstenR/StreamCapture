@@ -46,7 +46,7 @@ namespace WebRequest
             var configuration = builder.Build();
 
             //Authenticate
-            string hashValue = await Authenticate();
+            string hashValue = await Authenticate(configuration["user"],configuration["pass"]);
 
             //Capture stream
             int numFiles=CaptureStream(hashValue,args,configuration);
@@ -55,7 +55,7 @@ namespace WebRequest
             FixUp(numFiles,args[2],configuration);
         }
 
-        private async Task<string> Authenticate()
+        private async Task<string> Authenticate(string user,string pass)
         {
             string hashValue=null;
 
@@ -63,10 +63,10 @@ namespace WebRequest
             {
                 try
                 {
-                    //http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php?username=mwilkie&password=123lauve&site=view247
+                    //http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php?username=foo&password=bar&site=view247
                     Uri uri = new Uri("http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php");
                     client.BaseAddress = uri;
-                    var response = await client.GetAsync("?username=mwilkie&password=123lauve&site=view247");
+                    var response = await client.GetAsync("?username="+user+"&password="+pass"+&site=view247");
                     response.EnsureSuccessStatusCode(); // Throw in not success
 
                     string stringResponse = await response.Content.ReadAsStringAsync();
