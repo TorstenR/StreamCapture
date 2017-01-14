@@ -66,7 +66,7 @@ namespace WebRequest
                     //http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php?username=foo&password=bar&site=view247
                     Uri uri = new Uri("http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php");
                     client.BaseAddress = uri;
-                    var response = await client.GetAsync("?username="+user+"&password="+pass"+&site=view247");
+                    var response = await client.GetAsync("?username="+user+"&password="+pass+"&site=view247");
                     response.EnsureSuccessStatusCode(); // Throw in not success
 
                     string stringResponse = await response.Content.ReadAsStringAsync();
