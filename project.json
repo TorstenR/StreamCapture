@@ -5,8 +5,10 @@
     "emitEntryPoint": true
   },
   "dependencies": {
-    "Newtonsoft.Json": "8.0.3",
-    "System.Runtime.Serialization.Primitives":  "4.0.10-*",
+    "Newtonsoft.Json": "9.0.1",
+    "System.Runtime.Serialization.Primitives":  "4.*",
+    "Microsoft.Extensions.Configuration": "1.1.0",
+    "Microsoft.Extensions.Configuration.Json": "1.1.0",
     "System.Diagnostics.Process": "4.3.0"
   },
   "frameworks": {
