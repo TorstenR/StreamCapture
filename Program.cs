@@ -96,12 +96,11 @@ namespace WebRequest
                     //start process if not started already
                     if(p==null || p.HasExited)
                     {
-                        lastChannelFailure = loopNum;  //know when we last failed
-                        if(lastChannelFailure>0)
-                            Console.WriteLine("Capture Failed for channel {0} at minute {1}", channels[currentChannel],loopNum);
-
                         Console.WriteLine("Starting Capture: {0} {1}", exe, args + @filename + loopNum + ".ts" + " " + ffmpegArgs + " > out.txt 2> err.txt");
                         p = Process.Start(exe, args + @filename + loopNum + ".ts");
+
+                        lastChannelFailure = loopNum;  //know when we last failed
+                        Console.WriteLine("Capture Failed for channel {0} at minute {1}", channels[currentChannel],loopNum);
 
                         //Check for quality if more than 3 minutes, and go to next channel unless we've already selected best channel OR channel has been doing fine (stays alive for 15 minutes)
                         if( (loopNum>=(startingMinute+3)) && ((loopNum-lastChannelFailure)<=10) && bestChannelIdx < 0)
