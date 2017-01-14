@@ -267,6 +267,13 @@ namespace WebRequest
             //Run command
             Console.WriteLine("Starting Mux:");
             ExecProcess(configuration["ffmpegPath"],cmdLineArgs);
+
+            //If final file exist, delete old .ts file
+            if(File.Exists(outputFile))
+            {
+                Console.WriteLine("Removing ts file: {0}",inputFile);
+                File.Delete(inputFile);
+            }
         }
     }
 }
