@@ -7,5 +7,5 @@ set nasvidepath=\\nas\home\video\live247
 REM 
 REM Capture stream itself
 REM
-streamCapture %channel% %time% %filename% > log.txt 2> ffmpeglog.txt
+streamCapture %channel% %time% %filename% > %filename%Log.txt 2> %filename%Ffmpeglog.txt
 
