@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
+using Microsoft.Extensions.CommandLineUtils;
 
 
 namespace WebRequest
@@ -21,26 +22,31 @@ namespace WebRequest
 
         public static void Main(string[] args)
         {
+            CommandLineApplication commandLineApplication = new CommandLineApplication(throwOnUnexpectedArg: false);
+            CommandOption channels = commandLineApplication.Option("-c | --channels","Channels to record in the format nn+nn+nn",CommandOptionType.SingleValue);
+            CommandOption duration = commandLineApplication.Option("-d | --duration","Duration in minutes to record",CommandOptionType.SingleValue);
+            CommandOption filename = commandLineApplication.Option("-f | --filename","File name (no extension)",CommandOptionType.SingleValue);
+            commandLineApplication.HelpOption("-? | -h | --help");
+            commandLineApplication.Execute(args);       
+
+            Console.WriteLine($"Channels: {channels.Value()} Duration: {duration.Value()} File: {filename.Value()}");    
+
+            if(!channels.HasValue() || !duration.HasValue() || !filename.HasValue())
+            {
+                Console.WriteLine($"Incorrect command line options.  Please run with --help for more information.");
+                Environment.Exit(1);                
+            } 
+
+            //Parse list of channels and get minute
+            string[] strChannels = channels.Value().Split('+');
+            int minutes = Convert.ToInt32(duration.Value());
+
             Program p = new Program();
-            p.MainAsync(args).Wait();
+            p.MainAsync(strChannels,minutes,filename.Value()).Wait();
         }
 
-        async Task MainAsync(string[] args)
+        async Task MainAsync(string[] channels,int minutes,string fileName)
         {
-            if(args.Length < 3)
-            {
-                Console.WriteLine($"[channel1+channle2+...] [minutes] [filename] [[ffmpeg args]]");
-                Environment.Exit(1);
-            }
-
-            //Dump args
-            foreach(string arg in args)
-                Console.WriteLine($"arg: {arg}");
-
-            string ffmpegArgs = "";
-            if(args.Length>=4)
-                ffmpegArgs=args[3];
-
             //Read and build config
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
             var configuration = builder.Build();
@@ -49,10 +55,10 @@ namespace WebRequest
             string hashValue = await Authenticate(configuration["user"],configuration["pass"]);
 
             //Capture stream
-            int numFiles=CaptureStream(hashValue,args,configuration);
+            int numFiles=CaptureStream(hashValue,channels,minutes,fileName,configuration);
 
             //Fixup output
-            FixUp(numFiles,args[2],configuration);
+            FixUp(numFiles,fileName,configuration);
         }
 
         private async Task<string> Authenticate(string user,string pass)
@@ -98,12 +104,8 @@ namespace WebRequest
             return hashValue;
         }
         
-        private int CaptureStream(string hashValue,string[] args,IConfiguration configuration)
+        private int CaptureStream(string hashValue,string[] channels,int minutes,string fileName,IConfiguration configuration)
         {
-            //Parse list of channels and get minute
-            string[] channels = args[0].Split('+');
-            int minutes = Convert.ToInt32(args[1]);
-
             int currentFileNum = 0;
             int currentChannel = 0;
             int currentChannelFailureCount=0;
@@ -115,7 +117,7 @@ namespace WebRequest
             bestChannelSelected=false;
 
             //Build ffmpeg capture command line with first channel and get things rolling
-            string cmdLineArgs=BuildCaptureCmdLineArgs(channels[0],hashValue,args[2]+currentFileNum,configuration);
+            string cmdLineArgs=BuildCaptureCmdLineArgs(channels[0],hashValue,fileName+currentFileNum,configuration);
             Console.WriteLine("Starting Capture: {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
             p = Process.Start(configuration["ffmpegPath"],cmdLineArgs);
 
@@ -145,7 +147,7 @@ namespace WebRequest
                     }
 
                     //Now get things setup and going again
-                    cmdLineArgs=BuildCaptureCmdLineArgs(channels[currentChannel],hashValue,args[2]+currentFileNum,configuration);
+                    cmdLineArgs=BuildCaptureCmdLineArgs(channels[currentChannel],hashValue,fileName+currentFileNum,configuration);
                     Console.WriteLine("Starting Capture (again): {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
                     p = Process.Start(configuration["ffmpegPath"],cmdLineArgs);
 
