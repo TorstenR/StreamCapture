@@ -2,6 +2,7 @@
   "version": "1.0.0-*",
   "buildOptions": {
     "debugType": "portable",
+    "copyToOutput": "appsettings.json",
     "emitEntryPoint": true
   },
   "dependencies": {

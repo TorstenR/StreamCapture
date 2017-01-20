@@ -26,20 +26,33 @@ namespace WebRequest
             CommandOption channels = commandLineApplication.Option("-c | --channels","Channels to record in the format nn+nn+nn",CommandOptionType.SingleValue);
             CommandOption duration = commandLineApplication.Option("-d | --duration","Duration in minutes to record",CommandOptionType.SingleValue);
             CommandOption filename = commandLineApplication.Option("-f | --filename","File name (no extension)",CommandOptionType.SingleValue);
+            CommandOption datetime = commandLineApplication.Option("-d | --datetime","Datetime MM/DD/YY HH:MM",CommandOptionType.SingleValue);
             commandLineApplication.HelpOption("-? | -h | --help");
             commandLineApplication.Execute(args);       
 
-            Console.WriteLine($"Channels: {channels.Value()} Duration: {duration.Value()} File: {filename.Value()}");    
-
             if(!channels.HasValue() || !duration.HasValue() || !filename.HasValue())
             {
-                Console.WriteLine($"Incorrect command line options.  Please run with --help for more information.");
+                Console.WriteLine($"{DateTime.Now}: Incorrect command line options.  Please run with --help for more information.");
                 Environment.Exit(1);                
             } 
 
-            //Parse list of channels and get minute
+            //Convert options passed in as necessary
             string[] strChannels = channels.Value().Split('+');
             int minutes = Convert.ToInt32(duration.Value());
+
+            //Wait here until we're ready to start recording
+            if(datetime.HasValue())
+            {
+                DateTime recStart = DateTime.Parse(datetime.Value());
+                TimeSpan timeToWait = recStart - DateTime.Now;
+                Console.WriteLine($"{DateTime.Now}: Waiting for {timeToWait.Days} Days, {timeToWait.Hours} Hours, and {timeToWait.Minutes} minutes.");
+                Console.WriteLine($"Recording channel/s {channels.Value()} starting at {recStart} for {duration.Value()} minutes to {filename.Value()} file.");
+                Thread.Sleep(timeToWait);
+            }
+            else
+            {
+                Console.WriteLine($"Recording channel/s {channels.Value()} now for {duration.Value()} minutes to {filename.Value()} file.");
+            }
 
             Program p = new Program();
             p.MainAsync(strChannels,minutes,filename.Value()).Wait();
