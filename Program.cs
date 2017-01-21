@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Linq;
 using System.Text;
 using System.IO;
@@ -13,13 +14,11 @@ using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.CommandLineUtils;
 
 
-namespace WebRequest
+namespace StreamCapture
 {
     
     public class Program
     {
-        private bool bestChannelSelected;
-
         public static void Main(string[] args)
         {
             CommandLineApplication commandLineApplication = new CommandLineApplication(throwOnUnexpectedArg: false);
@@ -27,51 +26,98 @@ namespace WebRequest
             CommandOption duration = commandLineApplication.Option("-d | --duration","Duration in minutes to record",CommandOptionType.SingleValue);
             CommandOption filename = commandLineApplication.Option("-f | --filename","File name (no extension)",CommandOptionType.SingleValue);
             CommandOption datetime = commandLineApplication.Option("-d | --datetime","Datetime MM/DD/YY HH:MM",CommandOptionType.SingleValue);
+            CommandOption keyword = commandLineApplication.Option("-k | --keyword","Keyword to search listing by",CommandOptionType.SingleValue);
             commandLineApplication.HelpOption("-? | -h | --help");
             commandLineApplication.Execute(args);       
 
             if(!channels.HasValue() || !duration.HasValue() || !filename.HasValue())
             {
-                Console.WriteLine($"{DateTime.Now}: Incorrect command line options.  Please run with --help for more information.");
-                Environment.Exit(1);                
+                if(!keyword.HasValue() || !filename.HasValue())
+                {
+                    Console.WriteLine($"{DateTime.Now}: Incorrect command line options.  Please run with --help for more information.");
+                    Environment.Exit(1);
+                }                
             } 
 
-            //Convert options passed in as necessary
-            string[] strChannels = channels.Value().Split('+');
-            int minutes = Convert.ToInt32(duration.Value());
-
-            //Wait here until we're ready to start recording
-            if(datetime.HasValue())
-            {
-                DateTime recStart = DateTime.Parse(datetime.Value());
-                TimeSpan timeToWait = recStart - DateTime.Now;
-                Console.WriteLine($"{DateTime.Now}: Waiting for {timeToWait.Days} Days, {timeToWait.Hours} Hours, and {timeToWait.Minutes} minutes.");
-                Console.WriteLine($"Recording channel/s {channels.Value()} starting at {recStart} for {duration.Value()} minutes to {filename.Value()} file.");
-                Thread.Sleep(timeToWait);
-            }
-            else
-            {
-                Console.WriteLine($"Recording channel/s {channels.Value()} now for {duration.Value()} minutes to {filename.Value()} file.");
-            }
+            //Create new RecordInfo
+            RecordInfo recordInfo = new RecordInfo();
+            if(channels.HasValue())
+                recordInfo.LoadChannels(channels.Value());
+            recordInfo.strDuration=duration.Value();
+            recordInfo.strStartDT=datetime.Value();
+            recordInfo.keyword=keyword.Value();
 
             Program p = new Program();
-            p.MainAsync(strChannels,minutes,filename.Value()).Wait();
+            p.MainAsync(recordInfo).Wait();
         }
 
-        async Task MainAsync(string[] channels,int minutes,string fileName)
+        async Task MainAsync(RecordInfo recordInfo)
         {
             //Read and build config
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
             var configuration = builder.Build();
 
+            //If keyword passed in, grab schedule
+            if(recordInfo.keyword!=null)
+                await ParseSchedule(recordInfo);
+
+            //Dump show data
+            Console.WriteLine($"Show: {recordInfo.description}   Duration: {recordInfo.GetDuration()}");
+            Console.WriteLine($"Channels: {recordInfo.GetChannelString()}");            
+
+            //Wait here until we're ready to start recording
+            if(recordInfo.strStartDT != null)
+            {
+                DateTime recStart = recordInfo.GetStartDT();
+                TimeSpan timeToWait = recStart - DateTime.Now;
+                Console.WriteLine($"{DateTime.Now}: Starting recording at {recStart} - Waiting for {timeToWait.Days} Days, {timeToWait.Hours} Hours, and {timeToWait.Minutes} minutes.");
+                if(timeToWait.Seconds>0)
+                    Thread.Sleep(timeToWait);
+            }       
+
             //Authenticate
             string hashValue = await Authenticate(configuration["user"],configuration["pass"]);
 
             //Capture stream
-            int numFiles=CaptureStream(hashValue,channels,minutes,fileName,configuration);
+            int numFiles=CaptureStream(hashValue,recordInfo,configuration);
 
             //Fixup output
-            FixUp(numFiles,fileName,configuration);
+            FixUp(numFiles,recordInfo.strFileName,configuration);
+        }
+
+        private async Task ParseSchedule(RecordInfo recordInfo)
+        {
+            string schedString;
+            using (var client = new HttpClient())
+            {
+                Uri uri = new Uri("https://iptvguide.netlify.com/iptv.json");
+                var response = await client.GetAsync(uri);
+                response.EnsureSuccessStatusCode(); // Throw in not success
+                schedString = await response.Content.ReadAsStringAsync();
+            }
+
+            JObject jsonObject = JObject.Parse(schedString);
+            IEnumerable<JToken> channels = jsonObject.SelectTokens("$..items");
+            foreach(JToken channelInfo in channels)
+            {
+                IEnumerable<JToken> channelContent = channelInfo.Children();
+                foreach(JToken show in channelContent)
+                {
+                    if(show["name"].ToString().Contains(recordInfo.keyword))
+                    {
+                        if(show["quality"].ToString().Contains("720"))                      
+                            recordInfo.AddChannelAtBeginning(show["channel"].ToString(),show["quality"].ToString());
+                        else
+                            recordInfo.AddChannelAtEnd(show["channel"].ToString(),show["quality"].ToString());
+                        
+                        recordInfo.description=show["name"].ToString();
+                        recordInfo.strStartDT=show["time"].ToString();
+                        recordInfo.strDuration=show["runtime"].ToString();
+                        
+                        //Console.WriteLine($"{show["channel"]}:{show["quality"]} {show["name"]} starting at {show["time"]} for {show["runtime"]} minutes");
+                    }
+                }
+            }
         }
 
         private async Task<string> Authenticate(string user,string pass)
@@ -117,32 +163,27 @@ namespace WebRequest
             return hashValue;
         }
         
-        private int CaptureStream(string hashValue,string[] channels,int minutes,string fileName,IConfiguration configuration)
+        private int CaptureStream(string hashValue,RecordInfo recordInfo,IConfiguration configuration)
         {
             int currentFileNum = 0;
-            int currentChannel = 0;
             int currentChannelFailureCount=0;
             int lastChannelFailureTime = 0;
-            double[] qualityRatio = new double[channels.Length];
             Process p=null;
 
-            //initialize
-            bestChannelSelected=false;
-
             //Build ffmpeg capture command line with first channel and get things rolling
-            string cmdLineArgs=BuildCaptureCmdLineArgs(channels[0],hashValue,fileName+currentFileNum,configuration);
+            string cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetFirstChannel(),hashValue,recordInfo.strFileName+currentFileNum,configuration);
             Console.WriteLine("Starting Capture: {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
             p = Process.Start(configuration["ffmpegPath"],cmdLineArgs);
 
             //
             //Loop in case connection is flaky
             //
-            for(int loopNum=0;loopNum<minutes;loopNum++)
+            for(int loopNum=0;loopNum<recordInfo.GetDuration();loopNum++)
             {
                 //start process if not started already
                 if(p==null || p.HasExited)
                 {
-                    Console.WriteLine("Capture Failed for channel {0} at minute {1}", channels[currentChannel],loopNum);
+                    Console.WriteLine("Capture Failed for channel {0} at minute {1}", recordInfo.GetCurrentChannel(),loopNum);
 
                     //increment failure count and file number
                     currentChannelFailureCount++;
@@ -152,15 +193,16 @@ namespace WebRequest
                     if((loopNum-lastChannelFailureTime)<=15)
                     {
                         //Set quality ratio for current channel
-                        qualityRatio[currentChannel]=(loopNum-lastChannelFailureTime)/currentChannelFailureCount;
-                        Console.WriteLine("Setting quality ratio {0} for channel {1}", qualityRatio[currentChannel],channels[currentChannel]);
+                        double qualityRatio=(loopNum-lastChannelFailureTime)/currentChannelFailureCount;
+                        recordInfo.SetCurrentQualityRatio(qualityRatio);
+                        Console.WriteLine("Setting quality ratio {0} for channel {1}", qualityRatio,recordInfo.GetCurrentChannel());
 
                         //Determine correct next channel based on number and quality
-                        currentChannel = GetNextChannel(currentChannel,loopNum,channels,qualityRatio);
+                        SetNextChannel(recordInfo,loopNum);
                     }
 
                     //Now get things setup and going again
-                    cmdLineArgs=BuildCaptureCmdLineArgs(channels[currentChannel],hashValue,fileName+currentFileNum,configuration);
+                    cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetCurrentChannel(),hashValue,recordInfo.strFileName+currentFileNum,configuration);
                     Console.WriteLine("Starting Capture (again): {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
                     p = Process.Start(configuration["ffmpegPath"],cmdLineArgs);
 
@@ -181,38 +223,38 @@ namespace WebRequest
             return currentFileNum;
         }
 
-        private int GetNextChannel(int currentChannel,int loopNum,string[] channels,double[] qualityRatio)
+        private void SetNextChannel(RecordInfo recordInfo,int loopNum)
         {
             //Return if we've already selected the best channel
-            if(bestChannelSelected)
-                return currentChannel;
+            if(recordInfo.bestChannelSetFlag)
+                return;
 
-            //assume we have a next channel
-            currentChannel++; 
+            //opportunistically increment
+            recordInfo.currentChannelIdx++;                
 
-            if(currentChannel < channels.Length)  
+            if(recordInfo.currentChannelIdx < recordInfo.GetNumberOfChannels())  
             {
                 //do we still have more channels?  If so, grab the next one
-                Console.WriteLine("Switching to channel {0}", channels[currentChannel]);
+                Console.WriteLine("Switching to channel {0}", recordInfo.GetCurrentChannel());
             }
             else
             {
+                string[] channels = recordInfo.GetChannels();
+
                 //grab best channel by grabbing the best ratio  
                 double ratio=0;
                 for(int b=0;b<channels.Length;b++)
                 {
-                    if(qualityRatio[b]>ratio)
+                    if(recordInfo.GetQualityRatio(b)>ratio)
                     {
-                        ratio=qualityRatio[b];
-                        currentChannel=b;
-                        bestChannelSelected=true;
+                        ratio=recordInfo.GetQualityRatio(b);
+                        recordInfo.currentChannelIdx=b;
+                        recordInfo.bestChannelSetFlag=true;                    
                     }
 
-                    Console.WriteLine("Now setting channel to {0} with quality ratio of {1} for the rest of the capture session", channels[currentChannel],qualityRatio[currentChannel]);
+                    Console.WriteLine("Now setting channel to {0} with quality ratio of {1} for the rest of the capture session",recordInfo.GetCurrentChannel(),recordInfo.GetCurrentQualityRatio());
                 }
             }
-
-            return currentChannel;
         }
 
         private string BuildCaptureCmdLineArgs(string channel,string hashValue,string fileName,IConfiguration configuration)
@@ -289,6 +331,115 @@ namespace WebRequest
                 Console.WriteLine("Removing ts file: {0}",inputFile);
                 File.Delete(inputFile);
             }
+        }
+    }
+
+    public class RecordInfo
+    {
+        public string strDuration { get; set; }
+        public string strFileName { get; set; }
+        public string strStartDT { get; set; }
+
+        public int duration { get; set; }
+        public string filename { get; set; }
+        public DateTime startDT { get; set; }
+        public string description { get; set; }
+        public string keyword { get; set; }
+        public int currentChannelIdx{ get; set; }
+        public bool bestChannelSetFlag{ get; set; }
+
+        private List<string> channelList;
+        private List<double> channelRatioList;
+        private List<string> channelAnnotatedList;
+
+        public RecordInfo()
+        {
+            channelList = new List<string>();  
+            channelRatioList = new List<double>();
+            channelAnnotatedList = new List<string>();
+
+            currentChannelIdx=0;
+            bestChannelSetFlag=false;
+        }
+
+        public int GetDuration()
+        {
+            return Convert.ToInt32(strDuration);
+        }
+
+        public void LoadChannels(string strChannels)
+        {
+            string[] channelArray = strChannels.Split('+');
+            channelList = new List<string>(channelArray);     
+            channelAnnotatedList = new List<string>(channelArray);  
+        }
+
+        public string GetChannelString()
+        {
+            string channelStr="";
+
+            foreach(string channel in channelAnnotatedList)
+                channelStr=channelStr+channel+" ";
+
+            return channelStr;
+        }
+
+        public string GetFirstChannel()
+        {
+            return channelList.First<string>();
+        }
+
+        public DateTime GetStartDT()
+        {
+            DateTime startDT=DateTime.Parse(strStartDT);
+            return startDT.AddHours(-3);
+        }
+
+        public string GetCurrentChannel()
+        {
+            return channelList[currentChannelIdx];
+        }
+
+        public string GetChannel(int channelIdx)
+        {
+            return channelList[channelIdx];
+        }
+
+        public string[] GetChannels()
+        {
+            return channelList.ToArray<string>();
+        }
+
+        public void AddChannelAtEnd(string channel,string qualityTag)
+        {
+            channelList.Add(channel);
+            channelAnnotatedList.Add(channel+" ("+qualityTag+")");
+        }
+
+        public void AddChannelAtBeginning(string channel,string qualityTag)
+        {
+            channelList.Insert(0,channel);
+            channelAnnotatedList.Insert(0,channel+" ("+qualityTag+")");
+        }
+
+        public int GetNumberOfChannels()
+        {
+            return channelList.Count;
+        }
+
+        public void SetCurrentQualityRatio(double ratio)
+        {
+            channelRatioList.Insert(currentChannelIdx,ratio);
+        }
+
+        public double GetCurrentQualityRatio()
+        {
+            return channelRatioList[currentChannelIdx];
+        }
+
+        public double GetQualityRatio(int channelIdx)
+        {
+            return channelRatioList[channelIdx];
         }
     }
 }
