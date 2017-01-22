@@ -46,6 +46,7 @@ namespace StreamCapture
             recordInfo.strDuration=duration.Value();
             recordInfo.strStartDT=datetime.Value();
             recordInfo.keyword=keyword.Value();
+            recordInfo.strFileName=filename.Value();
 
             Program p = new Program();
             p.MainAsync(recordInfo).Wait();
@@ -63,6 +64,7 @@ namespace StreamCapture
 
             //Dump show data
             Console.WriteLine($"Show: {recordInfo.description}   Duration: {recordInfo.GetDuration()}");
+            Console.WriteLine($"File: {recordInfo.strFileName}");
             Console.WriteLine($"Channels: {recordInfo.GetChannelString()}");            
 
             //Wait here until we're ready to start recording
