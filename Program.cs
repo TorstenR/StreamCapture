@@ -26,13 +26,13 @@ namespace StreamCapture
             CommandOption duration = commandLineApplication.Option("-d | --duration","Duration in minutes to record",CommandOptionType.SingleValue);
             CommandOption filename = commandLineApplication.Option("-f | --filename","File name (no extension)",CommandOptionType.SingleValue);
             CommandOption datetime = commandLineApplication.Option("-d | --datetime","Datetime MM/DD/YY HH:MM (optional)",CommandOptionType.SingleValue);
-            CommandOption keyword = commandLineApplication.Option("-k | --keyword","Keyword to search listing by (all that's required)",CommandOptionType.SingleValue);
+            CommandOption keywords = commandLineApplication.Option("-k | --keywords","Keywords to search listing by - comma delimited",CommandOptionType.SingleValue);
             commandLineApplication.HelpOption("-? | -h | --help");
             commandLineApplication.Execute(args);       
 
             if(!channels.HasValue() || !duration.HasValue() || !filename.HasValue())
             {
-                if(!keyword.HasValue())
+                if(!keywords.HasValue())
                 {
                     Console.WriteLine($"{DateTime.Now}: Incorrect command line options.  Please run with --help for more information.");
                     Environment.Exit(1);
@@ -43,8 +43,8 @@ namespace StreamCapture
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
             var configuration = builder.Build();
 
-            //If we're not reading from the schedule, just start waiting for recording now
-            if(!keyword.HasValue())
+            //If we're not reading from the schedule, just go now
+            if(!keywords.HasValue())
             {
                 //Create new RecordInfo
                 RecordInfo recordInfo = new RecordInfo();
@@ -52,11 +52,7 @@ namespace StreamCapture
                     recordInfo.LoadChannels(channels.Value());
                 recordInfo.strDuration=duration.Value();
                 recordInfo.strStartDT=datetime.Value();
-                recordInfo.keyword=keyword.Value();
                 recordInfo.fileName=filename.Value();
-
-                //Dump
-                DumpRecordInfo(recordInfo);
 
                 //Start recording
                 Program p = new Program();
@@ -65,66 +61,99 @@ namespace StreamCapture
             }
 
             //Since keyword passed in, grab schedule from interwebs and loop forever, checking every 6 hours for new shows to record
+            Dictionary<string,RecordInfo> recInfoDict = new Dictionary<string,RecordInfo>();
             while(true)
             {
                 //Get latest schedule
-                Task<Dictionary<string,RecordInfo>> parseTask = ParseSchedule(keyword.Value());
-                Dictionary<string,RecordInfo> recInfoDict = parseTask.Result;
+                ParseSchedule(recInfoDict,keywords.Value()).Wait();
 
                 //Spawn new process for each show found
                 foreach (KeyValuePair<string, RecordInfo> kvp in recInfoDict)
                 {            
                     RecordInfo recordInfo = (RecordInfo)kvp.Value;
-                    recordInfo.processSpawnedFlag=true;
-                    DumpRecordInfo(recordInfo); 
-                    SpawnRecordProcess(recordInfo);
+
+                    //If show is not already in the past or waiting, get that done
+                    if(recordInfo.GetEndDT()>DateTime.Now && recordInfo.GetEndDT()<DateTime.Now.AddDays(1) && !recordInfo.processSpawnedFlag)
+                    {
+                        recordInfo.processSpawnedFlag=true;
+                        DumpRecordInfo(Console.Out,recordInfo,"Schedule Read: "); 
+        
+                        Program p = new Program();
+                        Thread newRecThread = new Thread(() => p.MainAsync(recordInfo,configuration).Wait());
+                        newRecThread.Start();
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{DateTime.Now}: ignoring id: {recordInfo.id}");
+                    }
                 }  
 
+                //Determine how long to sleep before next check
+                string[] times=configuration["scheduleCheck"].Split(',');
+                DateTime nextRecord=DateTime.Now;
+                bool timeFound=false;
+                for(int i=0;i<times.Length;i++)
+                {
+                    int recHour=Convert.ToInt32(times[i]);
+                    if(DateTime.Now.Hour < recHour)
+                    {
+                        int hourDiff=recHour-DateTime.Now.TimeOfDay.Hours;
+                        nextRecord=DateTime.Now.AddHours(hourDiff);
+                        timeFound=true;
+                        break;
+                    }
+                }
+
+                //If nothing was found, just grab the first time
+                if(!timeFound)
+                {
+                    int recHour=Convert.ToInt32(times[0]);  //grab first time
+
+                    //Looks like we go to tommorrow since we're still here
+                    nextRecord=new DateTime(
+                        DateTime.Now.Year,
+                        DateTime.Now.Month,
+                        DateTime.Now.Day+1,
+                        recHour,
+                        0,
+                        0,
+                        0,
+                        DateTime.Now.Kind);
+                }
+
                 //Wait
-                Console.WriteLine($"{DateTime.Now}: Now sleeping for 6 hours before checking again...");
-                TimeSpan interval = new TimeSpan(0, 1, 0);
-                Thread.Sleep(interval);         
+                TimeSpan timeToWait = nextRecord - DateTime.Now;
+                Console.WriteLine($"{DateTime.Now}: Now sleeping for {timeToWait.Hours} hours before checking again at {nextRecord.ToString()}");
+                Thread.Sleep(timeToWait);         
                 Console.WriteLine($"{DateTime.Now}: Woke up, now checking again...");
             } 
         }
 
-        private static void DumpRecordInfo(RecordInfo recordInfo)
+        private static void DumpRecordInfo(TextWriter logWriter,RecordInfo recordInfo,string tag)
         {
-            Console.WriteLine($"=====================");
-            Console.WriteLine($"Show: {recordInfo.description} StartDT: {recordInfo.GetStartDT()}  Duration: {recordInfo.GetDuration()}");
-            Console.WriteLine($"File: {recordInfo.fileName}");
-            Console.WriteLine($"Channels: {recordInfo.GetChannelString()}");               
-        }
-
-        private static void SpawnRecordProcess(RecordInfo recordInfo)
-        {
-            //Build command line args
-            string args = String.Format($"--channels={recordInfo.GetChannelArgs()} --duration={recordInfo.duration} --datetime={recordInfo.GetStartDT().ToString("MM/dd/yyyy")} --filename={recordInfo.fileName}");
-            Console.WriteLine($"{DateTime.Now}: Starting new streamCapture.exe with args: {args}");
-
-            //Process.Start(new ProcessStartInfo("cmd", $"foo.txt"));
-
-            ProcessStartInfo info = new ProcessStartInfo("cmd.exe", "foo.txt"); 
-            //info.UseShellExecute = false;  
-            info.RedirectStandardOutput = true;
-            Process processChild = Process.Start(info); // separate window
-
-            //ProcessStartInfo info = new ProcessStartInfo("cmd.exe", "foo.txt"); 
-            //ProcessStartInfo info = new ProcessStartInfo("streamCapture.exe", args);
-            //info.UseShellExecute = false;  
-            //info.RedirectStandardOutput = true;
-            //var recProcess = new Process {StartInfo = info};
-            //recProcess.Start();
+            logWriter.WriteLine($"{tag} =====================");
+            logWriter.WriteLine($"Show: {recordInfo.description} StartDT: {recordInfo.GetStartDT()}  Duration: {recordInfo.GetDuration()}");
+            logWriter.WriteLine($"File: {recordInfo.fileName}");
+            logWriter.WriteLine($"Channels: {recordInfo.GetChannelString()}");               
         }
 
         async Task MainAsync(RecordInfo recordInfo,IConfiguration configuration)
-        {       
+        {
+            //Write to our very own log as there might be other captures going too
+            string logPath=Path.Combine(configuration["logPath"],recordInfo.fileName+"Log.txt");
+            FileStream fileHandle = new FileStream (logPath, FileMode.OpenOrCreate, FileAccess.Write);
+            StreamWriter logWriter = new StreamWriter (fileHandle);
+            logWriter.AutoFlush = true;
+
+            //Dump
+            DumpRecordInfo(logWriter,recordInfo,"MainAsync");
+
             //Wait here until we're ready to start recording
             if(recordInfo.strStartDT != null)
             {
                 DateTime recStart = recordInfo.GetStartDT();
                 TimeSpan timeToWait = recStart - DateTime.Now;
-                Console.WriteLine($"{DateTime.Now}: Starting recording at {recStart} - Waiting for {timeToWait.Days} Days, {timeToWait.Hours} Hours, and {timeToWait.Minutes} minutes.");
+                logWriter.WriteLine($"{DateTime.Now}: Starting recording at {recStart} - Waiting for {timeToWait.Days} Days, {timeToWait.Hours} Hours, and {timeToWait.Minutes} minutes.");
                 if(timeToWait.Seconds>0)
                     Thread.Sleep(timeToWait);
             }       
@@ -133,16 +162,21 @@ namespace StreamCapture
             string hashValue = await Authenticate(configuration["user"],configuration["pass"]);
 
             //Capture stream
-            int numFiles=CaptureStream(hashValue,recordInfo,configuration);
+            int numFiles=CaptureStream(logWriter,hashValue,recordInfo,configuration);
 
             //Fixup output
-            FixUp(numFiles,recordInfo,configuration);
+            FixUp(logWriter,numFiles,recordInfo,configuration);
+
+            //Cleanup
+            logWriter.WriteLine($"Done Capturing - Cleaning up");
+            logWriter.Dispose();
+            fileHandle.Dispose();
         }
 
-        private static async Task<Dictionary<string,RecordInfo>> ParseSchedule(string keyword)
+        private static async Task ParseSchedule(Dictionary<string,RecordInfo> recInfoDict,string keywords)
         {
             //List of record info
-            Dictionary<string,RecordInfo> recInfoDict = new Dictionary<string,RecordInfo>();
+            //Dictionary<string,RecordInfo> recInfoDict = new Dictionary<string,RecordInfo>();
 
             string schedString;
             using (var client = new HttpClient())
@@ -160,38 +194,48 @@ namespace StreamCapture
                 IEnumerable<JToken> channelContent = channelInfo.Children();
                 foreach(JToken show in channelContent)
                 {
-                    string name=show["name"].ToString();
-                    if(name.Contains(keyword))
+                    string keyValue=show["name"].ToString()+show["time"].ToString();
+                    if(MatchKeywords(show["name"].ToString(),keywords))
                     {
-                        RecordInfo recordInfo = new RecordInfo();
-
-                        //Check in list
-                        if(recInfoDict.ContainsKey(name))
-                            recordInfo=recInfoDict[name];
+                        RecordInfo recordInfo;
+                        if(recInfoDict.ContainsKey(keyValue))
+                            recordInfo=recInfoDict[keyValue];
+                        else
+                            recordInfo = new RecordInfo();
 
                         if(show["quality"].ToString().Contains("720"))                      
                             recordInfo.AddChannelAtBeginning(show["channel"].ToString(),show["quality"].ToString());
                         else
-                            recordInfo.AddChannelAtEnd(show["channel"].ToString(),show["quality"].ToString());
-                        
+                            recordInfo.AddChannelAtEnd(show["channel"].ToString(),show["quality"].ToString());   
                         recordInfo.id=show["id"].ToString();
                         recordInfo.fileName=recordInfo.id;
                         recordInfo.description=show["name"].ToString();
                         recordInfo.strStartDT=show["time"].ToString();
+                        recordInfo.strEndDT=show["end_time"].ToString();
                         recordInfo.strDuration=show["runtime"].ToString();
-                        //recordInfo.strDuration="1";
 
-                        if(recInfoDict.ContainsKey(name))
-                            recInfoDict[name]=recordInfo;
+                        //Update or add
+                        if(recInfoDict.ContainsKey(keyValue))
+                            recInfoDict[keyValue]=recordInfo;
                         else
-                            recInfoDict.Add(name,recordInfo);
-                        
-                        //Console.WriteLine($"{show["channel"]}:{show["quality"]} {show["name"]} starting at {show["time"]} for {show["runtime"]} minutes");
+                            recInfoDict.Add(keyValue,recordInfo);
                     }
                 }
             }
+        }
 
-            return recInfoDict;
+        static private bool MatchKeywords(string showName,string keywords)
+        {
+            bool matchFlag=false;
+
+            string[] kArray = keywords.Split(',');
+            for(int i=0;i<kArray.Length;i++)
+            {
+                if(showName.ToLower().Contains(kArray[i].ToLower()))
+                    matchFlag=true;
+            }
+
+            return matchFlag;
         }
 
         private async Task<string> Authenticate(string user,string pass)
@@ -200,54 +244,46 @@ namespace StreamCapture
 
             using (var client = new HttpClient())
             {
-                try
+                //http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php?username=foo&password=bar&site=view247
+                Uri uri = new Uri("http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php");
+                client.BaseAddress = uri;
+                var response = await client.GetAsync("?username="+user+"&password="+pass+"&site=view247");
+                response.EnsureSuccessStatusCode(); // Throw in not success
+
+                string stringResponse = await response.Content.ReadAsStringAsync();
+                
+                //Console.WriteLine($"Response: {stringResponse}");
+
+                //Grab hash
+                JsonTextReader reader = new JsonTextReader(new StringReader(stringResponse));
+                while (reader.Read())
                 {
-                    //http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php?username=foo&password=bar&site=view247
-                    Uri uri = new Uri("http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php");
-                    client.BaseAddress = uri;
-                    var response = await client.GetAsync("?username="+user+"&password="+pass+"&site=view247");
-                    response.EnsureSuccessStatusCode(); // Throw in not success
-
-                    string stringResponse = await response.Content.ReadAsStringAsync();
-                    
-                    //Console.WriteLine($"Response: {stringResponse}");
-
-                    //Grab hash
-                    JsonTextReader reader = new JsonTextReader(new StringReader(stringResponse));
-                    while (reader.Read())
+                    if (reader.Value != null)
                     {
-                        if (reader.Value != null)
+                        //Console.WriteLine("Token: {0}, Value: {1}", reader.TokenType, reader.Value);
+                        if(reader.TokenType.ToString() == "PropertyName" && reader.Value.ToString() == "hash")
                         {
-                            //Console.WriteLine("Token: {0}, Value: {1}", reader.TokenType, reader.Value);
-                            if(reader.TokenType.ToString() == "PropertyName" && reader.Value.ToString() == "hash")
-                            {
-                                reader.Read();
-                                hashValue=reader.Value.ToString();
-                                break;
-                            }
+                            reader.Read();
+                            hashValue=reader.Value.ToString();
+                            break;
                         }
                     }
-                }
-                catch (HttpRequestException e)
-                {
-                    Console.WriteLine($"Request exception: {e.Message}");
                 }
             }
 
             return hashValue;
         }
         
-        private int CaptureStream(string hashValue,RecordInfo recordInfo,IConfiguration configuration)
+        private int CaptureStream(TextWriter logWriter,string hashValue,RecordInfo recordInfo,IConfiguration configuration)
         {
             int currentFileNum = 0;
             int currentChannelFailureCount=0;
             int lastChannelFailureTime = 0;
-            Process p=null;
 
             //Build ffmpeg capture command line with first channel and get things rolling
             string cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetFirstChannel(),hashValue,recordInfo.fileName+currentFileNum,configuration);
-            Console.WriteLine("Starting Capture: {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
-            p = Process.Start(configuration["ffmpegPath"],cmdLineArgs);
+            logWriter.WriteLine("Starting Capture: {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
+            Process p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,true);  //setting async flag
 
             //
             //Loop in case connection is flaky
@@ -257,7 +293,9 @@ namespace StreamCapture
                 //start process if not started already
                 if(p==null || p.HasExited)
                 {
-                    Console.WriteLine("Capture Failed for channel {0} at minute {1}", recordInfo.GetCurrentChannel(),loopNum);
+                    logWriter.WriteLine(p.StandardError.ReadToEnd());
+                    logWriter.WriteLine(p.StandardOutput.ReadToEnd());
+                    logWriter.WriteLine("Capture Failed for channel {0} at minute {1}", recordInfo.GetCurrentChannel(),loopNum);
 
                     //increment failure count and file number
                     currentChannelFailureCount++;
@@ -269,16 +307,16 @@ namespace StreamCapture
                         //Set quality ratio for current channel
                         double qualityRatio=(loopNum-lastChannelFailureTime)/currentChannelFailureCount;
                         recordInfo.SetCurrentQualityRatio(qualityRatio);
-                        Console.WriteLine("Setting quality ratio {0} for channel {1}", qualityRatio,recordInfo.GetCurrentChannel());
+                        logWriter.WriteLine("Setting quality ratio {0} for channel {1}", qualityRatio,recordInfo.GetCurrentChannel());
 
                         //Determine correct next channel based on number and quality
-                        SetNextChannel(recordInfo,loopNum);
+                        SetNextChannel(logWriter,recordInfo,loopNum);
                     }
 
                     //Now get things setup and going again
                     cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetCurrentChannel(),hashValue,recordInfo.fileName+currentFileNum,configuration);
-                    Console.WriteLine("Starting Capture (again): {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
-                    p = Process.Start(configuration["ffmpegPath"],cmdLineArgs);
+                    logWriter.WriteLine("Starting Capture (again): {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
+                    p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,true);
 
                     //Set the time we last failed a channel                        
                     lastChannelFailureTime = loopNum;  
@@ -288,16 +326,19 @@ namespace StreamCapture
                 TimeSpan interval = new TimeSpan(0, 1, 0);
                 Thread.Sleep(interval);
             }
-            Console.WriteLine($"Killing process now, time is up");
+            logWriter.WriteLine($"Clearing stream and killing process now, time is up");
 
             // Free resources associated with process.
             p.Kill();
+            logWriter.WriteLine(p.StandardError.ReadToEnd());
+            logWriter.WriteLine(p.StandardOutput.ReadToEnd());            
             p.WaitForExit();
+            p.Dispose();
 
             return currentFileNum;
         }
 
-        private void SetNextChannel(RecordInfo recordInfo,int loopNum)
+        private void SetNextChannel(TextWriter logWriter,RecordInfo recordInfo,int loopNum)
         {
             //Return if we've already selected the best channel
             if(recordInfo.bestChannelSetFlag)
@@ -309,7 +350,7 @@ namespace StreamCapture
             if(recordInfo.currentChannelIdx < recordInfo.GetNumberOfChannels())  
             {
                 //do we still have more channels?  If so, grab the next one
-                Console.WriteLine("Switching to channel {0}", recordInfo.GetCurrentChannel());
+                logWriter.WriteLine("Switching to channel {0}", recordInfo.GetCurrentChannel());
             }
             else
             {
@@ -326,7 +367,7 @@ namespace StreamCapture
                         recordInfo.bestChannelSetFlag=true;                    
                     }
 
-                    Console.WriteLine("Now setting channel to {0} with quality ratio of {1} for the rest of the capture session",recordInfo.GetCurrentChannel(),recordInfo.GetCurrentQualityRatio());
+                    logWriter.WriteLine("Now setting channel to {0} with quality ratio of {1} for the rest of the capture session",recordInfo.GetCurrentChannel(),recordInfo.GetCurrentQualityRatio());
                 }
             }
         }
@@ -347,14 +388,33 @@ namespace StreamCapture
             return cmdLineArgs;
         }
 
-        private void ExecProcess(string exe,string cmdLineArgs)
+        private Process ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs)
         {
-            Console.WriteLine("Exe: {0} {1}", exe,cmdLineArgs);
-            Process p = Process.Start(exe,cmdLineArgs);
-            p.WaitForExit();
+            return ExecProcess(logWriter,exe,cmdLineArgs,false);
         }
 
-        private void FixUp(int numFiles,RecordInfo recordInfo,IConfiguration configuration)
+        private Process ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs,bool asyncFlag)
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = exe,
+                Arguments = cmdLineArgs,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            Process process = Process.Start(processInfo);
+            if(!asyncFlag)
+            {
+                logWriter.WriteLine(process.StandardError.ReadToEnd());
+                logWriter.WriteLine(process.StandardOutput.ReadToEnd());
+                process.WaitForExit();
+            }
+
+            return process;
+        }
+
+        private void FixUp(TextWriter logWriter,int numFiles,RecordInfo recordInfo,IConfiguration configuration)
         {
             string cmdLineArgs;
             string outputFile;
@@ -371,7 +431,7 @@ namespace StreamCapture
 
 
             //Concat if more than one file
-            Console.WriteLine("Num Files: {0}", numFiles+1);
+            logWriter.WriteLine("Num Files: {0}", numFiles+1);
             if(numFiles > 0)
             {
                 //make fileist
@@ -388,8 +448,8 @@ namespace StreamCapture
                 cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",outputFile);
 
                 //Run command
-                Console.WriteLine("Starting Concat:");
-                ExecProcess(configuration["ffmpegPath"],cmdLineArgs);
+                logWriter.WriteLine("Starting Concat:");
+                ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
 
                 videoFileName=recordInfo.fileName+".ts";
             }
@@ -405,13 +465,13 @@ namespace StreamCapture
             cmdLineArgs=cmdLineArgs.Replace("[DESCRIPTION]",recordInfo.description);            
 
             //Run command
-            Console.WriteLine("Starting Mux:");
-            ExecProcess(configuration["ffmpegPath"],cmdLineArgs);
+            logWriter.WriteLine("Starting Mux:");
+            ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
 
             //If final file exist, delete old .ts file
             if(File.Exists(outputFile))
             {
-                Console.WriteLine("Removing ts file: {0}",inputFile);
+                logWriter.WriteLine("Removing ts file: {0}",inputFile);
                 File.Delete(inputFile);
             }
         }
@@ -422,6 +482,7 @@ namespace StreamCapture
         public string strDuration { get; set; }
         public string fileName { get; set; }
         public string strStartDT { get; set; }
+        public string strEndDT { get; set; }
 
         public string id { get; set; }
         public int duration { get; }
@@ -492,6 +553,12 @@ namespace StreamCapture
         {
             DateTime startDT=DateTime.Parse(strStartDT);
             return startDT.AddHours(-3);
+        }
+
+        public DateTime GetEndDT()
+        {
+            DateTime endDT=DateTime.Parse(strEndDT);
+            return endDT.AddHours(-3);
         }
 
         public string GetCurrentChannel()
