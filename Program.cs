@@ -22,51 +22,103 @@ namespace StreamCapture
         public static void Main(string[] args)
         {
             CommandLineApplication commandLineApplication = new CommandLineApplication(throwOnUnexpectedArg: false);
-            CommandOption channels = commandLineApplication.Option("-c | --channels","Channels to record in the format nn+nn+nn",CommandOptionType.SingleValue);
+            CommandOption channels = commandLineApplication.Option("-c | --channels","Channels to record in the format nn+nn+nn (must be 2 digits)",CommandOptionType.SingleValue);
             CommandOption duration = commandLineApplication.Option("-d | --duration","Duration in minutes to record",CommandOptionType.SingleValue);
             CommandOption filename = commandLineApplication.Option("-f | --filename","File name (no extension)",CommandOptionType.SingleValue);
-            CommandOption datetime = commandLineApplication.Option("-d | --datetime","Datetime MM/DD/YY HH:MM",CommandOptionType.SingleValue);
-            CommandOption keyword = commandLineApplication.Option("-k | --keyword","Keyword to search listing by",CommandOptionType.SingleValue);
+            CommandOption datetime = commandLineApplication.Option("-d | --datetime","Datetime MM/DD/YY HH:MM (optional)",CommandOptionType.SingleValue);
+            CommandOption keyword = commandLineApplication.Option("-k | --keyword","Keyword to search listing by (all that's required)",CommandOptionType.SingleValue);
             commandLineApplication.HelpOption("-? | -h | --help");
             commandLineApplication.Execute(args);       
 
             if(!channels.HasValue() || !duration.HasValue() || !filename.HasValue())
             {
-                if(!keyword.HasValue() || !filename.HasValue())
+                if(!keyword.HasValue())
                 {
                     Console.WriteLine($"{DateTime.Now}: Incorrect command line options.  Please run with --help for more information.");
                     Environment.Exit(1);
                 }                
             } 
 
-            //Create new RecordInfo
-            RecordInfo recordInfo = new RecordInfo();
-            if(channels.HasValue())
-                recordInfo.LoadChannels(channels.Value());
-            recordInfo.strDuration=duration.Value();
-            recordInfo.strStartDT=datetime.Value();
-            recordInfo.keyword=keyword.Value();
-            recordInfo.strFileName=filename.Value();
-
-            Program p = new Program();
-            p.MainAsync(recordInfo).Wait();
-        }
-
-        async Task MainAsync(RecordInfo recordInfo)
-        {
             //Read and build config
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
             var configuration = builder.Build();
 
-            //If keyword passed in, grab schedule
-            if(recordInfo.keyword!=null)
-                await ParseSchedule(recordInfo);
+            //If we're not reading from the schedule, just start waiting for recording now
+            if(!keyword.HasValue())
+            {
+                //Create new RecordInfo
+                RecordInfo recordInfo = new RecordInfo();
+                if(channels.HasValue())
+                    recordInfo.LoadChannels(channels.Value());
+                recordInfo.strDuration=duration.Value();
+                recordInfo.strStartDT=datetime.Value();
+                recordInfo.keyword=keyword.Value();
+                recordInfo.fileName=filename.Value();
 
-            //Dump show data
-            Console.WriteLine($"Show: {recordInfo.description}   Duration: {recordInfo.GetDuration()}");
-            Console.WriteLine($"File: {recordInfo.strFileName}");
-            Console.WriteLine($"Channels: {recordInfo.GetChannelString()}");            
+                //Dump
+                DumpRecordInfo(recordInfo);
 
+                //Start recording
+                Program p = new Program();
+                p.MainAsync(recordInfo,configuration).Wait();
+                Environment.Exit(0);
+            }
+
+            //Since keyword passed in, grab schedule from interwebs and loop forever, checking every 6 hours for new shows to record
+            while(true)
+            {
+                //Get latest schedule
+                Task<Dictionary<string,RecordInfo>> parseTask = ParseSchedule(keyword.Value());
+                Dictionary<string,RecordInfo> recInfoDict = parseTask.Result;
+
+                //Spawn new process for each show found
+                foreach (KeyValuePair<string, RecordInfo> kvp in recInfoDict)
+                {            
+                    RecordInfo recordInfo = (RecordInfo)kvp.Value;
+                    recordInfo.processSpawnedFlag=true;
+                    DumpRecordInfo(recordInfo); 
+                    SpawnRecordProcess(recordInfo);
+                }  
+
+                //Wait
+                Console.WriteLine($"{DateTime.Now}: Now sleeping for 6 hours before checking again...");
+                TimeSpan interval = new TimeSpan(0, 1, 0);
+                Thread.Sleep(interval);         
+                Console.WriteLine($"{DateTime.Now}: Woke up, now checking again...");
+            } 
+        }
+
+        private static void DumpRecordInfo(RecordInfo recordInfo)
+        {
+            Console.WriteLine($"=====================");
+            Console.WriteLine($"Show: {recordInfo.description} StartDT: {recordInfo.GetStartDT()}  Duration: {recordInfo.GetDuration()}");
+            Console.WriteLine($"File: {recordInfo.fileName}");
+            Console.WriteLine($"Channels: {recordInfo.GetChannelString()}");               
+        }
+
+        private static void SpawnRecordProcess(RecordInfo recordInfo)
+        {
+            //Build command line args
+            string args = String.Format($"--channels={recordInfo.GetChannelArgs()} --duration={recordInfo.duration} --datetime={recordInfo.GetStartDT().ToString("MM/dd/yyyy")} --filename={recordInfo.fileName}");
+            Console.WriteLine($"{DateTime.Now}: Starting new streamCapture.exe with args: {args}");
+
+            //Process.Start(new ProcessStartInfo("cmd", $"foo.txt"));
+
+            ProcessStartInfo info = new ProcessStartInfo("cmd.exe", "foo.txt"); 
+            //info.UseShellExecute = false;  
+            info.RedirectStandardOutput = true;
+            Process processChild = Process.Start(info); // separate window
+
+            //ProcessStartInfo info = new ProcessStartInfo("cmd.exe", "foo.txt"); 
+            //ProcessStartInfo info = new ProcessStartInfo("streamCapture.exe", args);
+            //info.UseShellExecute = false;  
+            //info.RedirectStandardOutput = true;
+            //var recProcess = new Process {StartInfo = info};
+            //recProcess.Start();
+        }
+
+        async Task MainAsync(RecordInfo recordInfo,IConfiguration configuration)
+        {       
             //Wait here until we're ready to start recording
             if(recordInfo.strStartDT != null)
             {
@@ -84,11 +136,14 @@ namespace StreamCapture
             int numFiles=CaptureStream(hashValue,recordInfo,configuration);
 
             //Fixup output
-            FixUp(numFiles,recordInfo.strFileName,configuration);
+            FixUp(numFiles,recordInfo,configuration);
         }
 
-        private async Task ParseSchedule(RecordInfo recordInfo)
+        private static async Task<Dictionary<string,RecordInfo>> ParseSchedule(string keyword)
         {
+            //List of record info
+            Dictionary<string,RecordInfo> recInfoDict = new Dictionary<string,RecordInfo>();
+
             string schedString;
             using (var client = new HttpClient())
             {
@@ -105,21 +160,38 @@ namespace StreamCapture
                 IEnumerable<JToken> channelContent = channelInfo.Children();
                 foreach(JToken show in channelContent)
                 {
-                    if(show["name"].ToString().Contains(recordInfo.keyword))
+                    string name=show["name"].ToString();
+                    if(name.Contains(keyword))
                     {
+                        RecordInfo recordInfo = new RecordInfo();
+
+                        //Check in list
+                        if(recInfoDict.ContainsKey(name))
+                            recordInfo=recInfoDict[name];
+
                         if(show["quality"].ToString().Contains("720"))                      
                             recordInfo.AddChannelAtBeginning(show["channel"].ToString(),show["quality"].ToString());
                         else
                             recordInfo.AddChannelAtEnd(show["channel"].ToString(),show["quality"].ToString());
                         
+                        recordInfo.id=show["id"].ToString();
+                        recordInfo.fileName=recordInfo.id;
                         recordInfo.description=show["name"].ToString();
                         recordInfo.strStartDT=show["time"].ToString();
                         recordInfo.strDuration=show["runtime"].ToString();
+                        //recordInfo.strDuration="1";
+
+                        if(recInfoDict.ContainsKey(name))
+                            recInfoDict[name]=recordInfo;
+                        else
+                            recInfoDict.Add(name,recordInfo);
                         
                         //Console.WriteLine($"{show["channel"]}:{show["quality"]} {show["name"]} starting at {show["time"]} for {show["runtime"]} minutes");
                     }
                 }
             }
+
+            return recInfoDict;
         }
 
         private async Task<string> Authenticate(string user,string pass)
@@ -173,7 +245,7 @@ namespace StreamCapture
             Process p=null;
 
             //Build ffmpeg capture command line with first channel and get things rolling
-            string cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetFirstChannel(),hashValue,recordInfo.strFileName+currentFileNum,configuration);
+            string cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetFirstChannel(),hashValue,recordInfo.fileName+currentFileNum,configuration);
             Console.WriteLine("Starting Capture: {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
             p = Process.Start(configuration["ffmpegPath"],cmdLineArgs);
 
@@ -204,7 +276,7 @@ namespace StreamCapture
                     }
 
                     //Now get things setup and going again
-                    cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetCurrentChannel(),hashValue,recordInfo.strFileName+currentFileNum,configuration);
+                    cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetCurrentChannel(),hashValue,recordInfo.fileName+currentFileNum,configuration);
                     Console.WriteLine("Starting Capture (again): {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
                     p = Process.Start(configuration["ffmpegPath"],cmdLineArgs);
 
@@ -282,25 +354,33 @@ namespace StreamCapture
             p.WaitForExit();
         }
 
-        private void FixUp(int numFiles,string fileName,IConfiguration configuration)
+        private void FixUp(int numFiles,RecordInfo recordInfo,IConfiguration configuration)
         {
             string cmdLineArgs;
             string outputFile;
-            string videoFileName=fileName+"0.ts";
+            string videoFileName=recordInfo.fileName+"0.ts";
             string ffmpegPath = configuration["ffmpegPath"];
             string outputPath = configuration["outputPath"];
+
+            //metadata
+            string metadata;
+            if(recordInfo.description!=null)
+                metadata=recordInfo.description;
+            else
+                metadata="File Name: "+recordInfo.fileName;
+
 
             //Concat if more than one file
             Console.WriteLine("Num Files: {0}", numFiles+1);
             if(numFiles > 0)
             {
                 //make fileist
-                string fileList = Path.Combine(outputPath,fileName+"0.ts");
+                string fileList = Path.Combine(outputPath,recordInfo.fileName+"0.ts");
                 for(int i=1;i<=numFiles;i++)
-                    fileList=fileList+"|"+Path.Combine(outputPath,fileName+i+".ts");
+                    fileList=fileList+"|"+Path.Combine(outputPath,recordInfo.fileName+i+".ts");
 
                 //Create output file path
-                outputFile=Path.Combine(outputPath,fileName+".ts");
+                outputFile=Path.Combine(outputPath,recordInfo.fileName+".ts");
 
                 //"concatCmdLine": "[FULLFFMPEGPATH] -i \"concat:[FILELIST]\" -c copy [FULLOUTPUTPATH]",
                 cmdLineArgs = configuration["concatCmdLine"];
@@ -311,17 +391,18 @@ namespace StreamCapture
                 Console.WriteLine("Starting Concat:");
                 ExecProcess(configuration["ffmpegPath"],cmdLineArgs);
 
-                videoFileName=fileName+".ts";
+                videoFileName=recordInfo.fileName+".ts";
             }
 
             //Mux file to mp4 from ts (transport stream)
             string inputFile=Path.Combine(outputPath,videoFileName);
-            outputFile=Path.Combine(outputPath,fileName+".mp4");
+            outputFile=Path.Combine(outputPath,recordInfo.fileName+".mp4");
 
             // "muxCmdLine": "[FULLFFMPEGPATH] -i [VIDEOFILE] -acodec copy -vcodec copy [FULLOUTPUTPATH]"
             cmdLineArgs = configuration["muxCmdLine"];
             cmdLineArgs=cmdLineArgs.Replace("[VIDEOFILE]",inputFile);
             cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",outputFile);
+            cmdLineArgs=cmdLineArgs.Replace("[DESCRIPTION]",recordInfo.description);            
 
             //Run command
             Console.WriteLine("Starting Mux:");
@@ -339,16 +420,17 @@ namespace StreamCapture
     public class RecordInfo
     {
         public string strDuration { get; set; }
-        public string strFileName { get; set; }
+        public string fileName { get; set; }
         public string strStartDT { get; set; }
 
-        public int duration { get; set; }
-        public string filename { get; set; }
+        public string id { get; set; }
+        public int duration { get; }
         public DateTime startDT { get; set; }
         public string description { get; set; }
         public string keyword { get; set; }
-        public int currentChannelIdx{ get; set; }
-        public bool bestChannelSetFlag{ get; set; }
+        public int currentChannelIdx { get; set; }
+        public bool bestChannelSetFlag { get; set; }
+        public bool processSpawnedFlag  { get; set; }
 
         private List<string> channelList;
         private List<double> channelRatioList;
@@ -360,8 +442,12 @@ namespace StreamCapture
             channelRatioList = new List<double>();
             channelAnnotatedList = new List<string>();
 
+            //Init certain properties that might be overwritten later
+            id=DateTime.Now.Ticks.ToString();
+
             currentChannelIdx=0;
             bestChannelSetFlag=false;
+            processSpawnedFlag=false;
         }
 
         public int GetDuration()
@@ -382,6 +468,17 @@ namespace StreamCapture
 
             foreach(string channel in channelAnnotatedList)
                 channelStr=channelStr+channel+" ";
+
+            return channelStr;
+        }
+
+        public string GetChannelArgs()
+        {
+            string channelStr="";
+
+            foreach(string channel in channelList)
+                channelStr=channelStr+channel+"+";
+            channelStr=channelStr.Trim('+');
 
             return channelStr;
         }
@@ -414,12 +511,16 @@ namespace StreamCapture
 
         public void AddChannelAtEnd(string channel,string qualityTag)
         {
+            if(channel.Length == 1)
+                channel="0"+channel;
             channelList.Add(channel);
             channelAnnotatedList.Add(channel+" ("+qualityTag+")");
         }
 
         public void AddChannelAtBeginning(string channel,string qualityTag)
         {
+            if(channel.Length == 1)
+                channel="0"+channel;
             channelList.Insert(0,channel);
             channelAnnotatedList.Insert(0,channel+" ("+qualityTag+")");
         }
