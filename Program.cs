@@ -331,11 +331,13 @@ namespace StreamCapture
             logWriter.WriteLine($"Clearing stream and killing process now, time is up");
 
             // Free resources associated with process.
-            p.Kill();
-            logWriter.WriteLine(p.StandardError.ReadToEnd());
-            logWriter.WriteLine(p.StandardOutput.ReadToEnd());            
-            p.WaitForExit();
-            p.Dispose();
+            if(p!=null && !p.HasExited)
+            {
+                p.Kill();
+                logWriter.WriteLine(p.StandardError.ReadToEnd());
+                logWriter.WriteLine(p.StandardOutput.ReadToEnd());            
+                p.WaitForExit();
+            }
 
             return currentFileNum;
         }
@@ -553,12 +555,18 @@ namespace StreamCapture
 
         public DateTime GetStartDT()
         {
+            if(strStartDT == null)
+                return DateTime.Now;
+
             DateTime startDT=DateTime.Parse(strStartDT);
             return startDT.AddHours(-3);
         }
 
         public DateTime GetEndDT()
         {
+            if(strEndDT == null)
+                return DateTime.Now;
+
             DateTime endDT=DateTime.Parse(strEndDT);
             return endDT.AddHours(-3);
         }
