@@ -73,14 +73,16 @@ namespace StreamCapture
                     RecordInfo recordInfo = (RecordInfo)kvp.Value;
 
                     //If show is not already in the past or waiting, get that done
-                    if(recordInfo.GetEndDT()>DateTime.Now && recordInfo.GetEndDT()<DateTime.Now.AddDays(1) && !recordInfo.processSpawnedFlag)
+                    int hoursInFuture=Convert.ToInt32(configuration["HoursInFuture"]);
+                    if(recordInfo.GetStartDT()>DateTime.Now && recordInfo.GetStartDT()<=DateTime.Now.AddHours(8) && !recordInfo.processSpawnedFlag)
                     {
                         recordInfo.processSpawnedFlag=true;
                         DumpRecordInfo(Console.Out,recordInfo,"Schedule Read: "); 
         
                         Program p = new Program();
-                        Thread newRecThread = new Thread(() => p.MainAsync(recordInfo,configuration).Wait());
-                        newRecThread.Start();
+                        Task.Factory.StartNew(() => p.MainAsync(recordInfo,configuration));  //use threadpool instead of more costly os threads
+                        //Thread newRecThread = new Thread(() => p.MainAsync(recordInfo,configuration).Wait());
+                        //newRecThread.Start();
                     }
                     else
                     {
