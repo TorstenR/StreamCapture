@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -73,7 +73,7 @@ namespace StreamCapture
                     RecordInfo recordInfo = (RecordInfo)kvp.Value;
 
                     //If show is not already in the past or waiting, get that done
-                    int hoursInFuture=Convert.ToInt32(configuration["HoursInFuture"]);
+                    int hoursInFuture=Convert.ToInt32(configuration["hoursInFuture"]);
                     if(recordInfo.GetStartDT()>DateTime.Now && recordInfo.GetStartDT()<=DateTime.Now.AddHours(8) && !recordInfo.processSpawnedFlag)
                     {
                         recordInfo.processSpawnedFlag=true;
@@ -170,7 +170,7 @@ namespace StreamCapture
             FixUp(logWriter,numFiles,recordInfo,configuration);
 
             //Cleanup
-            logWriter.WriteLine($"Done Capturing - Cleaning up");
+            logWriter.WriteLine($"{DateTime.Now}: Done Capturing - Cleaning up");
             logWriter.Dispose();
             fileHandle.Dispose();
         }
@@ -275,74 +275,64 @@ namespace StreamCapture
 
             return hashValue;
         }
-        
+     
         private int CaptureStream(TextWriter logWriter,string hashValue,RecordInfo recordInfo,IConfiguration configuration)
         {
             int currentFileNum = 0;
-            int currentChannelFailureCount=0;
-            int lastChannelFailureTime = 0;
+            int currentChannelFailureCount = 0;
+
+            //Marking time we started and when we should be done
+            DateTime captureStarted = DateTime.Now;
+            DateTime captureTargetEnd = captureStarted.AddMinutes(recordInfo.GetDuration());
+            DateTime lastStartedTime = captureStarted;
 
             //Build ffmpeg capture command line with first channel and get things rolling
             string cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetFirstChannel(),hashValue,recordInfo.fileName+currentFileNum,configuration);
-            logWriter.WriteLine("Starting Capture: {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
-            Process p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,true);  //setting async flag
+            logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} and expect to be done {captureTargetEnd}.  Cmd: {configuration["ffmpegPath"]} {cmdLineArgs}");
+            Process p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,recordInfo.GetDuration());  //setting async flag
+            logWriter.WriteLine($"{DateTime.Now}: After execution.  Exit Code: {p.ExitCode}");
 
             //
-            //Loop in case connection is flaky
+            //retry loop if we're not done yet
             //
-            for(int loopNum=0;loopNum<recordInfo.GetDuration();loopNum++)
-            {
-                //start process if not started already
-                if(p==null || p.HasExited)
+            int numRetries=Convert.ToInt32(configuration["numberOfRetries"]);
+            for(int retryNum=0;DateTime.Now<captureTargetEnd && retryNum<numRetries;retryNum++)
+            {           
+                logWriter.WriteLine($"{DateTime.Now}: Capture Failed for channel {recordInfo.GetCurrentChannel()}. Last failure {lastStartedTime}  Retry {retryNum+1} of {configuration["numberOfRetries"]}");
+
+                //increment failure count and file number
+                currentChannelFailureCount++;
+                currentFileNum++;
+
+                //Got to next channel if channel has been alive for less than 15 minutes
+                TimeSpan fifteenMin=new TimeSpan(0,15,0);
+                if((DateTime.Now-lastStartedTime) < fifteenMin && !recordInfo.bestChannelSetFlag)
                 {
-                    logWriter.WriteLine(p.StandardError.ReadToEnd());
-                    logWriter.WriteLine(p.StandardOutput.ReadToEnd());
-                    logWriter.WriteLine("Capture Failed for channel {0} at minute {1}", recordInfo.GetCurrentChannel(),loopNum);
+                    //Set quality ratio for current channel
+                    int minutes = (DateTime.Now-lastStartedTime).Minutes;
+                    double qualityRatio=minutes/currentChannelFailureCount;
+                    recordInfo.SetCurrentQualityRatio(qualityRatio);
+                    logWriter.WriteLine($"{DateTime.Now}: Setting quality ratio {qualityRatio} for channel {recordInfo.GetCurrentChannel()}");
 
-                    //increment failure count and file number
-                    currentChannelFailureCount++;
-                    currentFileNum++;
-
-                    //Got to next channel if channel has been alive for less than 15 minutes
-                    if((loopNum-lastChannelFailureTime)<=15)
-                    {
-                        //Set quality ratio for current channel
-                        double qualityRatio=(loopNum-lastChannelFailureTime)/currentChannelFailureCount;
-                        recordInfo.SetCurrentQualityRatio(qualityRatio);
-                        logWriter.WriteLine("Setting quality ratio {0} for channel {1}", qualityRatio,recordInfo.GetCurrentChannel());
-
-                        //Determine correct next channel based on number and quality
-                        SetNextChannel(logWriter,recordInfo,loopNum);
-                    }
-
-                    //Now get things setup and going again
-                    cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetCurrentChannel(),hashValue,recordInfo.fileName+currentFileNum,configuration);
-                    logWriter.WriteLine("Starting Capture (again): {0} {1}",configuration["ffmpegPath"],cmdLineArgs);
-                    p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,true);
-
-                    //Set the time we last failed a channel                        
-                    lastChannelFailureTime = loopNum;  
+                    //Determine correct next channel based on number and quality
+                    SetNextChannel(logWriter,recordInfo);
+                    currentChannelFailureCount=0;
                 }
 
-                //Wait
-                TimeSpan interval = new TimeSpan(0, 1, 0);
-                Thread.Sleep(interval);
-            }
-            logWriter.WriteLine($"Clearing stream and killing process now, time is up");
+                //Set new started time                       
+                lastStartedTime = DateTime.Now;
 
-            // Free resources associated with process.
-            if(p!=null && !p.HasExited)
-            {
-                p.Kill();
-                logWriter.WriteLine(p.StandardError.ReadToEnd());
-                logWriter.WriteLine(p.StandardOutput.ReadToEnd());            
-                p.WaitForExit();
+                //Now get things setup and going again
+                cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetCurrentChannel(),hashValue,recordInfo.fileName+currentFileNum,configuration);
+                logWriter.WriteLine($"{DateTime.Now}: Starting Capture (again): {configuration["ffmpegPath"]} {cmdLineArgs}");
+                p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,recordInfo.GetDuration());
             }
+            logWriter.WriteLine($"{DateTime.Now}: Finished Capturing Stream.");
 
             return currentFileNum;
         }
 
-        private void SetNextChannel(TextWriter logWriter,RecordInfo recordInfo,int loopNum)
+        private void SetNextChannel(TextWriter logWriter,RecordInfo recordInfo)
         {
             //Return if we've already selected the best channel
             if(recordInfo.bestChannelSetFlag)
@@ -354,7 +344,7 @@ namespace StreamCapture
             if(recordInfo.currentChannelIdx < recordInfo.GetNumberOfChannels())  
             {
                 //do we still have more channels?  If so, grab the next one
-                logWriter.WriteLine("Switching to channel {0}", recordInfo.GetCurrentChannel());
+                logWriter.WriteLine($"{DateTime.Now}: Switching to channel {recordInfo.GetCurrentChannel()}");
             }
             else
             {
@@ -364,15 +354,14 @@ namespace StreamCapture
                 double ratio=0;
                 for(int b=0;b<channels.Length;b++)
                 {
-                    if(recordInfo.GetQualityRatio(b)>ratio)
+                    if(recordInfo.GetQualityRatio(b)>=ratio)
                     {
                         ratio=recordInfo.GetQualityRatio(b);
                         recordInfo.currentChannelIdx=b;
                         recordInfo.bestChannelSetFlag=true;                    
                     }
-
-                    logWriter.WriteLine("Now setting channel to {0} with quality ratio of {1} for the rest of the capture session",recordInfo.GetCurrentChannel(),recordInfo.GetCurrentQualityRatio());
                 }
+                logWriter.WriteLine($"{DateTime.Now}: Now setting channel to {recordInfo.GetCurrentChannel()} with quality ratio of {recordInfo.GetCurrentQualityRatio()} for the rest of the capture session");
             }
         }
 
@@ -394,10 +383,10 @@ namespace StreamCapture
 
         private Process ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs)
         {
-            return ExecProcess(logWriter,exe,cmdLineArgs,false);
+            return ExecProcess(logWriter,exe,cmdLineArgs,0);
         }
 
-        private Process ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs,bool asyncFlag)
+        private Process ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs,int timeout)
         {
             var processInfo = new ProcessStartInfo
             {
@@ -408,14 +397,33 @@ namespace StreamCapture
             };
 
             Process process = Process.Start(processInfo);
-            if(!asyncFlag)
+
+            //Let's build a timer to kill the process when done
+            if(timeout>0)
             {
-                logWriter.WriteLine(process.StandardError.ReadToEnd());
-                logWriter.WriteLine(process.StandardOutput.ReadToEnd());
-                process.WaitForExit();
+                TimeSpan delayTime = new TimeSpan(0, timeout, 0);
+                TimeSpan intervalTime = new TimeSpan(0, 0, 0, 0, -1); //turn off interval timer
+                logWriter.WriteLine($"{DateTime.Now}: Settting Timer for {timeout} minutes in the future to kill process.");
+                Timer captureTimer = new Timer(OnCaptureTimer, process, delayTime, intervalTime);
             }
 
+            //Now, let's wait for the thing to exit
+            logWriter.WriteLine(process.StandardError.ReadToEnd());
+            logWriter.WriteLine(process.StandardOutput.ReadToEnd());
+            process.WaitForExit();
+
             return process;
+        }
+
+        //Handler for ffmpeg timer to kill the process
+        static void OnCaptureTimer(object obj)
+        {    
+            Process p = obj as Process;
+            if(p!=null && !p.HasExited)
+            {
+                p.Kill();
+                p.WaitForExit();
+            }                
         }
 
         private void FixUp(TextWriter logWriter,int numFiles,RecordInfo recordInfo,IConfiguration configuration)
@@ -435,7 +443,7 @@ namespace StreamCapture
 
 
             //Concat if more than one file
-            logWriter.WriteLine("Num Files: {0}", numFiles+1);
+            logWriter.WriteLine($"{DateTime.Now}: Num Files: {(numFiles+1)}");
             if(numFiles > 0)
             {
                 //make fileist
@@ -452,7 +460,7 @@ namespace StreamCapture
                 cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",outputFile);
 
                 //Run command
-                logWriter.WriteLine("Starting Concat:");
+                logWriter.WriteLine($"{DateTime.Now}: Starting Concat: {configuration["ffmpegPath"]} {cmdLineArgs}");
                 ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
 
                 videoFileName=recordInfo.fileName+".ts";
@@ -469,14 +477,22 @@ namespace StreamCapture
             cmdLineArgs=cmdLineArgs.Replace("[DESCRIPTION]",recordInfo.description);            
 
             //Run command
-            logWriter.WriteLine("Starting Mux:");
+            logWriter.WriteLine($"{DateTime.Now}: Starting Mux: {configuration["ffmpegPath"]} {cmdLineArgs}");
             ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
 
-            //If final file exist, delete old .ts file
+            //If final file exist, delete old .ts file/s
             if(File.Exists(outputFile))
             {
-                logWriter.WriteLine("Removing ts file: {0}",inputFile);
+                inputFile=Path.Combine(outputPath,videoFileName);
+                logWriter.WriteLine($"{DateTime.Now}: Removing ts file: {inputFile}");
                 File.Delete(inputFile);
+
+                for(int i=0;i<=numFiles;i++)
+                {
+                    inputFile=Path.Combine(outputPath,recordInfo.fileName+i+".ts");
+                    logWriter.WriteLine($"{DateTime.Now}: Removing ts file: {inputFile}");
+                    File.Delete(inputFile);
+                }
             }
         }
     }
@@ -489,7 +505,6 @@ namespace StreamCapture
         public string strEndDT { get; set; }
 
         public string id { get; set; }
-        public int duration { get; }
         public DateTime startDT { get; set; }
         public string description { get; set; }
         public string keyword { get; set; }
