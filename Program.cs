@@ -47,7 +47,7 @@ namespace StreamCapture
             if(!keywords.HasValue())
             {
                 //Create new RecordInfo
-                RecordInfo recordInfo = new RecordInfo();
+                RecordInfo recordInfo = new RecordInfo(configuration);
                 if(channels.HasValue())
                     recordInfo.LoadChannels(channels.Value());
                 recordInfo.strDuration=duration.Value();
@@ -65,7 +65,7 @@ namespace StreamCapture
             while(true)
             {
                 //Get latest schedule
-                ParseSchedule(recInfoDict,keywords.Value()).Wait();
+                ParseSchedule(recInfoDict,keywords.Value(),configuration).Wait();
 
                 //Spawn new process for each show found
                 foreach (KeyValuePair<string, RecordInfo> kvp in recInfoDict)
@@ -74,15 +74,13 @@ namespace StreamCapture
 
                     //If show is not already in the past or waiting, get that done
                     int hoursInFuture=Convert.ToInt32(configuration["hoursInFuture"]);
-                    if(recordInfo.GetStartDT()>DateTime.Now && recordInfo.GetStartDT()<=DateTime.Now.AddHours(8) && !recordInfo.processSpawnedFlag)
+                    if(recordInfo.GetStartDT()>DateTime.Now && recordInfo.GetStartDT()<=DateTime.Now.AddHours(hoursInFuture) && !recordInfo.processSpawnedFlag)
                     {
                         recordInfo.processSpawnedFlag=true;
                         DumpRecordInfo(Console.Out,recordInfo,"Schedule Read: "); 
         
                         Program p = new Program();
                         Task.Factory.StartNew(() => p.MainAsync(recordInfo,configuration));  //use threadpool instead of more costly os threads
-                        //Thread newRecThread = new Thread(() => p.MainAsync(recordInfo,configuration).Wait());
-                        //newRecThread.Start();
                     }
                     else
                     {
@@ -161,7 +159,7 @@ namespace StreamCapture
             }       
 
             //Authenticate
-            string hashValue = await Authenticate(configuration["user"],configuration["pass"]);
+            string hashValue = await Authenticate(configuration);
 
             //Capture stream
             int numFiles=CaptureStream(logWriter,hashValue,recordInfo,configuration);
@@ -175,11 +173,8 @@ namespace StreamCapture
             fileHandle.Dispose();
         }
 
-        private static async Task ParseSchedule(Dictionary<string,RecordInfo> recInfoDict,string keywords)
+        private static async Task ParseSchedule(Dictionary<string,RecordInfo> recInfoDict,string keywords,IConfiguration configuration)
         {
-            //List of record info
-            //Dictionary<string,RecordInfo> recInfoDict = new Dictionary<string,RecordInfo>();
-
             string schedString;
             using (var client = new HttpClient())
             {
@@ -203,7 +198,7 @@ namespace StreamCapture
                         if(recInfoDict.ContainsKey(keyValue))
                             recordInfo=recInfoDict[keyValue];
                         else
-                            recordInfo = new RecordInfo();
+                            recordInfo = new RecordInfo(configuration);
 
                         if(show["quality"].ToString().Contains("720"))                      
                             recordInfo.AddChannelAtBeginning(show["channel"].ToString(),show["quality"].ToString());
@@ -240,16 +235,20 @@ namespace StreamCapture
             return matchFlag;
         }
 
-        private async Task<string> Authenticate(string user,string pass)
+        private async Task<string> Authenticate(IConfiguration configuration)
         {
             string hashValue=null;
 
             using (var client = new HttpClient())
             {
                 //http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php?username=foo&password=bar&site=view247
-                Uri uri = new Uri("http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php");
-                client.BaseAddress = uri;
-                var response = await client.GetAsync("?username="+user+"&password="+pass+"&site=view247");
+
+                //Build URL
+                string strURL=configuration["authURL"];
+                strURL=strURL.Replace("[USERNAME]",configuration["user"]);
+                strURL=strURL.Replace("[PASSWORD]",configuration["pass"]);
+
+                var response = await client.GetAsync(strURL);
                 response.EnsureSuccessStatusCode(); // Throw in not success
 
                 string stringResponse = await response.Content.ReadAsStringAsync();
@@ -512,11 +511,12 @@ namespace StreamCapture
         public bool bestChannelSetFlag { get; set; }
         public bool processSpawnedFlag  { get; set; }
 
+        private int timeOffset;
         private List<string> channelList;
         private List<double> channelRatioList;
         private List<string> channelAnnotatedList;
 
-        public RecordInfo()
+        public RecordInfo(IConfiguration configuration)
         {
             channelList = new List<string>();  
             channelRatioList = new List<double>();
@@ -525,6 +525,7 @@ namespace StreamCapture
             //Init certain properties that might be overwritten later
             id=DateTime.Now.Ticks.ToString();
 
+            timeOffset=Convert.ToInt32(configuration["schedTimeOffset"]);
             currentChannelIdx=0;
             bestChannelSetFlag=false;
             processSpawnedFlag=false;
@@ -574,7 +575,7 @@ namespace StreamCapture
                 return DateTime.Now;
 
             DateTime startDT=DateTime.Parse(strStartDT);
-            return startDT.AddHours(-3);
+            return startDT.AddHours(timeOffset);
         }
 
         public DateTime GetEndDT()
@@ -583,7 +584,7 @@ namespace StreamCapture
                 return DateTime.Now;
 
             DateTime endDT=DateTime.Parse(strEndDT);
-            return endDT.AddHours(-3);
+            return endDT.AddHours(timeOffset);
         }
 
         public string GetCurrentChannel()
