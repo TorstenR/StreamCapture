@@ -26,7 +26,8 @@ namespace StreamCapture
             CommandOption duration = commandLineApplication.Option("-d | --duration","Duration in minutes to record",CommandOptionType.SingleValue);
             CommandOption filename = commandLineApplication.Option("-f | --filename","File name (no extension)",CommandOptionType.SingleValue);
             CommandOption datetime = commandLineApplication.Option("-d | --datetime","Datetime MM/DD/YY HH:MM (optional)",CommandOptionType.SingleValue);
-            CommandOption keywords = commandLineApplication.Option("-k | --keywords","Keywords to search listing by - comma delimited",CommandOptionType.SingleValue);
+            CommandOption keywords = commandLineApplication.Option("-k | --keywords","Keywords to search listing by - comma delimited. "+
+                "Optionally pre and post minutes can be added.  Example: LiverPool,NFL|5|30,Chelsea starts NFL 5 minuts early and ends 30 minutes late.",CommandOptionType.SingleValue);
             commandLineApplication.HelpOption("-? | -h | --help");
             commandLineApplication.Execute(args);       
 
@@ -47,7 +48,7 @@ namespace StreamCapture
             if(!keywords.HasValue())
             {
                 //Create new RecordInfo
-                RecordInfo recordInfo = new RecordInfo(configuration);
+                RecordInfo recordInfo = new RecordInfo();
                 if(channels.HasValue())
                     recordInfo.LoadChannels(channels.Value());
                 recordInfo.strDuration=duration.Value();
@@ -192,24 +193,43 @@ namespace StreamCapture
                 foreach(JToken show in channelContent)
                 {
                     string keyValue=show["name"].ToString()+show["time"].ToString();
-                    if(MatchKeywords(show["name"].ToString(),keywords))
-                    {
+                    string matchKeyword=MatchKeywords(show["name"].ToString(),keywords);
+                    if(matchKeyword!=null)
+                    {              
+                        //Build record info 
                         RecordInfo recordInfo;
                         if(recInfoDict.ContainsKey(keyValue))
                             recordInfo=recInfoDict[keyValue];
                         else
-                            recordInfo = new RecordInfo(configuration);
+                            recordInfo = new RecordInfo();
 
                         if(show["quality"].ToString().Contains("720"))                      
                             recordInfo.AddChannelAtBeginning(show["channel"].ToString(),show["quality"].ToString());
                         else
                             recordInfo.AddChannelAtEnd(show["channel"].ToString(),show["quality"].ToString());   
                         recordInfo.id=show["id"].ToString();
-                        recordInfo.fileName=recordInfo.id;
                         recordInfo.description=show["name"].ToString();
                         recordInfo.strStartDT=show["time"].ToString();
                         recordInfo.strEndDT=show["end_time"].ToString();
                         recordInfo.strDuration=show["runtime"].ToString();
+                        recordInfo.strDTOffset=configuration["schedTimeOffset"];
+
+                        //Get pre and post times if available
+                        string[] kPartsArray = matchKeyword.Split('|');
+                        if(kPartsArray.Length>1)
+                        {
+                            recordInfo.strPreMinutes=kPartsArray[1];
+                            recordInfo.strPostMinutes=kPartsArray[2];
+                        }
+
+                        //Clean up description, and then use as filename
+                        recordInfo.fileName=show["name"].ToString()+show["id"].ToString();
+                        string myChars=@"|'/\ ,<>#@!+_-&^*()~`";
+                        string invalidChars = myChars + new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+                        foreach(char c in invalidChars)
+                        {
+                            recordInfo.fileName = recordInfo.fileName.Replace(c.ToString(),"");
+                        }
 
                         //Update or add
                         if(recInfoDict.ContainsKey(keyValue))
@@ -221,18 +241,19 @@ namespace StreamCapture
             }
         }
 
-        static private bool MatchKeywords(string showName,string keywords)
+        static private string MatchKeywords(string showName,string keywords)
         {
-            bool matchFlag=false;
+            string matchKeyword=null;
 
             string[] kArray = keywords.Split(',');
             for(int i=0;i<kArray.Length;i++)
             {
-                if(showName.ToLower().Contains(kArray[i].ToLower()))
-                    matchFlag=true;
+                string[] kPartsArray = kArray[i].Split('|');
+                if(showName.ToLower().Contains(kPartsArray[0].ToLower()))
+                    matchKeyword=kArray[i];
             }
 
-            return matchFlag;
+            return matchKeyword;
         }
 
         private async Task<string> Authenticate(IConfiguration configuration)
@@ -502,6 +523,9 @@ namespace StreamCapture
         public string fileName { get; set; }
         public string strStartDT { get; set; }
         public string strEndDT { get; set; }
+        public string strDTOffset  { get; set; }
+        public string strPreMinutes { get; set; }
+        public string strPostMinutes { get; set; }
 
         public string id { get; set; }
         public DateTime startDT { get; set; }
@@ -511,12 +535,11 @@ namespace StreamCapture
         public bool bestChannelSetFlag { get; set; }
         public bool processSpawnedFlag  { get; set; }
 
-        private int timeOffset;
         private List<string> channelList;
         private List<double> channelRatioList;
         private List<string> channelAnnotatedList;
 
-        public RecordInfo(IConfiguration configuration)
+        public RecordInfo()
         {
             channelList = new List<string>();  
             channelRatioList = new List<double>();
@@ -525,15 +548,19 @@ namespace StreamCapture
             //Init certain properties that might be overwritten later
             id=DateTime.Now.Ticks.ToString();
 
-            timeOffset=Convert.ToInt32(configuration["schedTimeOffset"]);
             currentChannelIdx=0;
             bestChannelSetFlag=false;
             processSpawnedFlag=false;
+            strPreMinutes="0";
+            strPostMinutes="0";
+            strDTOffset="0";
         }
 
         public int GetDuration()
         {
-            return Convert.ToInt32(strDuration);
+            int duration = Convert.ToInt32(strDuration);
+            duration = duration + Convert.ToInt32(strPreMinutes) + Convert.ToInt32(strPostMinutes);
+            return duration;
         }
 
         public void LoadChannels(string strChannels)
@@ -574,17 +601,18 @@ namespace StreamCapture
             if(strStartDT == null)
                 return DateTime.Now;
 
+            //Create base date time
             DateTime startDT=DateTime.Parse(strStartDT);
-            return startDT.AddHours(timeOffset);
-        }
 
-        public DateTime GetEndDT()
-        {
-            if(strEndDT == null)
-                return DateTime.Now;
+            //subtract pre time if appropriate
+            int preMin = Convert.ToInt32(strPreMinutes)*-1;
+            startDT=startDT.AddMinutes(preMin);
 
-            DateTime endDT=DateTime.Parse(strEndDT);
-            return endDT.AddHours(timeOffset);
+            //Add offset 
+            int timeOffset=Convert.ToInt32(strDTOffset);
+            startDT=startDT.AddHours(timeOffset);
+
+            return startDT;
         }
 
         public string GetCurrentChannel()
