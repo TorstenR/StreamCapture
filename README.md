@@ -31,10 +31,13 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 - "user" - Yes, username and password
 - "pass"
 - "scheduleCheck" - Comma separated hours (24 hour format) for when you want the scheduled checked.
-- "HoursInFuture" - Don't schedule anything farther out than this number of hours
+- "hoursInFuture" - Don't schedule anything farther out than this number of hours
+- "numberOfRetries" - Number of time we retry after ffmpeg capture error before giving up
+- "schedTimeOffset" - Schedule appears to be in EST.  This is the offset for local time.  (e.g. PST is -3)
 - "logPath" - Puts the capture thread logs here
 - "outputPath" - Puts the capture video file here (I go directly to my NAS)
 - "ffmpegPath" - location of ffmpeg.exe
+- "authURL" - URL to get authentication token for stream
 - "captureCmdLine" - Cmd line for ffmpeg capture. Items in brackets should be self explanatory
 - "concatCmdLine" - Cmd line for ffmpeg concat. Items in brackets should be self explanatory
 - "muxCmdLine" - Cmd line for ffmpeg MUX. Items in brackets should be self explanatory
