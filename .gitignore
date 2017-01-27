@@ -2,3 +2,4 @@
 bin/Debug/netcoreapp1.1/*
 obj/Debug/netcoreapp1.1/*
 project.lock.json
+ffmpeg/*
