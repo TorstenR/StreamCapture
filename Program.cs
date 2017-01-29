@@ -92,34 +92,25 @@ namespace StreamCapture
                 //Determine how long to sleep before next check
                 string[] times=configuration["scheduleCheck"].Split(',');
                 DateTime nextRecord=DateTime.Now;
-                bool timeFound=false;
-                for(int i=0;i<times.Length;i++)
+                
+                //find out if today
+                if(DateTime.Now.Hour < Convert.ToInt32(times[times.Length-1]))
                 {
-                    int recHour=Convert.ToInt32(times[i]);
-                    if(DateTime.Now.Hour < recHour)
+                    for(int i=0;i<times.Length;i++)
                     {
-                        int hourDiff=recHour-DateTime.Now.TimeOfDay.Hours;
-                        nextRecord=DateTime.Now.AddHours(hourDiff);
-                        timeFound=true;
-                        break;
+                        int recHour=Convert.ToInt32(times[i]);
+                        if(DateTime.Now.Hour < recHour)
+                        {
+                            nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
+                            break;
+                        }
                     }
                 }
-
-                //If nothing was found, just grab the first time
-                if(!timeFound)
+                else
                 {
+                    //build for tomorrow
                     int recHour=Convert.ToInt32(times[0]);  //grab first time
-
-                    //Looks like we go to tommorrow since we're still here
-                    nextRecord=new DateTime(
-                        DateTime.Now.Year,
-                        DateTime.Now.Month,
-                        DateTime.Now.Day+1,
-                        recHour,
-                        0,
-                        0,
-                        0,
-                        DateTime.Now.Kind);
+                    nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day+1,recHour,0,0,0,DateTime.Now.Kind);
                 }
 
                 //Wait
