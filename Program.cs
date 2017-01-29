@@ -339,13 +339,14 @@ namespace StreamCapture
                     currentChannelFailureCount=0;
                 }
 
-                //Set new started time                       
+                //Set new started time and calc new timer                  
                 lastStartedTime = DateTime.Now;
+                TimeSpan timeLeft=captureTargetEnd-DateTime.Now;
 
                 //Now get things setup and going again
                 cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetCurrentChannel(),hashValue,recordInfo.fileName+currentFileNum,configuration);
                 logWriter.WriteLine($"{DateTime.Now}: Starting Capture (again): {configuration["ffmpegPath"]} {cmdLineArgs}");
-                p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,recordInfo.GetDuration());
+                p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1);
             }
             logWriter.WriteLine($"{DateTime.Now}: Finished Capturing Stream.");
 
@@ -416,6 +417,7 @@ namespace StreamCapture
                 RedirectStandardError = true
             };
 
+            Timer captureTimer=null;
             Process process = Process.Start(processInfo);
 
             //Let's build a timer to kill the process when done
@@ -424,13 +426,17 @@ namespace StreamCapture
                 TimeSpan delayTime = new TimeSpan(0, timeout, 0);
                 TimeSpan intervalTime = new TimeSpan(0, 0, 0, 0, -1); //turn off interval timer
                 logWriter.WriteLine($"{DateTime.Now}: Settting Timer for {timeout} minutes in the future to kill process.");
-                Timer captureTimer = new Timer(OnCaptureTimer, process, delayTime, intervalTime);
+                captureTimer = new Timer(OnCaptureTimer, process, delayTime, intervalTime);
             }
 
             //Now, let's wait for the thing to exit
             logWriter.WriteLine(process.StandardError.ReadToEnd());
             logWriter.WriteLine(process.StandardOutput.ReadToEnd());
             process.WaitForExit();
+
+            //Clean up timer
+            if(timeout>0 && captureTimer != null)
+                captureTimer.Dispose();
 
             return process;
         }
