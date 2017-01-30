@@ -115,7 +115,7 @@ namespace StreamCapture
 
                 //Wait
                 TimeSpan timeToWait = nextRecord - DateTime.Now;
-                Console.WriteLine($"{DateTime.Now}: Now sleeping for {timeToWait.Hours} hours before checking again at {nextRecord.ToString()}");
+                Console.WriteLine($"{DateTime.Now}: Now sleeping for {timeToWait.Hours+1} hours before checking again at {nextRecord.ToString()}");
                 Thread.Sleep(timeToWait);         
                 Console.WriteLine($"{DateTime.Now}: Woke up, now checking again...");
             } 
