@@ -26,26 +26,22 @@ namespace StreamCapture
             CommandOption duration = commandLineApplication.Option("-d | --duration","Duration in minutes to record",CommandOptionType.SingleValue);
             CommandOption filename = commandLineApplication.Option("-f | --filename","File name (no extension)",CommandOptionType.SingleValue);
             CommandOption datetime = commandLineApplication.Option("-d | --datetime","Datetime MM/DD/YY HH:MM (optional)",CommandOptionType.SingleValue);
-            CommandOption keywords = commandLineApplication.Option("-k | --keywords","Keywords to search listing by - comma delimited. "+
-                "Optionally pre and post minutes can be added.  Example: LiverPool,NFL|5|30,Chelsea starts NFL 5 minuts early and ends 30 minutes late.",CommandOptionType.SingleValue);
             commandLineApplication.HelpOption("-? | -h | --help");
-            commandLineApplication.Execute(args);       
-
-            if(!channels.HasValue() || !duration.HasValue() || !filename.HasValue())
-            {
-                if(!keywords.HasValue())
-                {
-                    Console.WriteLine($"{DateTime.Now}: Incorrect command line options.  Please run with --help for more information.");
-                    Environment.Exit(1);
-                }                
-            } 
+            commandLineApplication.Execute(args);     
+            
+            //do we have optional args passed in?
+            bool optionalArgsFlag=false;
+            if(channels.HasValue() && duration.HasValue() && filename.HasValue())
+                optionalArgsFlag=true;
+            else
+                Console.WriteLine($"{DateTime.Now}: No usable command line options passed in - Using keywords to search schedule. (Please run with --help if you'ref confused)");
 
             //Read and build config
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
             var configuration = builder.Build();
 
-            //If we're not reading from the schedule, just go now
-            if(!keywords.HasValue())
+            //Use optional parameters if passed in
+            if(optionalArgsFlag)
             {
                 //Create new RecordInfo
                 RecordInfo recordInfo = new RecordInfo();
@@ -61,15 +57,19 @@ namespace StreamCapture
                 Environment.Exit(0);
             }
 
-            //Since keyword passed in, grab schedule from interwebs and loop forever, checking every 6 hours for new shows to record
-            Dictionary<string,RecordInfo> recInfoDict = new Dictionary<string,RecordInfo>();
+            //Since we'ref using keywords, grab schedule from interwebs and loop forever, checking every n hours for new shows to record
             while(true)
             {
+                //Get keywords
+                Keywords keywords = new Keywords(configuration["keywordsFile"]);
+
                 //Get latest schedule
-                ParseSchedule(recInfoDict,keywords.Value(),configuration).Wait();
+                Schedule schedule=new Schedule();
+                schedule.LoadSchedule().Wait();
+                Dictionary<string,RecordInfo> recordSched=schedule.GetRecordSchedule(keywords,configuration);
 
                 //Spawn new process for each show found
-                foreach (KeyValuePair<string, RecordInfo> kvp in recInfoDict)
+                foreach (KeyValuePair<string, RecordInfo> kvp in recordSched)
                 {            
                     RecordInfo recordInfo = (RecordInfo)kvp.Value;
 
@@ -163,88 +163,6 @@ namespace StreamCapture
             logWriter.WriteLine($"{DateTime.Now}: Done Capturing - Cleaning up");
             logWriter.Dispose();
             fileHandle.Dispose();
-        }
-
-        private static async Task ParseSchedule(Dictionary<string,RecordInfo> recInfoDict,string keywords,IConfiguration configuration)
-        {
-            string schedString;
-            using (var client = new HttpClient())
-            {
-                Uri uri = new Uri("https://iptvguide.netlify.com/iptv.json");
-                var response = await client.GetAsync(uri);
-                response.EnsureSuccessStatusCode(); // Throw in not success
-                schedString = await response.Content.ReadAsStringAsync();
-            }
-
-            JObject jsonObject = JObject.Parse(schedString);
-            IEnumerable<JToken> channels = jsonObject.SelectTokens("$..items");
-            foreach(JToken channelInfo in channels)
-            {
-                IEnumerable<JToken> channelContent = channelInfo.Children();
-                foreach(JToken show in channelContent)
-                {
-                    string keyValue=show["name"].ToString()+show["time"].ToString();
-                    string matchKeyword=MatchKeywords(show["name"].ToString(),keywords);
-                    if(matchKeyword!=null)
-                    {              
-                        //Build record info 
-                        RecordInfo recordInfo;
-                        if(recInfoDict.ContainsKey(keyValue))
-                            recordInfo=recInfoDict[keyValue];
-                        else
-                            recordInfo = new RecordInfo();
-
-                        if(show["quality"].ToString().Contains("720"))                      
-                            recordInfo.AddChannelAtBeginning(show["channel"].ToString(),show["quality"].ToString());
-                        else
-                            recordInfo.AddChannelAtEnd(show["channel"].ToString(),show["quality"].ToString());   
-                        recordInfo.id=show["id"].ToString();
-                        recordInfo.description=show["name"].ToString();
-                        recordInfo.strStartDT=show["time"].ToString();
-                        recordInfo.strEndDT=show["end_time"].ToString();
-                        recordInfo.strDuration=show["runtime"].ToString();
-                        recordInfo.strDTOffset=configuration["schedTimeOffset"];
-
-                        //Get pre and post times if available
-                        string[] kPartsArray = matchKeyword.Split('|');
-                        if(kPartsArray.Length>1)
-                        {
-                            recordInfo.strPreMinutes=kPartsArray[1];
-                            recordInfo.strPostMinutes=kPartsArray[2];
-                        }
-
-                        //Clean up description, and then use as filename
-                        recordInfo.fileName=show["name"].ToString()+show["id"].ToString();
-                        string myChars=@"|'/\ ,<>#@!+_-&^*()~`";
-                        string invalidChars = myChars + new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
-                        foreach(char c in invalidChars)
-                        {
-                            recordInfo.fileName = recordInfo.fileName.Replace(c.ToString(),"");
-                        }
-
-                        //Update or add
-                        if(recInfoDict.ContainsKey(keyValue))
-                            recInfoDict[keyValue]=recordInfo;
-                        else
-                            recInfoDict.Add(keyValue,recordInfo);
-                    }
-                }
-            }
-        }
-
-        static private string MatchKeywords(string showName,string keywords)
-        {
-            string matchKeyword=null;
-
-            string[] kArray = keywords.Split(',');
-            for(int i=0;i<kArray.Length;i++)
-            {
-                string[] kPartsArray = kArray[i].Split('|');
-                if(showName.ToLower().Contains(kPartsArray[0].ToLower()))
-                    matchKeyword=kArray[i];
-            }
-
-            return matchKeyword;
         }
 
         private async Task<string> Authenticate(IConfiguration configuration)
@@ -511,156 +429,6 @@ namespace StreamCapture
                     File.Delete(inputFile);
                 }
             }
-        }
-    }
-
-    public class RecordInfo
-    {
-        public string strDuration { get; set; }
-        public string fileName { get; set; }
-        public string strStartDT { get; set; }
-        public string strEndDT { get; set; }
-        public string strDTOffset  { get; set; }
-        public string strPreMinutes { get; set; }
-        public string strPostMinutes { get; set; }
-
-        public string id { get; set; }
-        public DateTime startDT { get; set; }
-        public string description { get; set; }
-        public string keyword { get; set; }
-        public int currentChannelIdx { get; set; }
-        public bool bestChannelSetFlag { get; set; }
-        public bool processSpawnedFlag  { get; set; }
-
-        private List<string> channelList;
-        private List<double> channelRatioList;
-        private List<string> channelAnnotatedList;
-
-        public RecordInfo()
-        {
-            channelList = new List<string>();  
-            channelRatioList = new List<double>();
-            channelAnnotatedList = new List<string>();
-
-            //Init certain properties that might be overwritten later
-            id=DateTime.Now.Ticks.ToString();
-
-            currentChannelIdx=0;
-            bestChannelSetFlag=false;
-            processSpawnedFlag=false;
-            strPreMinutes="0";
-            strPostMinutes="0";
-            strDTOffset="0";
-        }
-
-        public int GetDuration()
-        {
-            int duration = Convert.ToInt32(strDuration);
-            duration = duration + Convert.ToInt32(strPreMinutes) + Convert.ToInt32(strPostMinutes);
-            return duration;
-        }
-
-        public void LoadChannels(string strChannels)
-        {
-            string[] channelArray = strChannels.Split('+');
-            channelList = new List<string>(channelArray);     
-            channelAnnotatedList = new List<string>(channelArray);  
-        }
-
-        public string GetChannelString()
-        {
-            string channelStr="";
-
-            foreach(string channel in channelAnnotatedList)
-                channelStr=channelStr+channel+" ";
-
-            return channelStr;
-        }
-
-        public string GetChannelArgs()
-        {
-            string channelStr="";
-
-            foreach(string channel in channelList)
-                channelStr=channelStr+channel+"+";
-            channelStr=channelStr.Trim('+');
-
-            return channelStr;
-        }
-
-        public string GetFirstChannel()
-        {
-            return channelList.First<string>();
-        }
-
-        public DateTime GetStartDT()
-        {
-            if(strStartDT == null)
-                return DateTime.Now;
-
-            //Create base date time
-            DateTime startDT=DateTime.Parse(strStartDT);
-
-            //subtract pre time if appropriate
-            int preMin = Convert.ToInt32(strPreMinutes)*-1;
-            startDT=startDT.AddMinutes(preMin);
-
-            //Add offset 
-            int timeOffset=Convert.ToInt32(strDTOffset);
-            startDT=startDT.AddHours(timeOffset);
-
-            return startDT;
-        }
-
-        public string GetCurrentChannel()
-        {
-            return channelList[currentChannelIdx];
-        }
-
-        public string GetChannel(int channelIdx)
-        {
-            return channelList[channelIdx];
-        }
-
-        public string[] GetChannels()
-        {
-            return channelList.ToArray<string>();
-        }
-
-        public void AddChannelAtEnd(string channel,string qualityTag)
-        {
-            if(channel.Length == 1)
-                channel="0"+channel;
-            channelList.Add(channel);
-            channelAnnotatedList.Add(channel+" ("+qualityTag+")");
-        }
-
-        public void AddChannelAtBeginning(string channel,string qualityTag)
-        {
-            if(channel.Length == 1)
-                channel="0"+channel;
-            channelList.Insert(0,channel);
-            channelAnnotatedList.Insert(0,channel+" ("+qualityTag+")");
-        }
-
-        public int GetNumberOfChannels()
-        {
-            return channelList.Count;
-        }
-
-        public void SetCurrentQualityRatio(double ratio)
-        {
-            channelRatioList.Insert(currentChannelIdx,ratio);
-        }
-
-        public double GetCurrentQualityRatio()
-        {
-            return channelRatioList[currentChannelIdx];
-        }
-
-        public double GetQualityRatio(int channelIdx)
-        {
-            return channelRatioList[channelIdx];
         }
     }
 }
