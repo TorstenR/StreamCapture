@@ -1,30 +1,23 @@
 using System;
-using System.Net.Http;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Linq;
-using System.Text;
 using System.IO;
-using System.Diagnostics;
-using System.Threading;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Json;
-using Microsoft.Extensions.CommandLineUtils;
-
 
 namespace StreamCapture
 {
     public class ChannelHistory
     {
         Dictionary<string, ChannelHistoryInfo> channelHistoryDict;
+        static readonly object _lock = new object();  //used to lock the json load and save portion
 
         public ChannelHistory()
         {
             try
             {
-                channelHistoryDict = JsonConvert.DeserializeObject<Dictionary<string, ChannelHistoryInfo>>(File.ReadAllText("channelhistory.json"));
+                lock (_lock)
+                {
+                    channelHistoryDict = JsonConvert.DeserializeObject<Dictionary<string, ChannelHistoryInfo>>(File.ReadAllText("channelhistory.json"));
+                }
             }
             catch(Exception)
             {
@@ -34,7 +27,10 @@ namespace StreamCapture
 
         public void Save()
         {
-            File.WriteAllText("channelhistory.json", JsonConvert.SerializeObject(channelHistoryDict, Formatting.Indented));
+            lock (_lock)
+            {
+                File.WriteAllText("channelhistory.json", JsonConvert.SerializeObject(channelHistoryDict, Formatting.Indented));
+            }
         }
 
         public ChannelHistoryInfo GetChannelHistoryInfo(string channel)
