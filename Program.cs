@@ -40,13 +40,15 @@ namespace StreamCapture
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
             var configuration = builder.Build();
 
+            //Read channel history (used to determine which order to use)
+            ChannelHistory channelHistory = new ChannelHistory();
+
             //Use optional parameters if passed in
             if(optionalArgsFlag)
             {
                 //Create new RecordInfo
-                RecordInfo recordInfo = new RecordInfo();
-                if(channels.HasValue())
-                    recordInfo.LoadChannels(channels.Value());
+                RecordInfo recordInfo = new RecordInfo(channelHistory);
+                recordInfo.channels.LoadChannels(channels.Value());
                 recordInfo.strDuration=duration.Value();
                 recordInfo.strStartDT=datetime.Value();
                 recordInfo.fileName=filename.Value();
@@ -61,12 +63,12 @@ namespace StreamCapture
             while(true)
             {
                 //Get keywords
-                Keywords keywords = new Keywords(configuration["keywordsFile"]);
+                Keywords keywords = new Keywords();
 
                 //Get latest schedule
                 Schedule schedule=new Schedule();
                 schedule.LoadSchedule().Wait();
-                Dictionary<string,RecordInfo> recordSched=schedule.GetRecordSchedule(keywords,configuration);
+                Dictionary<string,RecordInfo> recordSched=schedule.GetRecordSchedule(keywords,configuration,channelHistory);
 
                 //Spawn new process for each show found
                 foreach (KeyValuePair<string, RecordInfo> kvp in recordSched)
@@ -126,7 +128,7 @@ namespace StreamCapture
             logWriter.WriteLine($"{tag} =====================");
             logWriter.WriteLine($"Show: {recordInfo.description} StartDT: {recordInfo.GetStartDT()}  Duration: {recordInfo.GetDuration()}");
             logWriter.WriteLine($"File: {recordInfo.fileName}");
-            logWriter.WriteLine($"Channels: {recordInfo.GetChannelString()}");               
+            logWriter.WriteLine($"Channels: {recordInfo.channels.GetChannelString()}");               
         }
 
         async Task MainAsync(RecordInfo recordInfo,IConfiguration configuration)
@@ -208,6 +210,7 @@ namespace StreamCapture
         private int CaptureStream(TextWriter logWriter,string hashValue,RecordInfo recordInfo,IConfiguration configuration)
         {
             int currentFileNum = 0;
+            int channelIdx = 0;
             int currentChannelFailureCount = 0;
 
             //Marking time we started and when we should be done
@@ -215,8 +218,17 @@ namespace StreamCapture
             DateTime captureTargetEnd = captureStarted.AddMinutes(recordInfo.GetDuration());
             DateTime lastStartedTime = captureStarted;
 
+
+            //Getting channel list
+            ChannelInfo[] channelInfoArray=recordInfo.channels.GetSortedChannels();
+            ChannelInfo currentChannel=channelInfoArray[channelIdx];
+
+            //Update capture history
+            recordInfo.channelHistory.GetChannelHistoryInfo(currentChannel.number).recordingsAttempted+=1;
+            recordInfo.channelHistory.GetChannelHistoryInfo(currentChannel.number).lastAttempt=DateTime.Now;
+
             //Build ffmpeg capture command line with first channel and get things rolling
-            string cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetFirstChannel(),hashValue,recordInfo.fileName+currentFileNum,configuration);
+            string cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,recordInfo.fileName+currentFileNum,configuration);
             logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} and expect to be done {captureTargetEnd}.  Cmd: {configuration["ffmpegPath"]} {cmdLineArgs}");
             Process p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,recordInfo.GetDuration());  //setting async flag
             logWriter.WriteLine($"{DateTime.Now}: After execution.  Exit Code: {p.ExitCode}");
@@ -227,7 +239,10 @@ namespace StreamCapture
             int numRetries=Convert.ToInt32(configuration["numberOfRetries"]);
             for(int retryNum=0;DateTime.Now<captureTargetEnd && retryNum<numRetries;retryNum++)
             {           
-                logWriter.WriteLine($"{DateTime.Now}: Capture Failed for channel {recordInfo.GetCurrentChannel()}. Last failure {lastStartedTime}  Retry {retryNum+1} of {configuration["numberOfRetries"]}");
+                logWriter.WriteLine($"{DateTime.Now}: Capture Failed for channel {currentChannel.number}. Last failure {lastStartedTime}  Retry {retryNum+1} of {configuration["numberOfRetries"]}");
+
+                //Update channel history
+                recordInfo.channelHistory.GetChannelHistoryInfo(currentChannel.number).errors+=1;
 
                 //increment failure count and file number
                 currentChannelFailureCount++;
@@ -240,59 +255,73 @@ namespace StreamCapture
                     //Set quality ratio for current channel
                     int minutes = (DateTime.Now-lastStartedTime).Minutes;
                     double qualityRatio=minutes/currentChannelFailureCount;
-                    recordInfo.SetCurrentQualityRatio(qualityRatio);
-                    logWriter.WriteLine($"{DateTime.Now}: Setting quality ratio {qualityRatio} for channel {recordInfo.GetCurrentChannel()}");
+                    currentChannel.ratio=qualityRatio;
+                    logWriter.WriteLine($"{DateTime.Now}: Setting quality ratio {qualityRatio} for channel {currentChannel.number}");
 
                     //Determine correct next channel based on number and quality
-                    SetNextChannel(logWriter,recordInfo);
+                    if(!recordInfo.bestChannelSetFlag)
+                    {
+                        channelIdx=GetNextChannel(logWriter,recordInfo,channelInfoArray,channelIdx);
+                        currentChannel=channelInfoArray[channelIdx];
+                    }
+
                     currentChannelFailureCount=0;
                 }
 
-                //Set new started time and calc new timer                  
+                //Set new started time and calc new timer     
+                TimeSpan timeJustRecorded=DateTime.Now-lastStartedTime;
                 lastStartedTime = DateTime.Now;
                 TimeSpan timeLeft=captureTargetEnd-DateTime.Now;
 
+                //Update capture history
+                recordInfo.channelHistory.GetChannelHistoryInfo(currentChannel.number).hoursRecorded+=timeJustRecorded.TotalHours;
+                recordInfo.channelHistory.GetChannelHistoryInfo(currentChannel.number).recordingsAttempted+=1;
+                recordInfo.channelHistory.GetChannelHistoryInfo(currentChannel.number).lastAttempt=DateTime.Now;
+                recordInfo.channelHistory.Save();
+
                 //Now get things setup and going again
-                cmdLineArgs=BuildCaptureCmdLineArgs(recordInfo.GetCurrentChannel(),hashValue,recordInfo.fileName+currentFileNum,configuration);
+                cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,recordInfo.fileName+currentFileNum,configuration);
                 logWriter.WriteLine($"{DateTime.Now}: Starting Capture (again): {configuration["ffmpegPath"]} {cmdLineArgs}");
                 p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1);
             }
             logWriter.WriteLine($"{DateTime.Now}: Finished Capturing Stream.");
 
+            //Update capture history
+            TimeSpan finalTimeJustRecorded=DateTime.Now-lastStartedTime;
+            recordInfo.channelHistory.GetChannelHistoryInfo(currentChannel.number).hoursRecorded+=finalTimeJustRecorded.TotalHours;
+            recordInfo.channelHistory.GetChannelHistoryInfo(currentChannel.number).lastSuccess=DateTime.Now;
+            recordInfo.channelHistory.Save();
+
             return currentFileNum;
         }
 
-        private void SetNextChannel(TextWriter logWriter,RecordInfo recordInfo)
-        {
-            //Return if we've already selected the best channel
-            if(recordInfo.bestChannelSetFlag)
-                return;
+        private int GetNextChannel(TextWriter logWriter,RecordInfo recordInfo,ChannelInfo[] channelInfoArray,int channelIdx)
+        {   
+            //Oportunistically get next channel
+            channelIdx++;
 
-            //opportunistically increment
-            recordInfo.currentChannelIdx++;                
-
-            if(recordInfo.currentChannelIdx < recordInfo.GetNumberOfChannels())  
+            if(channelIdx < channelInfoArray.Length)  
             {
                 //do we still have more channels?  If so, grab the next one
-                logWriter.WriteLine($"{DateTime.Now}: Switching to channel {recordInfo.GetCurrentChannel()}");
+                logWriter.WriteLine($"{DateTime.Now}: Switching to channel {channelInfoArray[channelIdx].number}");
             }
             else
             {
-                string[] channels = recordInfo.GetChannels();
-
                 //grab best channel by grabbing the best ratio  
                 double ratio=0;
-                for(int b=0;b<channels.Length;b++)
+                for(int b=0;b<channelInfoArray.Length;b++)
                 {
-                    if(recordInfo.GetQualityRatio(b)>=ratio)
+                    if(channelInfoArray[b].ratio>=ratio)
                     {
-                        ratio=recordInfo.GetQualityRatio(b);
-                        recordInfo.currentChannelIdx=b;
-                        recordInfo.bestChannelSetFlag=true;                    
+                        ratio=channelInfoArray[b].ratio;
+                        channelIdx=b;         
+                        recordInfo.bestChannelSetFlag=true;
                     }
                 }
-                logWriter.WriteLine($"{DateTime.Now}: Now setting channel to {recordInfo.GetCurrentChannel()} with quality ratio of {recordInfo.GetCurrentQualityRatio()} for the rest of the capture session");
+                logWriter.WriteLine($"{DateTime.Now}: Now setting channel to {channelInfoArray[channelIdx].number} with quality ratio of {channelInfoArray[channelIdx].ratio} for the rest of the capture session");
             }
+
+            return channelIdx;
         }
 
         private string BuildCaptureCmdLineArgs(string channel,string hashValue,string fileName,IConfiguration configuration)

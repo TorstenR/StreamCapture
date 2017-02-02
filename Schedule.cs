@@ -35,7 +35,7 @@ namespace StreamCapture
         }
 
         //Returns dictionary of all shows (record info) that match keywords
-        public Dictionary<string, RecordInfo> GetRecordSchedule(Keywords keywords, IConfiguration configuration)
+        public Dictionary<string, RecordInfo> GetRecordSchedule(Keywords keywords, IConfiguration configuration,ChannelHistory channelHistory)
         {
             Dictionary<string, RecordInfo> recInfoDict = new Dictionary<string, RecordInfo>();
 
@@ -54,19 +54,23 @@ namespace StreamCapture
                         if (recInfoDict.ContainsKey(keyValue))
                             recordInfo = recInfoDict[keyValue];
                         else
-                            recordInfo = new RecordInfo();
+                            recordInfo = new RecordInfo(channelHistory);
 
                         //Build channel list
-                        recordInfo.AddChannel(show["channel"].ToString(), show["quality"].ToString());
+                        recordInfo.channels.AddUpdateChannel(show["channel"].ToString(), show["quality"].ToString(), show["language"].ToString());
 
                         recordInfo.id = show["id"].ToString();
                         recordInfo.description = show["name"].ToString();
                         recordInfo.strStartDT = show["time"].ToString();
+                        //recordInfo.strStartDT = DateTime.Now.AddHours(4).ToString();
                         recordInfo.strEndDT = show["end_time"].ToString();
                         recordInfo.strDuration = show["runtime"].ToString();
+                        //recordInfo.strDuration = "1";
                         recordInfo.strDTOffset = configuration["schedTimeOffset"];
                         recordInfo.preMinutes = keywordInfo.preMinutes;
                         recordInfo.postMinutes = keywordInfo.postMinutes;
+                        recordInfo.qualityPref = keywordInfo.qualityPref;
+                        recordInfo.langPref = keywordInfo.langPref;
 
                         //Clean up description, and then use as filename
                         recordInfo.fileName = show["name"].ToString() + show["id"].ToString();

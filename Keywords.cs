@@ -20,9 +20,9 @@ namespace StreamCapture
     {
         Dictionary<string, KeywordInfo> keywordDict;
 
-        public Keywords(string keywordFileName)
+        public Keywords()
         {
-            keywordDict = JsonConvert.DeserializeObject<Dictionary<string, KeywordInfo>>(File.ReadAllText(keywordFileName));
+            keywordDict = JsonConvert.DeserializeObject<Dictionary<string, KeywordInfo>>(File.ReadAllText("keywords.json"));
         }
 
         public KeywordInfo[] GetKeywordArray()
@@ -45,21 +45,27 @@ namespace StreamCapture
                 {
                     if (showName.ToLower().Contains(kArray[i].ToLower()))
                     {
-                        keywordInfo = kvp.Value;
-                        break;
+                        string[] excludeArray = kvp.Value.exclude.Split(',');
+
+                        //Make sure no keywords to exclude are found
+                        bool excludedFlag=false;
+                        for(int e=0;e<excludeArray.Length;e++)
+                        {
+                            if (showName.ToLower().Contains(excludeArray[e].ToLower()))
+                                excludedFlag=true;
+                        }
+
+                        if(!excludedFlag)
+                        {
+                            keywordInfo = kvp.Value;
+                            break;
+                        }
                     }
                 }
             }
 
             return keywordInfo;
         }
-    }
-
-    public class KeywordInfo
-    {
-        public string keywords { get; set; }
-        public int preMinutes { get; set; }
-        public int postMinutes { get; set; }
     }
 }
  
