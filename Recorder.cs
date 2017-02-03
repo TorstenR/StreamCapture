@@ -16,10 +16,9 @@ namespace StreamCapture
     {
         private void DumpRecordInfo(TextWriter logWriter,RecordInfo recordInfo)
         {
-            logWriter.WriteLine($"{DateTime.Now}: =====================");
-            logWriter.WriteLine($"Show: {recordInfo.description} StartDT: {recordInfo.GetStartDT()}  Duration: {recordInfo.GetDuration()}");
-            logWriter.WriteLine($"File: {recordInfo.fileName}");
-            logWriter.WriteLine($"Channels: {recordInfo.GetChannelString()}");              
+            logWriter.WriteLine($"{DateTime.Now}: Queuing show: {recordInfo.description}");
+            logWriter.WriteLine($"                      Starting on {recordInfo.GetStartDT()} for {recordInfo.GetDuration()} minutes ({recordInfo.GetDuration()/60}hrs ish)");
+            logWriter.WriteLine($"                      Channel list is: {recordInfo.GetChannelString()}");           
         }
 
         public void MonitorMode(IConfiguration configuration)
@@ -38,7 +37,10 @@ namespace StreamCapture
                 {            
                     //If show is not already in the past and not already queued, let's go!
                     int hoursInFuture=Convert.ToInt32(configuration["hoursInFuture"]);
-                    if(recordInfo.GetStartDT()>DateTime.Now && recordInfo.GetStartDT()<=DateTime.Now.AddHours(hoursInFuture) && !recordInfo.processSpawnedFlag)
+                    bool showInFuture=recordInfo.GetEndDT()>DateTime.Now;
+                    bool showClose=recordInfo.GetStartDT()<=DateTime.Now.AddHours(hoursInFuture);
+                    bool showQueued=recordInfo.processSpawnedFlag;
+                    if(showInFuture && showClose && !showQueued)
                     {
                         recordInfo.processSpawnedFlag=true;
                         DumpRecordInfo(Console.Out,recordInfo); 
@@ -48,7 +50,12 @@ namespace StreamCapture
                     }
                     else
                     {
-                        Console.WriteLine($"{DateTime.Now}: Ignoring show until we're closer: {recordInfo.description} on {recordInfo.GetStartDT()}");
+                        if(!showInFuture)
+                            Console.WriteLine($"{DateTime.Now}: Show already finished: {recordInfo.description} at {recordInfo.GetStartDT()}");
+                        if(!showClose)
+                            Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
+                        if(showQueued)
+                            Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");
                     }
                 }  
 

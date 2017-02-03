@@ -56,6 +56,21 @@ namespace StreamCapture
             return startDT;
         }
 
+        public DateTime GetEndDT()
+        {
+            if(strEndDT == null)
+                return DateTime.Now;
+
+            //Create base date time
+            DateTime endDT=DateTime.Parse(strEndDT);
+
+            //Add offset 
+            int timeOffset=Convert.ToInt32(strDTOffset);
+            endDT=endDT.AddHours(timeOffset);
+
+            return endDT;
+        }
+
         //Return duration in minutes
         public int GetDuration()
         {
