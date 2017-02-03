@@ -17,8 +17,7 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 
 ###Caveats:
 - Not very well commented
-- Almost zero exception or error handling.  If something goes wrong (including config), you'll have to read the stack trace
-- Has limited testing I'm using it, but it's not been "in production" very long.  Read: probably has a crap ton of bugs....
+- Has limited testing I'm using it, but it's not been "in production" very long.  
 - My plex did not recognize the embedded meta-data.  Not sure why....
 
 ###Areas to help:
