@@ -6,6 +6,7 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 
 ###News:
 - Feb 2, 2017: I've just posted a pretty major refactor which should make the code more readable.  In additon, there is now a new .json file which defines the keywords and the like.  Please read the documentation below for more information on this.
+- Feb 2, 2017: I tested on mac and it seemed to work great - after updated appconfig.json with the correct paths of course.
 
 ###Features:
 - Polls the schedule on a configurable schedule searching for keywords (and other info) you've provided
