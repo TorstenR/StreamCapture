@@ -11,8 +11,10 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 
 ###Features:
 - Polls the schedule on a configurable schedule searching for keywords (and other info) you've provided
-- Spawns a separate thread and captures stream using ffmpeg
-- Uses (limited) heuristics to determine channel quality and switches up mid-stream if necessary.  (working to improve)
+- Allows "pre" and "post" minutes to be specified per show.  (e.g. some events potentially have overtime, some don't...)
+- Spawns a separate thread and captures stream using ffmpeg, comlete with seperate log file
+- When multiple channels are available, it orders them based on some heuristics (e.g. higher quality first)
+- Uses (limited) heuristics to determine channel quality and switches to better channels if necessary.  (working to improve)
 - Should be able to start and "forget about it" and simply watch the results on plex (or whatever you use)
 
 ###Caveats:
@@ -60,6 +62,13 @@ If running in Mode 2, keywords.json is how it's decided which shows to record ba
 - "postMinutes": number of minutes to record late by
 - "langPref": used to order the channels by. (which one to try first, and then 2nd of there's a problem etc)  For example, I use "US" to get the english channels ahead of "DE".  (not sure the full list, see schedule)
 - "qualityPref": also used to order channels.  I use "720p" so it tries to get HD first.
+
+###Troubleshooting###
+- First thing is to check your log file/s for what might have gone wrong.  Most often, this will lead you in the right direction.
+- Double check that .Net Core is working right by compiling and running "hello world" or whatever.
+- Make sure ffmpeg is installed and working correctly
+- Make sure you have disk space and that your internet connection is good.  This is especially true when capturing multiple streams at once.
+- If all else fails, use your debugger (VS Code?) and see what's going on.
 
 ###Compiling:
 - Go to http://www.dot.net and download the right .NET Core for your platform
