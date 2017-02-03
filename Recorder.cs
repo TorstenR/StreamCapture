@@ -11,9 +11,23 @@ using System.Collections.Generic;
 
 namespace StreamCapture
 {
-    
     public class Recorder
     {
+        IConfiguration configuration;
+
+        public Recorder(IConfiguration _configuration)
+        {
+            configuration=_configuration;
+
+            //Test Authentication
+            Task<string> authTask = Authenticate();
+            string hashValue=authTask.Result;  
+            if(!!string.IsNullOrEmpty(hashValue))                     
+            {
+                Console.WriteLine($"ERROR: Unable to authenticate.  Check username and password?  Bad auth URL?");
+                Environment.Exit(1);                
+            }            
+        }
         private void DumpRecordInfo(TextWriter logWriter,RecordInfo recordInfo)
         {
             logWriter.WriteLine($"{DateTime.Now}: Queuing show: {recordInfo.description}");
@@ -21,7 +35,7 @@ namespace StreamCapture
             logWriter.WriteLine($"                      Channel list is: {recordInfo.GetChannelString()}");           
         }
 
-        public void MonitorMode(IConfiguration configuration)
+        public void MonitorMode()
         {
             //Create new recordings object to manage our recordings
             Recordings recordings = new Recordings(configuration);
@@ -118,21 +132,25 @@ namespace StreamCapture
             }       
 
             //Authenticate
-            Task<string> authTask = Authenticate(configuration);
+            Task<string> authTask = Authenticate();
             string hashValue=authTask.Result;
+            if(!!string.IsNullOrEmpty(hashValue))                     
+            {
+                Console.WriteLine($"ERROR: Unable to authenticate.  Check username and password?");
+                Environment.Exit(1);               
 
             //Capture stream
-            int numFiles=CaptureStream(logWriter,hashValue,recordInfo,configuration);
+            int numFiles=CaptureStream(logWriter,hashValue,recordInfo);
 
             //Fixup output
-            FixUp(logWriter,numFiles,recordInfo,configuration);
+            FixUp(logWriter,numFiles,recordInfo);
 
             //Cleanup
             logWriter.WriteLine($"{DateTime.Now}: Done Capturing - Cleaning up");
             logWriter.Dispose();
+            }
         }
-
-        private async Task<string> Authenticate(IConfiguration configuration)
+        private async Task<string> Authenticate()
         {
             string hashValue=null;
 
@@ -172,7 +190,7 @@ namespace StreamCapture
             return hashValue;
         }
      
-        private int CaptureStream(TextWriter logWriter,string hashValue,RecordInfo recordInfo,IConfiguration configuration)
+        private int CaptureStream(TextWriter logWriter,string hashValue,RecordInfo recordInfo)
         {
             int currentFileNum = 0;
             int channelIdx = 0;
@@ -195,7 +213,7 @@ namespace StreamCapture
             channelHistory.GetChannelHistoryInfo(currentChannel.number).lastAttempt=DateTime.Now;
 
             //Build ffmpeg capture command line with first channel and get things rolling
-            string cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,recordInfo.fileName+currentFileNum,configuration);
+            string cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,recordInfo.fileName+currentFileNum);
             logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} and expect to be done {captureTargetEnd}.");
             logWriter.WriteLine($"Cmd: {configuration["ffmpegPath"]} {cmdLineArgs}");
             Process p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,recordInfo.GetDuration());  //setting async flag
@@ -248,7 +266,7 @@ namespace StreamCapture
                 channelHistory.Save();
 
                 //Now get things setup and going again
-                cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,recordInfo.fileName+currentFileNum,configuration);
+                cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,recordInfo.fileName+currentFileNum);
                 logWriter.WriteLine($"{DateTime.Now}: Starting Capture (again): {configuration["ffmpegPath"]} {cmdLineArgs}");
                 p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1);
             }
@@ -292,7 +310,7 @@ namespace StreamCapture
             return channelIdx;
         }
 
-        private string BuildCaptureCmdLineArgs(string channel,string hashValue,string fileName,IConfiguration configuration)
+        private string BuildCaptureCmdLineArgs(string channel,string hashValue,string fileName)
         {
             //C:\Users\mark\Desktop\ffmpeg\bin\ffmpeg -i "http://dnaw1.smoothstreams.tv:9100/view247/ch01q1.stream/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvMS8yMDE2IDM6NDA6MTcgUE0maGFzaF92YWx1ZT1xVGxaZmlzMkNYd0hFTEJlaTlzVVJ3PT0mdmFsaWRtaW51dGVzPTcyMCZpZD00MzM=" -c copy t.ts
             
@@ -363,7 +381,7 @@ namespace StreamCapture
             }                
         }
 
-        private void FixUp(TextWriter logWriter,int numFiles,RecordInfo recordInfo,IConfiguration configuration)
+        private void FixUp(TextWriter logWriter,int numFiles,RecordInfo recordInfo)
         {
             string cmdLineArgs;
             string outputFile;
