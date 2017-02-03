@@ -30,7 +30,10 @@ namespace StreamCapture
             if(channels.HasValue() && duration.HasValue() && filename.HasValue())
                 optionalArgsFlag=true;
             else
-                Console.WriteLine($"{DateTime.Now}: No usable command line options passed in - Using keywords to search schedule. (Please run with --help if you'ref confused)");
+            {
+                Console.WriteLine($"{DateTime.Now}: Using keywords.json to search schedule. (Please run with --help if you're confused)");
+                Console.WriteLine($"=======================");                
+            }
 
             //Read and build config
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
