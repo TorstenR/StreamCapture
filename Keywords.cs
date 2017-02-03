@@ -40,8 +40,11 @@ namespace StreamCapture
                         bool excludedFlag=false;
                         for(int e=0;e<excludeArray.Length;e++)
                         {
-                            if (showName.ToLower().Contains(excludeArray[e].ToLower()))
-                                excludedFlag=true;
+                            if(excludeArray[e].Length>0)
+                            {
+                                if (showName.ToLower().Contains(excludeArray[e].ToLower()))
+                                    excludedFlag=true;
+                            }
                         }
 
                         if(!excludedFlag)
