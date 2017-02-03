@@ -43,7 +43,8 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 - "numberOfRetries" - Number of time we retry after ffmpeg capture error before giving up
 - "schedTimeOffset" - Schedule appears to be in EST.  This is the offset for local time.  (e.g. PST is -3)
 - "logPath" - Puts the capture thread logs here
-- "outputPath" - Puts the capture video file here (I go directly to my NAS)
+- "outputPath" - Puts the capture video file here (I capture locally, and then move to my NAS - see next param)
+- "nasPath" - Optional parameter will will copy the final .mp4 file to this location (in my case, my NAS)
 - "ffmpegPath" - location of ffmpeg.exe
 - "authURL" - URL to get authentication token for stream
 - "captureCmdLine" - Cmd line for ffmpeg capture. Items in brackets should be self explanatory
