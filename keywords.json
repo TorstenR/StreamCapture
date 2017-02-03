@@ -1,0 +1,43 @@
+{
+  "Soccer": {
+    "keywords": "liverpool,chelsea,FA Cup,sounders",
+    "exclude": "",
+    "preMinutes": 5,
+    "postMinutes": 15,
+    "langPref": "US",
+    "qualityPref": "720P"
+  },
+  "USA National": {
+    "keywords": "usa",
+    "exclude": "tennis",
+    "preMinutes": 5,
+    "postMinutes": 15,
+    "langPref": "US",
+    "qualityPref": "720P"
+  },
+  "F1": {
+    "keywords": "f1",
+    "exclude": "",
+    "preMinutes": 5,
+    "postMinutes": 5,
+    "langPref": "US",
+    "qualityPref": "720P"
+  },
+  "World Rally": {
+    "keywords": "wrc",
+    "exclude": "",
+    "preMinutes": 5,
+    "postMinutes": 30,
+    "langPref": "US",
+    "qualityPref": "720P"
+  },
+  "NHL": {
+    "keywords": "blackhawks,red wings,rangers",
+    "exclude": "",
+    "preMinutes": 5,
+    "postMinutes": 20,
+    "langPref": "US",
+    "qualityPref": "720P"
+  }
+} 
+

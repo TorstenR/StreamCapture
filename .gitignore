@@ -1,5 +1,7 @@
-*.dll
-bin/Debug/netcoreapp1.1/*
-obj/Debug/netcoreapp1.1/*
+logs/*
+bin/*
+obj/*
+videos/*
+.vs/*
 project.lock.json
 ffmpeg/*
