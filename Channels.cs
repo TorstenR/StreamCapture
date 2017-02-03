@@ -18,7 +18,8 @@ namespace StreamCapture
             string[] channelArray = strChannels.Split('+');
             foreach (string channel in channelArray)
             {
-                BuildChannelInfo(channel, "", "");
+                ChannelInfo channelInfo = BuildChannelInfo(channel, "", "");
+                AddUpdateChannel(channel,channelInfo);
             }
         }
 

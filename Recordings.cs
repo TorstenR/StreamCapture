@@ -70,10 +70,11 @@ namespace StreamCapture
                     recordInfo.channels.AddUpdateChannel(scheduleShow.channel, scheduleShow.quality, scheduleShow.language);
                     recordInfo.id = scheduleShow.id;
                     recordInfo.description = scheduleShow.name;
-                    //recordInfo.strStartDT = scheduleShow.time;
-                    recordInfo.strStartDT = DateTime.Now.AddHours(4).ToString();
+                    recordInfo.strStartDT = scheduleShow.time;
+                    //recordInfo.strStartDT = DateTime.Now.AddHours(4).ToString();
                     recordInfo.strEndDT = scheduleShow.end_time;
                     recordInfo.strDuration = scheduleShow.runtime;
+                    //recordInfo.strDuration = "1";
                     recordInfo.strDTOffset = configuration["schedTimeOffset"];
                     recordInfo.preMinutes = keywordInfo.preMinutes;
                     recordInfo.postMinutes = keywordInfo.postMinutes;

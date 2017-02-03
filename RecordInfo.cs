@@ -80,7 +80,9 @@ namespace StreamCapture
                 else if (channelInfo.lang.Length == 0 || channelInfo.lang.ToLower().Contains(langPref.ToLower()))
                     usChannelsList.Add(channelInfo);
                 else
+                {
                     otherChannelsList.Add(channelInfo);
+                }
             }
 
             //Start the list we're returning by a sort  (in the future put cool heuristics here)

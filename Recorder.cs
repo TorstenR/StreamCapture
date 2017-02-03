@@ -1,13 +1,12 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.CommandLineUtils;
+using System.Collections.Generic;
 
 
 namespace StreamCapture
@@ -15,24 +14,91 @@ namespace StreamCapture
     
     public class Recorder
     {
-        private void DumpRecordInfo(TextWriter logWriter,RecordInfo recordInfo,string tag)
+        private void DumpRecordInfo(TextWriter logWriter,RecordInfo recordInfo)
         {
-            logWriter.WriteLine($"{tag} =====================");
+            logWriter.WriteLine($"{DateTime.Now}: =====================");
             logWriter.WriteLine($"Show: {recordInfo.description} StartDT: {recordInfo.GetStartDT()}  Duration: {recordInfo.GetDuration()}");
             logWriter.WriteLine($"File: {recordInfo.fileName}");
-            logWriter.WriteLine($"Channels: {recordInfo.GetChannelString()}");               
+            logWriter.WriteLine($"Channels: {recordInfo.GetChannelString()}");              
         }
 
-        public async Task MainAsync(RecordInfo recordInfo,IConfiguration configuration)
+        public void MonitorMode(IConfiguration configuration)
+        {
+            //Create new recordings object to manage our recordings
+            Recordings recordings = new Recordings(configuration);
+
+            //Grab schedule from interwebs and loop forever, checking every n hours for new shows to record
+            while(true)
+            {
+                //Grabs schedule and builds a recording list based on keywords
+                List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
+
+                //Go through record list, spawn a new process for each show found
+                foreach (RecordInfo recordInfo in recordInfoList)
+                {            
+                    //If show is not already in the past and not already queued, let's go!
+                    int hoursInFuture=Convert.ToInt32(configuration["hoursInFuture"]);
+                    if(recordInfo.GetStartDT()>DateTime.Now && recordInfo.GetStartDT()<=DateTime.Now.AddHours(hoursInFuture) && !recordInfo.processSpawnedFlag)
+                    {
+                        recordInfo.processSpawnedFlag=true;
+                        DumpRecordInfo(Console.Out,recordInfo); 
+
+                        // Queue show to be recorded now
+                        Task.Factory.StartNew(() => QueueRecording(recordInfo,configuration,true)); 
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{DateTime.Now}: Ignoring show until we're closer: {recordInfo.description} on {recordInfo.GetStartDT()}");
+                    }
+                }  
+
+                //Determine how long to sleep before next check
+                string[] times=configuration["scheduleCheck"].Split(',');
+                DateTime nextRecord=DateTime.Now;
+                
+                //find out if today
+                if(DateTime.Now.Hour < Convert.ToInt32(times[times.Length-1]))
+                {
+                    for(int i=0;i<times.Length;i++)
+                    {
+                        int recHour=Convert.ToInt32(times[i]);
+                        if(DateTime.Now.Hour < recHour)
+                        {
+                            nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    //build date tomorrow
+                    int recHour=Convert.ToInt32(times[0]);  //grab first time in the list
+                    nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
+                    nextRecord=nextRecord.AddDays(1);
+                }
+
+                //Wait
+                TimeSpan timeToWait = nextRecord - DateTime.Now;
+                Console.WriteLine($"{DateTime.Now}: Now sleeping for {timeToWait.Hours+1} hours before checking again at {nextRecord.ToString()}");
+                Thread.Sleep(timeToWait);         
+                Console.WriteLine($"{DateTime.Now}: Woke up, now checking again...");
+            } 
+        }
+
+        public void QueueRecording(RecordInfo recordInfo,IConfiguration configuration,bool useLogFlag)
         {
             //Write to our very own log as there might be other captures going too
-            string logPath=Path.Combine(configuration["logPath"],recordInfo.fileName+"Log.txt");
-            FileStream fileHandle = new FileStream (logPath, FileMode.OpenOrCreate, FileAccess.Write);
-            StreamWriter logWriter = new StreamWriter (fileHandle);
+            StreamWriter logWriter=new StreamWriter(Console.OpenStandardOutput());
+            if(useLogFlag)
+            {
+                string logPath=Path.Combine(configuration["logPath"],recordInfo.fileName+"Log.txt");
+                FileStream fileHandle = new FileStream (logPath, FileMode.OpenOrCreate, FileAccess.Write);
+                logWriter = new StreamWriter (fileHandle);
+            }
             logWriter.AutoFlush = true;
 
             //Dump
-            DumpRecordInfo(logWriter,recordInfo,"MainAsync");
+            DumpRecordInfo(logWriter,recordInfo);
 
             //Wait here until we're ready to start recording
             if(recordInfo.strStartDT != null)
@@ -45,7 +111,8 @@ namespace StreamCapture
             }       
 
             //Authenticate
-            string hashValue = await Authenticate(configuration);
+            Task<string> authTask = Authenticate(configuration);
+            string hashValue=authTask.Result;
 
             //Capture stream
             int numFiles=CaptureStream(logWriter,hashValue,recordInfo,configuration);
@@ -56,7 +123,6 @@ namespace StreamCapture
             //Cleanup
             logWriter.WriteLine($"{DateTime.Now}: Done Capturing - Cleaning up");
             logWriter.Dispose();
-            fileHandle.Dispose();
         }
 
         private async Task<string> Authenticate(IConfiguration configuration)
@@ -123,7 +189,8 @@ namespace StreamCapture
 
             //Build ffmpeg capture command line with first channel and get things rolling
             string cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,recordInfo.fileName+currentFileNum,configuration);
-            logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} and expect to be done {captureTargetEnd}.  Cmd: {configuration["ffmpegPath"]} {cmdLineArgs}");
+            logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} and expect to be done {captureTargetEnd}.");
+            logWriter.WriteLine($"Cmd: {configuration["ffmpegPath"]} {cmdLineArgs}");
             Process p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,recordInfo.GetDuration());  //setting async flag
             logWriter.WriteLine($"{DateTime.Now}: After execution.  Exit Code: {p.ExitCode}");
 

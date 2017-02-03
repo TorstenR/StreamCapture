@@ -1,32 +1,39 @@
-#Short hack to capture streams from live247 using .Net Core
+#Program to capture streams from live247 using .Net Core
 
 For the longest time I was frustrated at not being able to reasonably record streams from Live247 to watch my favorite sporting events.  That frustration is what this little diddy was born out of.  
 
-Note: please don't attempt to use unless you're fairly technically minded.  I don't have much time to help, but will do my best of course.  To state the obvious, if anyone wants to contribute to the documentation that'd be great!
+Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
+
+###News:
+- Feb 2, 2017: I've just posted a pretty major refactor which should make the code more readable.  In additon, there is now a new .json file which defines the keywords and the like.  Please read the documentation below for more information on this.
 
 ###Features:
-- Polls the schedule on a configurable schedule searching for keywords you've provided
+- Polls the schedule on a configurable schedule searching for keywords (and other info) you've provided
 - Spawns a separate thread and captures stream using ffmpeg
-- Uses (not very good) heuristics to determine channel quality and switches up mid-stream if necessary.
+- Uses (limited) heuristics to determine channel quality and switches up mid-stream if necessary.  (working to improve)
 - Should be able to start and "forget about it" and simply watch the results on plex (or whatever you use)
 
 ###Caveats:
 - Not very well commented
 - Almost zero exception or error handling.  If something goes wrong (including config), you'll have to read the stack trace
 - Has limited testing I'm using it, but it's not been "in production" very long.  Read: probably has a crap ton of bugs....
-- It's mostly a hack.  Seriously....the code is not production quality. 
-- Still playing with ffmpeg to find the right balance on erroring out when there's a problem with the stream.
 - My plex did not recognize the embedded meta-data.  Not sure why....
 
 ###Areas to help:
 - Bugs....  (feel free to file them on github and submit a PR of course...)
-- Testing on other platforms.  (love to hear your feedback on that)
-- ffmpeg expertise, especially around erroring out if there's a problem with the feed.  (-xerror chokes immediately on 720P feeds)
+- More testing on other platforms.  (I've done some testing on Mac with good results)
 - General improvements (I'm open to whatever)
 
 ###How to use:
-The easiest way to use this is to type 'streamCapture --keywords="chelsea"'  This will search and schedule and fire off a thread which will "sleep" until it's time to capture the stream.
+There are 2 "modes" to run.  They are:
 
+**Mode 1: Single execution and exit**
+Simply pass in --duration, --channels, --filename, and optionaly --datetime to record a single show.  Use --help for more specifics.
+
+**Mode 2: Infinite loop which scans schedule for wanted shows to capture  (this is the intended primary mode)**
+Simply run StreamCapture with no parameters.  It will read keywords.json every n hours and queue up shows to record as appropriate.
+
+**appsettings.json**
 There are multiple config values in appsettings.json.  By looking at these you'll get a better idea what's happening.
 - "user" - Yes, username and password
 - "pass"
@@ -42,14 +49,23 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 - "concatCmdLine" - Cmd line for ffmpeg concat. Items in brackets should be self explanatory
 - "muxCmdLine" - Cmd line for ffmpeg MUX. Items in brackets should be self explanatory
 
-There are other command line options if you know specifically what you want to record.  You can see these by running streamCapture w/ --help or -?.
+**keywords.json**
+If running in Mode 2, keywords.json is how it's decided which shows to record based on the schedule.  More specifically:
+- Top level node: name of whatever you want to name the "grouping".  This is arbitrary and doesn't affect anything programatically.
+- "keywords": comma delimted list of keywords to use for which shows to record
+- "exclude": comma delimited list of keywords to use to EXCLUDE any shows.  (for example, I exclude "tennis" for usa keywords)
+- "preMinutes": number of minutes to start early by
+- "postMinutes": number of minutes to record late by
+- "langPref": used to order the channels by. (which one to try first, and then 2nd of there's a problem etc)  For example, I use "US" to get the english channels ahead of "DE".  (not sure the full list, see schedule)
+- "qualityPref": also used to order channels.  I use "720p" so it tries to get HD first.
 
 ###Compiling:
 - Go to http://www.dot.net and download the right .NET Core for your platform
 - Make "hello world" to make sure your environment is correct and you understand at least the basics
 - Compile streamCapture by typing 'dotnet build'
 
-###How the program works (assumes you're using keywords):
+###How the program works
+This explains how "Mode 2" works.  "Mode 1" is similar, but without the loop.  (go figure)
 
 **Main thread goes into an infinite loop and does the following:**
 - Grabs schedule on the configured hours
