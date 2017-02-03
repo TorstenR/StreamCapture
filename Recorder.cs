@@ -292,11 +292,16 @@ namespace StreamCapture
             string cmdLineArgs = configuration["captureCmdLine"];
             string outputPath = Path.Combine(configuration["outputPath"],fileName+".ts");
 
+            //Make sure file does not already exist
+            if(File.Exists(outputPath))
+            {
+                string newFileName=Path.Combine(configuration["outputPath"],fileName+"_"+Path.GetRandomFileName()+".ts");
+                File.Move(outputPath,newFileName);
+            }            
+
             cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",outputPath);
             cmdLineArgs=cmdLineArgs.Replace("[CHANNEL]",channel);
             cmdLineArgs=cmdLineArgs.Replace("[AUTHTOKEN]",hashValue);
-            
-            //Console.WriteLine($"Cmd Line Args:  {cmdLineArgs}");
 
             return cmdLineArgs;
         }
@@ -358,6 +363,7 @@ namespace StreamCapture
             string videoFileName=recordInfo.fileName+"0.ts";
             string ffmpegPath = configuration["ffmpegPath"];
             string outputPath = configuration["outputPath"];
+            string nasPath = configuration["nasPath"];
 
             //metadata
             string metadata;
@@ -377,7 +383,7 @@ namespace StreamCapture
                     fileList=fileList+"|"+Path.Combine(outputPath,recordInfo.fileName+i+".ts");
 
                 //Create output file path
-                outputFile=Path.Combine(outputPath,recordInfo.fileName+".ts");
+                outputFile=Path.Combine(outputPath,recordInfo.fileName+".ts");          
 
                 //"concatCmdLine": "[FULLFFMPEGPATH] -i \"concat:[FILELIST]\" -c copy [FULLOUTPUTPATH]",
                 cmdLineArgs = configuration["concatCmdLine"];
@@ -394,6 +400,13 @@ namespace StreamCapture
             //Mux file to mp4 from ts (transport stream)
             string inputFile=Path.Combine(outputPath,videoFileName);
             outputFile=Path.Combine(outputPath,recordInfo.fileName+".mp4");
+
+            //Make sure file doesn't already exist
+            if(File.Exists(outputFile))
+            {
+                string newFileName=Path.Combine(outputPath,recordInfo.fileName+"_"+Path.GetRandomFileName()+".mp4");
+                File.Move(outputFile,newFileName);                 
+            }
 
             // "muxCmdLine": "[FULLFFMPEGPATH] -i [VIDEOFILE] -acodec copy -vcodec copy [FULLOUTPUTPATH]"
             cmdLineArgs = configuration["muxCmdLine"];
@@ -412,12 +425,29 @@ namespace StreamCapture
                 logWriter.WriteLine($"{DateTime.Now}: Removing ts file: {inputFile}");
                 File.Delete(inputFile);
 
-                for(int i=0;i<=numFiles;i++)
+                if(numFiles>0)
                 {
-                    inputFile=Path.Combine(outputPath,recordInfo.fileName+i+".ts");
-                    logWriter.WriteLine($"{DateTime.Now}: Removing ts file: {inputFile}");
-                    File.Delete(inputFile);
+                    for(int i=0;i<=numFiles;i++)
+                    {
+                        inputFile=Path.Combine(outputPath,recordInfo.fileName+i+".ts");
+                        logWriter.WriteLine($"{DateTime.Now}: Removing ts file: {inputFile}");
+                        File.Delete(inputFile);
+                    }
                 }
+            }
+
+            //If NAS path exists, move file mp4 file there
+            if(nasPath != null)
+            {
+                string nasFile=Path.Combine(nasPath,recordInfo.fileName+".mp4");
+                if(File.Exists(nasFile))
+                {
+                    string newFileName=Path.Combine(configuration["outputPath"],recordInfo.fileName+"_"+Path.GetRandomFileName()+".mp4");
+                    File.Move(outputPath,newFileName);
+                }
+
+                logWriter.WriteLine($"{DateTime.Now}: Moving {outputFile} to {nasFile}");
+                File.Move(outputFile,nasFile);
             }
         }
     }
