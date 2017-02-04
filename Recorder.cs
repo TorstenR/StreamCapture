@@ -213,10 +213,11 @@ namespace StreamCapture
             channelHistory.GetChannelHistoryInfo(currentChannel.number).lastAttempt=DateTime.Now;
 
             //Build ffmpeg capture command line with first channel and get things rolling
-            string cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,recordInfo.fileName+currentFileNum);
+            string outputPath=BuildOutputPath(recordInfo.fileName+currentFileNum);
+            string cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,outputPath);
             logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} and expect to be done {captureTargetEnd}.");
             logWriter.WriteLine($"Cmd: {configuration["ffmpegPath"]} {cmdLineArgs}");
-            Process p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,recordInfo.GetDuration());  //setting async flag
+            Process p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,recordInfo.GetDuration(),outputPath);  
             logWriter.WriteLine($"{DateTime.Now}: After execution.  Exit Code: {p.ExitCode}");
 
             //
@@ -266,9 +267,10 @@ namespace StreamCapture
                 channelHistory.Save();
 
                 //Now get things setup and going again
-                cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,recordInfo.fileName+currentFileNum);
+                outputPath=BuildOutputPath(recordInfo.fileName+currentFileNum);
+                cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,outputPath);
                 logWriter.WriteLine($"{DateTime.Now}: Starting Capture (again): {configuration["ffmpegPath"]} {cmdLineArgs}");
-                p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1);
+                p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,outputPath);
             }
             logWriter.WriteLine($"{DateTime.Now}: Finished Capturing Stream.");
 
@@ -280,6 +282,32 @@ namespace StreamCapture
 
             return currentFileNum;
         }
+
+        private string BuildOutputPath(string fileName)
+        {
+            string outputPath = Path.Combine(configuration["outputPath"],fileName+".ts");
+
+            //Make sure file does not already exist.  If so, rename it.
+            if(File.Exists(outputPath))
+            {
+                string newFileName=Path.Combine(configuration["outputPath"],fileName+"_"+Path.GetRandomFileName()+".ts");
+                File.Move(outputPath,newFileName);
+            }
+
+            return outputPath;      
+        }
+
+        private string BuildCaptureCmdLineArgs(string channel,string hashValue,string outputPath)
+        {
+            //C:\Users\mark\Desktop\ffmpeg\bin\ffmpeg -i "http://dnaw1.smoothstreams.tv:9100/view247/ch01q1.stream/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvMS8yMDE2IDM6NDA6MTcgUE0maGFzaF92YWx1ZT1xVGxaZmlzMkNYd0hFTEJlaTlzVVJ3PT0mdmFsaWRtaW51dGVzPTcyMCZpZD00MzM=" -c copy t.ts
+            
+            string cmdLineArgs = configuration["captureCmdLine"];
+            cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",outputPath);
+            cmdLineArgs=cmdLineArgs.Replace("[CHANNEL]",channel);
+            cmdLineArgs=cmdLineArgs.Replace("[AUTHTOKEN]",hashValue);
+
+            return cmdLineArgs;
+        }        
 
         private int GetNextChannel(TextWriter logWriter,RecordInfo recordInfo,ChannelInfo[] channelInfoArray,int channelIdx)
         {   
@@ -310,34 +338,14 @@ namespace StreamCapture
             return channelIdx;
         }
 
-        private string BuildCaptureCmdLineArgs(string channel,string hashValue,string fileName)
-        {
-            //C:\Users\mark\Desktop\ffmpeg\bin\ffmpeg -i "http://dnaw1.smoothstreams.tv:9100/view247/ch01q1.stream/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvMS8yMDE2IDM6NDA6MTcgUE0maGFzaF92YWx1ZT1xVGxaZmlzMkNYd0hFTEJlaTlzVVJ3PT0mdmFsaWRtaW51dGVzPTcyMCZpZD00MzM=" -c copy t.ts
-            
-            string cmdLineArgs = configuration["captureCmdLine"];
-            string outputPath = Path.Combine(configuration["outputPath"],fileName+".ts");
-
-            //Make sure file does not already exist
-            if(File.Exists(outputPath))
-            {
-                string newFileName=Path.Combine(configuration["outputPath"],fileName+"_"+Path.GetRandomFileName()+".ts");
-                File.Move(outputPath,newFileName);
-            }            
-
-            cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",outputPath);
-            cmdLineArgs=cmdLineArgs.Replace("[CHANNEL]",channel);
-            cmdLineArgs=cmdLineArgs.Replace("[AUTHTOKEN]",hashValue);
-
-            return cmdLineArgs;
-        }
-
         private Process ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs)
         {
-            return ExecProcess(logWriter,exe,cmdLineArgs,0);
+            return ExecProcess(logWriter,exe,cmdLineArgs,0,null);
         }
 
-        private Process ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs,int timeout)
+        private Process ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs,int timeout,string outputPath)
         {
+            //Create our process
             var processInfo = new ProcessStartInfo
             {
                 FileName = exe,
@@ -345,17 +353,22 @@ namespace StreamCapture
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
-
-            Timer captureTimer=null;
             Process process = Process.Start(processInfo);
 
             //Let's build a timer to kill the process when done
+            Timer captureTimer=null;
+            CaptureProcessInfo captureProcessInfo = null;
             if(timeout>0)
             {
-                TimeSpan delayTime = new TimeSpan(0, timeout, 0);
-                TimeSpan intervalTime = new TimeSpan(0, 0, 0, 0, -1); //turn off interval timer
+                //create capture process info
+                DateTime timerDone=DateTime.Now.AddMinutes(timeout);
+                captureProcessInfo = new CaptureProcessInfo(process,90000000,timerDone,outputPath,logWriter);
+                //2000000
+
+                //create timer
+                TimeSpan intervalTime = new TimeSpan(0, 0, 10); 
                 logWriter.WriteLine($"{DateTime.Now}: Settting Timer for {timeout} minutes in the future to kill process.");
-                captureTimer = new Timer(OnCaptureTimer, process, delayTime, intervalTime);
+                captureTimer = new Timer(OnCaptureTimer, captureProcessInfo, intervalTime, intervalTime);
             }
 
             //Now, let's wait for the thing to exit
@@ -373,12 +386,48 @@ namespace StreamCapture
         //Handler for ffmpeg timer to kill the process
         static void OnCaptureTimer(object obj)
         {    
-            Process p = obj as Process;
-            if(p!=null && !p.HasExited)
+            bool killProcess=false;
+            CaptureProcessInfo captureProcessInfo = obj as CaptureProcessInfo;
+
+            //Are we done?
+            if(DateTime.Now >= captureProcessInfo.timerDone)
+            {
+                killProcess=true;
+                captureProcessInfo.logWriter.WriteLine($"{DateTime.Now}: Timer is up.  Killing capture process");
+            }
+
+            //Make sure file is still growing at a reasonable pace.  Otherwise, kill the process
+            if(!killProcess)
+            {
+                //Grab file info
+                FileInfo fileInfo=new FileInfo(captureProcessInfo.outputPath);
+
+                //Make sure file even exists!
+                if(!fileInfo.Exists)
+                {
+                    killProcess=true;
+                    captureProcessInfo.logWriter.WriteLine($"{DateTime.Now}: ERROR: File {captureProcessInfo.outputPath} doesn't exist.  Feed is bad.");
+                }
+                else
+                {
+                    //Make sure file size (rate) is fine
+                    long fileSize = fileInfo.Length;
+                    if(fileSize <= (captureProcessInfo.fileSize + captureProcessInfo.acceptableRate))
+                    {
+                        killProcess=true;
+                        captureProcessInfo.logWriter.WriteLine($"{DateTime.Now}: ERROR: File size no longer growing. (Rate: {(fileSize-captureProcessInfo.fileSize)/10} bytes/s)  Killing capture process.");
+                    }
+                    captureProcessInfo.fileSize=fileSize;
+                }
+            }
+
+            //Kill process if needed
+            Process p = captureProcessInfo.process;
+            if(killProcess && p!=null && !p.HasExited)
             {
                 p.Kill();
                 p.WaitForExit();
-            }                
+            }
         }
 
         private void FixUp(TextWriter logWriter,int numFiles,RecordInfo recordInfo)

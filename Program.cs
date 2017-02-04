@@ -25,7 +25,7 @@ namespace StreamCapture
 
             //do we have optional args passed in?
             bool optionalArgsFlag=false;
-            if(channels.HasValue() && duration.HasValue() && filename.HasValue())
+            if(channels.HasValue() || duration.HasValue() || filename.HasValue())
             {
                 VerifyCommandLineParams(channels,duration,filename,datetime);
                 optionalArgsFlag=true;
@@ -173,6 +173,10 @@ namespace StreamCapture
 
         static private void ValidateDirExist(string source,string pathTag,string path)
         {
+            //empty is fine
+            if(string.IsNullOrEmpty(path))
+                return;
+
             try
             {
                 bool dirExists=Directory.Exists(path);
