@@ -13,6 +13,7 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 - Polls the schedule on a configurable schedule searching for keywords (and other info) you've provided
 - Allows "pre" and "post" minutes to be specified per show.  (e.g. some events potentially have overtime, some don't...)
 - Spawns a separate thread and captures stream using ffmpeg, comlete with seperate log file
+- Works cross platform.  (confirmed on Windows and Mac.  If you're using on nix...let me know please)
 - When multiple channels are available, it orders them based on some heuristics (e.g. higher quality first)
 - Uses (limited) heuristics to determine channel quality and switches to better channels if necessary.  (working to improve)
 - Detects "stalls" by monitoring the file size every 10 seconds
