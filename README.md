@@ -15,6 +15,7 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 - Spawns a separate thread and captures stream using ffmpeg, comlete with seperate log file
 - When multiple channels are available, it orders them based on some heuristics (e.g. higher quality first)
 - Uses (limited) heuristics to determine channel quality and switches to better channels if necessary.  (working to improve)
+- Detects "stalls" by monitoring the file size every 10 seconds
 - Should be able to start and "forget about it" and simply watch the results on plex (or whatever you use)
 
 ###Caveats:
