@@ -3,14 +3,6 @@ using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.CommandLineUtils;
 
-//
-// TODO
-//
-// split single recording and loop out
-// add verification steps for each class, including main startup
-// make sure authentication is error checked
-
-
 namespace StreamCapture
 {
     

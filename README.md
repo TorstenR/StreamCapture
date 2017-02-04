@@ -1,23 +1,25 @@
-#Program to capture streams from live247 using .Net Core
+#Program to capture streams from live247 (and apparently other Smoothstream offerings) using .Net Core
 
 For the longest time I was frustrated at not being able to reasonably record streams from Live247 to watch my favorite sporting events.  That frustration is what this little diddy was born out of.  
 
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ###News:
+- Feb 3, 2017: Finally added long overdue error checking.  It's not yet complete, but at least it'll catch the big configuration errors right away.
 - Feb 2, 2017: I've just posted a pretty major refactor which should make the code more readable.  In additon, there is now a new .json file which defines the keywords and the like.  Please read the documentation below for more information on this.
 - Feb 2, 2017: I tested on mac and it seemed to work great - after updated appconfig.json with the correct paths of course.
 
 ###Features:
 - Polls the schedule on a configurable schedule searching for keywords (and other info) you've provided
-- Spawns a separate thread and captures stream using ffmpeg
-- Uses (limited) heuristics to determine channel quality and switches up mid-stream if necessary.  (working to improve)
+- Allows "pre" and "post" minutes to be specified per show.  (e.g. some events potentially have overtime, some don't...)
+- Spawns a separate thread and captures stream using ffmpeg, comlete with seperate log file
+- When multiple channels are available, it orders them based on some heuristics (e.g. higher quality first)
+- Uses (limited) heuristics to determine channel quality and switches to better channels if necessary.  (working to improve)
 - Should be able to start and "forget about it" and simply watch the results on plex (or whatever you use)
 
 ###Caveats:
 - Not very well commented
-- Almost zero exception or error handling.  If something goes wrong (including config), you'll have to read the stack trace
-- Has limited testing I'm using it, but it's not been "in production" very long.  Read: probably has a crap ton of bugs....
+- Has limited testing I'm using it, but it's not been "in production" very long.  
 - My plex did not recognize the embedded meta-data.  Not sure why....
 
 ###Areas to help:
@@ -43,7 +45,8 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 - "numberOfRetries" - Number of time we retry after ffmpeg capture error before giving up
 - "schedTimeOffset" - Schedule appears to be in EST.  This is the offset for local time.  (e.g. PST is -3)
 - "logPath" - Puts the capture thread logs here
-- "outputPath" - Puts the capture video file here (I go directly to my NAS)
+- "outputPath" - Puts the capture video file here (I capture locally, and then move to my NAS - see next param)
+- "nasPath" - Optional parameter will will copy the final .mp4 file to this location (in my case, my NAS)
 - "ffmpegPath" - location of ffmpeg.exe
 - "authURL" - URL to get authentication token for stream
 - "captureCmdLine" - Cmd line for ffmpeg capture. Items in brackets should be self explanatory
@@ -59,6 +62,13 @@ If running in Mode 2, keywords.json is how it's decided which shows to record ba
 - "postMinutes": number of minutes to record late by
 - "langPref": used to order the channels by. (which one to try first, and then 2nd of there's a problem etc)  For example, I use "US" to get the english channels ahead of "DE".  (not sure the full list, see schedule)
 - "qualityPref": also used to order channels.  I use "720p" so it tries to get HD first.
+
+###Troubleshooting###
+- First thing is to check your log file/s for what might have gone wrong.  Most often, this will lead you in the right direction.
+- Double check that .Net Core is working right by compiling and running "hello world" or whatever.
+- Make sure ffmpeg is installed and working correctly
+- Make sure you have disk space and that your internet connection is good.  This is especially true when capturing multiple streams at once.
+- If all else fails, use your debugger (VS Code?) and see what's going on.
 
 ###Compiling:
 - Go to http://www.dot.net and download the right .NET Core for your platform
