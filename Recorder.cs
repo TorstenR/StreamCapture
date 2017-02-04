@@ -22,7 +22,7 @@ namespace StreamCapture
             //Test Authentication
             Task<string> authTask = Authenticate();
             string hashValue=authTask.Result;  
-            if(!!string.IsNullOrEmpty(hashValue))                     
+            if(string.IsNullOrEmpty(hashValue))                     
             {
                 Console.WriteLine($"ERROR: Unable to authenticate.  Check username and password?  Bad auth URL?");
                 Environment.Exit(1);                
@@ -134,10 +134,11 @@ namespace StreamCapture
             //Authenticate
             Task<string> authTask = Authenticate();
             string hashValue=authTask.Result;
-            if(!!string.IsNullOrEmpty(hashValue))                     
+            if(string.IsNullOrEmpty(hashValue))                     
             {
                 Console.WriteLine($"ERROR: Unable to authenticate.  Check username and password?");
                 Environment.Exit(1);               
+            }
 
             //Capture stream
             int numFiles=CaptureStream(logWriter,hashValue,recordInfo);
@@ -148,7 +149,6 @@ namespace StreamCapture
             //Cleanup
             logWriter.WriteLine($"{DateTime.Now}: Done Capturing - Cleaning up");
             logWriter.Dispose();
-            }
         }
         private async Task<string> Authenticate()
         {
