@@ -215,10 +215,11 @@ namespace StreamCapture
             //Build ffmpeg capture command line with first channel and get things rolling
             string outputPath=BuildOutputPath(recordInfo.fileName+currentFileNum);
             string cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,outputPath);
-            logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} and expect to be done {captureTargetEnd}.");
-            logWriter.WriteLine($"Cmd: {configuration["ffmpegPath"]} {cmdLineArgs}");
+            logWriter.WriteLine($"=========================================");
+            logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} on channel {currentChannel.number}.  Expect to be done by {captureTargetEnd}.");
+            logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
             Process p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,recordInfo.GetDuration(),outputPath);  
-            logWriter.WriteLine($"{DateTime.Now}: After execution.  Exit Code: {p.ExitCode}");
+            logWriter.WriteLine($"{DateTime.Now}: Exited Capture.  Exit Code: {p.ExitCode}");
 
             //
             //retry loop if we're not done yet
@@ -226,7 +227,7 @@ namespace StreamCapture
             int numRetries=Convert.ToInt32(configuration["numberOfRetries"]);
             for(int retryNum=0;DateTime.Now<captureTargetEnd && retryNum<numRetries;retryNum++)
             {           
-                logWriter.WriteLine($"{DateTime.Now}: Capture Failed for channel {currentChannel.number}. Last failure {lastStartedTime}  Retry {retryNum+1} of {configuration["numberOfRetries"]}");
+                logWriter.WriteLine($"{DateTime.Now}: Capture Failed for channel {currentChannel.number}. Retry {retryNum+1} of {configuration["numberOfRetries"]}");
 
                 //Update channel history
                 channelHistory.GetChannelHistoryInfo(currentChannel.number).errors+=1;
@@ -240,7 +241,7 @@ namespace StreamCapture
                 if((DateTime.Now-lastStartedTime) < fifteenMin && !recordInfo.bestChannelSetFlag)
                 {
                     //Set quality ratio for current channel
-                    int minutes = (DateTime.Now-lastStartedTime).Minutes;
+                    double minutes = (DateTime.Now-lastStartedTime).TotalMinutes;
                     double qualityRatio=minutes/currentChannelFailureCount;
                     currentChannel.ratio=qualityRatio;
                     logWriter.WriteLine($"{DateTime.Now}: Setting quality ratio {qualityRatio} for channel {currentChannel.number}");
@@ -269,7 +270,8 @@ namespace StreamCapture
                 //Now get things setup and going again
                 outputPath=BuildOutputPath(recordInfo.fileName+currentFileNum);
                 cmdLineArgs=BuildCaptureCmdLineArgs(currentChannel.number,hashValue,outputPath);
-                logWriter.WriteLine($"{DateTime.Now}: Starting Capture (again): {configuration["ffmpegPath"]} {cmdLineArgs}");
+                logWriter.WriteLine($"{DateTime.Now}: Starting Capture (again) on channel {currentChannel.number}");
+                logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
                 p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,outputPath);
             }
             logWriter.WriteLine($"{DateTime.Now}: Finished Capturing Stream.");

@@ -82,9 +82,9 @@ namespace StreamCapture
                     recordInfo.langPref = keywordInfo.langPref;
 
                     //Clean up description, and then use as filename
-                    recordInfo.fileName = scheduleShow.name + scheduleShow.id;
-                    string myChars = @"|'/\ ,<>#@!+_-&^*()~`";
-                    string invalidChars = myChars + new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+                    recordInfo.fileName = scheduleShow.name.Replace(' ','_');
+                    string myChars = @"|'/\ ,<>#@!+&^*()~`";
+                    string invalidChars = myChars + new string(Path.GetInvalidFileNameChars());
                     foreach (char c in invalidChars)
                     {
                         recordInfo.fileName = recordInfo.fileName.Replace(c.ToString(), "");
