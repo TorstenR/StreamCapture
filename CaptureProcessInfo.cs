@@ -11,12 +11,14 @@ namespace StreamCapture
         public string outputPath { get; set;}
         public long fileSize { get; set; }
         public long acceptableRate { get; set; }
+        public int interval { get; set;}
         public TextWriter logWriter { get; set; }
 
-        public CaptureProcessInfo(Process _p,long _ar,DateTime _td,string _o,TextWriter _l)
+        public CaptureProcessInfo(Process _p,long _ar,int _i,DateTime _td,string _o,TextWriter _l)
         {
             process=_p;
             acceptableRate=_ar;
+            interval=_i;
             timerDone = _td;
             outputPath=_o;
             fileSize=0;

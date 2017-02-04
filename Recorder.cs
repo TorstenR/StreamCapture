@@ -362,13 +362,16 @@ namespace StreamCapture
             CaptureProcessInfo captureProcessInfo = null;
             if(timeout>0)
             {
+                int interval=10;  //# of seconds between timer/file checks
+                long acceptableRate=3000000;
+
                 //create capture process info
                 DateTime timerDone=DateTime.Now.AddMinutes(timeout);
-                captureProcessInfo = new CaptureProcessInfo(process,90000000,timerDone,outputPath,logWriter);
+                captureProcessInfo = new CaptureProcessInfo(process,acceptableRate,interval,timerDone,outputPath,logWriter);
                 //2000000
 
                 //create timer
-                TimeSpan intervalTime = new TimeSpan(0, 0, 10); 
+                TimeSpan intervalTime = new TimeSpan(0, 0, interval); 
                 logWriter.WriteLine($"{DateTime.Now}: Settting Timer for {timeout} minutes in the future to kill process.");
                 captureTimer = new Timer(OnCaptureTimer, captureProcessInfo, intervalTime, intervalTime);
             }
@@ -417,7 +420,8 @@ namespace StreamCapture
                     if(fileSize <= (captureProcessInfo.fileSize + captureProcessInfo.acceptableRate))
                     {
                         killProcess=true;
-                        captureProcessInfo.logWriter.WriteLine($"{DateTime.Now}: ERROR: File size no longer growing. (Rate: {(fileSize-captureProcessInfo.fileSize)/10} bytes/s)  Killing capture process.");
+                        long bytesSec=(fileSize-captureProcessInfo.fileSize)/captureProcessInfo.interval;
+                        captureProcessInfo.logWriter.WriteLine($"{DateTime.Now}: ERROR: File size no longer growing. (Current Rate: ({bytesSec} bytes/s)  Killing capture process.");
                     }
                     captureProcessInfo.fileSize=fileSize;
                 }
