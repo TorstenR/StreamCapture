@@ -201,7 +201,7 @@ namespace StreamCapture
 
             //Marking time we started and when we should be done
             DateTime captureStarted = DateTime.Now;
-            DateTime captureTargetEnd = captureStarted.AddMinutes(recordInfo.GetDuration());
+            DateTime captureTargetEnd = recordInfo.GetStartDT().AddMinutes(recordInfo.GetDuration());
             DateTime lastStartedTime = captureStarted;
 
             //Getting channel list
