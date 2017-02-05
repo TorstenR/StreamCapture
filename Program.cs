@@ -135,7 +135,10 @@ namespace StreamCapture
             ValidateInt("appsettings.json","hoursInFuture",configuration["hoursInFuture"],0,48);             
            
             //Check retries
-            ValidateInt("appsettings.json","numberOfRetries",configuration["numberOfRetries"],1,50);             
+            ValidateInt("appsettings.json","numberOfRetries",configuration["numberOfRetries"],1,50);          
+
+            //Check retries
+            ValidateInt("appsettings.json","acceptableRate",configuration["acceptableRate"],1,6000000);                     
 
             //Check offset
             ValidateInt("appsettings.json","schedTimeOffset",configuration["schedTimeOffset"],-12,12);       
@@ -157,7 +160,7 @@ namespace StreamCapture
         {
             try
             {
-                int num=Convert.ToInt16(strInt);
+                int num=Convert.ToInt32(strInt);
                 if(num < lower || num > upper)
                 {
                     Console.WriteLine($"ERROR: '{paramName}' in {source} is invalid.  Should be >={lower} and <={upper}.");
