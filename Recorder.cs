@@ -203,6 +203,7 @@ namespace StreamCapture
             DateTime captureStarted = DateTime.Now;
             DateTime captureTargetEnd = recordInfo.GetStartDT().AddMinutes(recordInfo.GetDuration());
             DateTime lastStartedTime = captureStarted;
+            TimeSpan duration=captureTargetEnd-captureStarted;
 
             //Getting channel list
             ChannelInfo[] channelInfoArray=recordInfo.GetSortedChannels();
@@ -218,7 +219,7 @@ namespace StreamCapture
             logWriter.WriteLine($"=========================================");
             logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} on channel {currentChannel.number}.  Expect to be done by {captureTargetEnd}.");
             logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
-            Process p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,recordInfo.GetDuration(),outputPath);  
+            Process p = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)duration.TotalMinutes,outputPath);  
             logWriter.WriteLine($"{DateTime.Now}: Exited Capture.  Exit Code: {p.ExitCode}");
 
             //
