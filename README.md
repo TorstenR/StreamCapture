@@ -5,6 +5,7 @@ For the longest time I was frustrated at not being able to reasonably record str
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ###News:
+- Feb 5, 2017: Added the notion of network speed to determine best servers and channels.  There's even an up front general network speed test.  Yes, this means that you can put in multiple servers now in appconfig.  (in fact, it's a requirement)
 - Feb 3, 2017: Finally added long overdue error checking.  It's not yet complete, but at least it'll catch the big configuration errors right away.
 - Feb 2, 2017: I've just posted a pretty major refactor which should make the code more readable.  In additon, there is now a new .json file which defines the keywords and the like.  Please read the documentation below for more information on this.
 - Feb 2, 2017: I tested on mac and it seemed to work great - after updated appconfig.json with the correct paths of course.
@@ -15,6 +16,7 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 - Spawns a separate thread and captures stream using ffmpeg, comlete with seperate log file
 - Works cross platform.  (confirmed on Windows and Mac.  If you're using on nix...let me know please)
 - When multiple channels are available, it orders them based on some heuristics (e.g. higher quality first)
+- Cycles through multiple servers if supplied to find the fastest one
 - Uses (limited) heuristics to determine channel quality and switches to better channels if necessary.  (working to improve)
 - Detects "stalls" by monitoring the file size every 10 seconds
 - Should be able to start and "forget about it" and simply watch the results on plex (or whatever you use)
@@ -92,7 +94,9 @@ This explains how "Mode 2" works.  "Mode 1" is similar, but without the loop.  (
 - Grabs an authentication token
 - Wakes up and spawns ffmpeg to capture the stream in a separate process
 - Loops once a minute for duration 
-- If ffmpeg process has exited, then based on some crappy heuristics change the channel to see if we can do better
+- Monitor file size every 10 seconds and kill capture process if the rate falls below a threshold.
+- If ffmpeg process has exited, then based speed change the server to see if we can do better
+- If still having trouble, after going through all the servers, switch channels if multiple to find the fastest one.
 - If we've reached duration, kill ffmpeg capture
 - If we've captured to multiple files,  (this would happen if there were problem w/ the stream) using ffmpeg to concat them
 - Use ffmpeg to MUX the .ts file to mp4 as well as add embedded metadata
