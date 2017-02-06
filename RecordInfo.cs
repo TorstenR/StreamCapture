@@ -19,7 +19,6 @@ namespace StreamCapture
         public string qualityPref { get; set; }
         public string langPref { get; set; }
 
-        public bool bestChannelSetFlag { get; set; }
         public bool processSpawnedFlag  { get; set; }
 
         public Channels channels;
@@ -30,7 +29,6 @@ namespace StreamCapture
 
             //Init certain properties 
             id=DateTime.Now.Ticks.ToString();
-            bestChannelSetFlag=false;
             processSpawnedFlag=false;
             strDTOffset="0";
             qualityPref="";

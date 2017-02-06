@@ -12,7 +12,6 @@ namespace StreamCapture
         private Dictionary<string, RecordInfo> recordDict;
         private Schedule schedule;
         private Keywords keywords;
-        private ChannelHistory channelHistory;
 
         public Recordings(IConfiguration _configuration)
         {
@@ -20,7 +19,6 @@ namespace StreamCapture
             configuration = _configuration;
             schedule = new Schedule();
             keywords = new Keywords();
-            channelHistory = new ChannelHistory();
         }
 
         public void AddUpdateRecordInfo(string recordInfoKey,RecordInfo recordInfo)

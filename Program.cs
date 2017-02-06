@@ -61,6 +61,8 @@ namespace StreamCapture
 
         static private void VerifyCommandLineParams(CommandOption channels,CommandOption duration,CommandOption filename,CommandOption datetime)
         {
+            Console.WriteLine($"{DateTime.Now}: Verifying command line options passed in....");
+
             //Check channels
             try
             {
@@ -116,6 +118,8 @@ namespace StreamCapture
         }
         static private void VerifyAppsettings(IConfiguration configuration)
         {
+            Console.WriteLine($"{DateTime.Now}: Verifying appsettings....");
+
             //Check schedule check schedule
             try
             {
@@ -211,6 +215,6 @@ namespace StreamCapture
                 Console.WriteLine($"ERROR: ERROR '{fileTag}' in {source} is invalid.  Error: {e.Message}");
                 Environment.Exit(1);
             }              
-        }        
+        }    
     }
 }

@@ -11,6 +11,7 @@ namespace StreamCapture
         public string outputPath { get; set;}
         public long fileSize { get; set; }
         public long acceptableRate { get; set; }
+        public long avgKBytesSec { get; set; }
         public int interval { get; set;}
         public TextWriter logWriter { get; set; }
 
@@ -22,6 +23,7 @@ namespace StreamCapture
             timerDone = _td;
             outputPath=_o;
             fileSize=0;
+            avgKBytesSec=0;
             logWriter=_l;
         }
     }

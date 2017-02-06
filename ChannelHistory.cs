@@ -43,15 +43,35 @@ namespace StreamCapture
                 channelHistoryInfo.channel = channel;
                 channelHistoryInfo.hoursRecorded = 0;
                 channelHistoryInfo.recordingsAttempted = 0;
-                channelHistoryInfo.errors = 0;
                 channelHistoryInfo.lastAttempt = DateTime.Now;
                 channelHistoryInfo.lastSuccess = DateTime.Now;
                 channelHistoryInfo.activeFlag = true;
+                channelHistoryInfo.serverSpeed = new Dictionary<string,long>();
 
                 channelHistoryDict.Add(channel, channelHistoryInfo);
             }   
 
             return channelHistoryInfo;
+        }
+
+        public void SetServerAvgKBytesSec(string channel,string server,long avgKBytesSec)
+        {
+            ChannelHistoryInfo channelHistoryInfo=GetChannelHistoryInfo(channel);
+
+            //For backwards compat, make sure serverSpeed is init'd
+            if(channelHistoryInfo.serverSpeed==null)
+                channelHistoryInfo.serverSpeed = new Dictionary<string,long>();
+
+            long origAvgKBytesSec=0;
+            if(channelHistoryInfo.serverSpeed.TryGetValue(server,out origAvgKBytesSec))
+            {
+                avgKBytesSec=(avgKBytesSec+origAvgKBytesSec)/2;
+                channelHistoryInfo.serverSpeed[server]=avgKBytesSec;
+            }
+            else
+            {
+                channelHistoryInfo.serverSpeed.Add(server,avgKBytesSec);
+            }
         }
     }
 }
