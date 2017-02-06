@@ -6,20 +6,20 @@ namespace StreamCapture
 {
     public class Servers
     {
-        private List<ServerInfo> serverList;
+        private List<String> serverList;
 
         public Servers(string strServers)
         {
-            serverList = new List<ServerInfo>();
+            serverList = new List<string>();
 
             string[] serverArray = strServers.Split(',');
             foreach (string server in serverArray)
             {
-                serverList.Add(new ServerInfo(server,0));
+                serverList.Add(server);
             }
         }
 
-        public List<ServerInfo> GetServerList()
+        public List<string> GetServerList()
         {
             //return serverList.Select(s => s.server).ToArray();
             return serverList;

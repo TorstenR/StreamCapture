@@ -72,7 +72,6 @@ namespace StreamCapture
             ChannelInfo channelInfo = new ChannelInfo();
             channelInfo.number = channel;
             channelInfo.description = channel + " (" + quality + "/" + lang + ") ";
-            channelInfo.avgKBytesSec = 0;
             channelInfo.qualityTag = quality;
             channelInfo.lang = lang;
 

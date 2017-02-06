@@ -10,7 +10,7 @@ namespace StreamCapture
         private ChannelHistory channeHistory;
         private Servers servers;
         private RecordInfo recordInfo;
-        private List<Tuple<ServerInfo,ChannelInfo,long>> sortedTupleList;
+        private List<Tuple<string,ChannelInfo,long>> sortedTupleList;
 
 
         private int tupleIdx=0;
@@ -29,7 +29,7 @@ namespace StreamCapture
 
         public string GetServerName()
         {
-            return sortedTupleList[tupleIdx].Item1.server;
+            return sortedTupleList[tupleIdx].Item1;
         }
 
         public string GetChannelNumber()
@@ -40,16 +40,15 @@ namespace StreamCapture
         public void SetAvgKBytesSec(long avgKBytesSec)
         {
             ChannelInfo currentChannel=sortedTupleList[tupleIdx].Item2;
-            ServerInfo currentServer=sortedTupleList[tupleIdx].Item1;
+            string currentServer=sortedTupleList[tupleIdx].Item1;
 
-            currentChannel.avgKBytesSec = (currentChannel.avgKBytesSec+avgKBytesSec)/2;
-            currentServer.avgKBytesSec = (currentServer.avgKBytesSec+avgKBytesSec)/2;
+            //Replace avgKB w/ the updated value we just observed
+            sortedTupleList[tupleIdx]=new Tuple<string,ChannelInfo,long>(currentServer,currentChannel,avgKBytesSec);
 
-            logWriter.WriteLine($"{DateTime.Now}: Setting {currentChannel.avgKBytesSec}KB/s for channel {currentChannel.number} and {currentServer.avgKBytesSec}KB/s for server {currentServer.server}");
-
+            logWriter.WriteLine($"{DateTime.Now}: Setting {avgKBytesSec}KB/s for server/channel {currentServer}/{currentChannel.number}");
         }
 
-        public Tuple<ServerInfo,ChannelInfo,long>  GetNextServerChannel()
+        public Tuple<string,ChannelInfo,long>  GetNextServerChannel()
         {
                 //Make sure we don't have one already selected
                 if(bestTupleSelectedFlag)
@@ -59,7 +58,7 @@ namespace StreamCapture
                 tupleIdx++;
                 if(tupleIdx < sortedTupleList.Count)
                 {
-                    logWriter.WriteLine($"{DateTime.Now}: Switching to Server: {sortedTupleList[tupleIdx].Item1.server} Channel: {sortedTupleList[tupleIdx].Item2.number} Historical Rate: {sortedTupleList[tupleIdx].Item3}KB/s");
+                    logWriter.WriteLine($"{DateTime.Now}: Switching to Server: {sortedTupleList[tupleIdx].Item1} Channel: {sortedTupleList[tupleIdx].Item2.number} Historical Rate: {sortedTupleList[tupleIdx].Item3}KB/s");
                     return sortedTupleList[tupleIdx];
                 }
 
@@ -67,7 +66,7 @@ namespace StreamCapture
                 long bestAvgKB=0;
                 for(int idx=0;idx<sortedTupleList.Count;idx++)
                 {
-                    Tuple<ServerInfo,ChannelInfo,long> tuple=sortedTupleList[idx];
+                    Tuple<string,ChannelInfo,long> tuple=sortedTupleList[idx];
                     if(tuple.Item3>bestAvgKB)
                     {
                         bestAvgKB=tuple.Item3;
@@ -75,7 +74,7 @@ namespace StreamCapture
                     }
                 }
 
-                logWriter.WriteLine($"{DateTime.Now}: Now using Server: {sortedTupleList[tupleIdx].Item1.server} Channel: {sortedTupleList[tupleIdx].Item2.number} Historical Rate: {sortedTupleList[tupleIdx].Item3}KB/s for the rest of the capture");
+                logWriter.WriteLine($"{DateTime.Now}: Now using Server: {sortedTupleList[tupleIdx].Item1} Channel: {sortedTupleList[tupleIdx].Item2.number} Historical Rate: {sortedTupleList[tupleIdx].Item3}KB/s for the rest of the capture");
 
                 bestTupleSelectedFlag=true;
                 return sortedTupleList[tupleIdx];;
@@ -84,8 +83,8 @@ namespace StreamCapture
         private void BuildSortedTupleList()
         {
             //We'll sort inside of two major categories
-            List<Tuple<ServerInfo,ChannelInfo,long>> preferredChannelsList = new List<Tuple<ServerInfo,ChannelInfo,long>>();
-            List<Tuple<ServerInfo,ChannelInfo,long>> otherChannelsList = new List<Tuple<ServerInfo,ChannelInfo,long>>();
+            List<Tuple<string,ChannelInfo,long>> preferredChannelsList = new List<Tuple<string,ChannelInfo,long>>();
+            List<Tuple<string,ChannelInfo,long>> otherChannelsList = new List<Tuple<string,ChannelInfo,long>>();
 
             //Let's start by looping through the channels and updating the lists.  We'
             List<ChannelInfo> channelInfoLIst = recordInfo.channels.GetChannels();
@@ -103,38 +102,38 @@ namespace StreamCapture
             }
 
             //Final sorted list
-            sortedTupleList = new List<Tuple<ServerInfo,ChannelInfo,long>>();
+            sortedTupleList = new List<Tuple<string,ChannelInfo,long>>();
             sortedTupleList.AddRange(preferredChannelsList);
             sortedTupleList.AddRange(otherChannelsList);
 
             //Let's dump this
             logWriter.WriteLine($"{DateTime.Now}: Using the following order of server/channel Pairs:");
-            foreach(Tuple<ServerInfo,ChannelInfo,long> tuple in sortedTupleList)
+            foreach(Tuple<string,ChannelInfo,long> tuple in sortedTupleList)
             {
-                logWriter.WriteLine($"                    Server: {tuple.Item1.server} Channel: {tuple.Item2.description} Historical Rate: {tuple.Item3}KB/s");
+                logWriter.WriteLine($"                    Server: {tuple.Item1} Channel: {tuple.Item2.description} Historical Rate: {tuple.Item3}KB/s");
             }
         }
 
-        private void InsertChannelInfo(List<Tuple<ServerInfo,ChannelInfo,long>> tupleList,ChannelInfo channelInfo)
+        private void InsertChannelInfo(List<Tuple<string,ChannelInfo,long>> tupleList,ChannelInfo channelInfo)
         {
-            List<ServerInfo> serverList=servers.GetServerList();
-            foreach(ServerInfo serverInfo in serverList)
+            List<string> serverList=servers.GetServerList();
+            foreach(string server in serverList)
             {
-                long avgKBytesSec=channeHistory.GetAvgKBytesSec(serverInfo.server,channelInfo.number);
+                long avgKBytesSec=channeHistory.GetAvgKBytesSec(server,channelInfo.number);
 
                 //Let's insert appropriately
                 for(int index=0;index < tupleList.Count;index++)
                 {
-                    Tuple<ServerInfo,ChannelInfo,long> tuple = tupleList[index];
+                    Tuple<string,ChannelInfo,long> tuple = tupleList[index];
                     if(avgKBytesSec > tuple.Item3)
                     {
-                        tupleList.Insert(index,new Tuple<ServerInfo,ChannelInfo,long>(serverInfo,channelInfo,avgKBytesSec));
+                        tupleList.Insert(index,new Tuple<string,ChannelInfo,long>(server,channelInfo,avgKBytesSec));
                         return;
                     }
                 }
 
                 //For cases where this is the first one or avg was zero
-                tupleList.Add(new Tuple<ServerInfo,ChannelInfo,long>(serverInfo,channelInfo,avgKBytesSec));
+                tupleList.Add(new Tuple<string,ChannelInfo,long>(server,channelInfo,avgKBytesSec));
             }
         }
 
