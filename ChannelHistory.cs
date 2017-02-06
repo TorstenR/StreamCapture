@@ -73,5 +73,22 @@ namespace StreamCapture
                 channelHistoryInfo.serverSpeed.Add(server,avgKBytesSec);
             }
         }
+
+        public long GetAvgKBytesSec(string server,string channel)
+        {
+            ChannelHistoryInfo channelHistoryInfo=GetChannelHistoryInfo(channel);
+            
+            //Make sure serverSpeed dict exists
+            if(channelHistoryInfo.serverSpeed==null)
+                return 0;
+         
+            //See if there's an entry for this server
+            long avgKBytesSec;
+            if(channelHistoryInfo.serverSpeed.TryGetValue(server,out avgKBytesSec))
+                return avgKBytesSec;
+
+            //Oh well, just return 0 ifn ot found
+            return 0;
+        }
     }
 }

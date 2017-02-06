@@ -136,15 +136,18 @@ namespace StreamCapture
             }       
 
             //Check servers
-            try
+            string serverList=configuration["serverList"];
+            string captureCmdLine=configuration["captureCmdLine"];
+            if(string.IsNullOrEmpty(serverList) && captureCmdLine.Contains("[SERVER]"))
             {
-                string[] serverArray=configuration["serverList"].Split(',');
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine($"ERROR: 'serverList' in appsettings.json is invalid.  Should be in format server,server,...  Error: {e.Message}");
+                Console.WriteLine($"ERROR: 'serverList' is empty in appsettings, but 'captureCmdLine' is expecting '[SERVER]'");
                 Environment.Exit(1);
-            }              
+            }
+            if(!string.IsNullOrEmpty(serverList) && !captureCmdLine.Contains("[SERVER]"))
+            {
+                Console.WriteLine($"ERROR: 'serverList' has servers in appsettings, but 'captureCmdLine' does not have '[SERVER]'");
+                Environment.Exit(1);
+            }           
 
             //Check hours in future
             ValidateInt("appsettings.json","hoursInFuture",configuration["hoursInFuture"],0,48);             

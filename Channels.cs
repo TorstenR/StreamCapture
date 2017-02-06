@@ -30,6 +30,11 @@ namespace StreamCapture
             return channelInfo;
         }
 
+        public ChannelInfo GetChannel(int channelIdx)
+        {
+            return channelDict.ElementAt(channelIdx).Value;
+        }
+
         public List<ChannelInfo> GetChannels()
         {
             return channelDict.Values.ToList();
