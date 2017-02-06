@@ -258,7 +258,7 @@ namespace StreamCapture
             //retry loop if we're not done yet
             //
             int numRetries=Convert.ToInt32(configuration["numberOfRetries"]);
-            for(int retryNum=0;DateTime.Now<=captureTargetEnd && retryNum<numRetries;retryNum++)
+            for(int retryNum=0;DateTime.Now<=captureTargetEnd.AddSeconds(-10) && retryNum<numRetries;retryNum++)
             {           
                 logWriter.WriteLine($"{DateTime.Now}: Capture Failed for server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}. Retry {retryNum+1} of {configuration["numberOfRetries"]}");
 
@@ -272,10 +272,10 @@ namespace StreamCapture
                 TimeSpan fifteenMin=new TimeSpan(0,15,0);
                 if((DateTime.Now-lastStartedTime) < fifteenMin)
                 {
-                    //Set rate for current server and channel
+                    //Set rate for current server/channel pair
                     scs.SetAvgKBytesSec(captureProcessInfo.avgKBytesSec);
 
-                    //Get correct server and channel
+                    //Get correct server and channel (determined by heuristics)
                     scs.GetNextServerChannel();
                 }
 
