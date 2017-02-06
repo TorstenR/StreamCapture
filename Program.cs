@@ -133,7 +133,18 @@ namespace StreamCapture
             {
                 Console.WriteLine($"ERROR: 'scheduleCheck' in appsettings.json is invalid.  Should be in format hh,hh,hh...  Error: {e.Message}");
                 Environment.Exit(1);
-            }         
+            }       
+
+            //Check servers
+            try
+            {
+                string[] serverArray=configuration["serverList"].Split(',');
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine($"ERROR: 'serverList' in appsettings.json is invalid.  Should be in format server,server,...  Error: {e.Message}");
+                Environment.Exit(1);
+            }              
 
             //Check hours in future
             ValidateInt("appsettings.json","hoursInFuture",configuration["hoursInFuture"],0,48);             
