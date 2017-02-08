@@ -1,22 +1,31 @@
-#Program to capture streams from live247 using .Net Core
+#Program to capture streams from live247 (and apparently other Smoothstream offerings) using .Net Core
 
 For the longest time I was frustrated at not being able to reasonably record streams from Live247 to watch my favorite sporting events.  That frustration is what this little diddy was born out of.  
 
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ###News:
+- Feb 7, 2017: Email alerting now for schedule and completed shows via SMTP
+- Feb 5, 2017: Added the notion of network speed to determine best servers and channels.  There's even an up front general network speed test.  Yes, this means that you can put in multiple servers now in appconfig.  (in fact, it's a requirement)
+- Feb 3, 2017: Finally added long overdue error checking.  It's not yet complete, but at least it'll catch the big configuration errors right away.
 - Feb 2, 2017: I've just posted a pretty major refactor which should make the code more readable.  In additon, there is now a new .json file which defines the keywords and the like.  Please read the documentation below for more information on this.
+- Feb 2, 2017: I tested on mac and it seemed to work great - after updated appconfig.json with the correct paths of course.
 
 ###Features:
 - Polls the schedule on a configurable schedule searching for keywords (and other info) you've provided
-- Spawns a separate thread and captures stream using ffmpeg
-- Uses (limited) heuristics to determine channel quality and switches up mid-stream if necessary.  (working to improve)
+- Allows "pre" and "post" minutes to be specified per show.  (e.g. some events potentially have overtime, some don't...)
+- Spawns a separate thread and captures stream using ffmpeg, comlete with seperate log file
+- Works cross platform.  (confirmed on Windows and Mac.  If you're using on nix...let me know please)
+- When multiple channels are available, it orders them based on some heuristics (e.g. higher quality first)
+- Email alerting for what's scheduled and what's done
+- Cycles through multiple servers if supplied to find the fastest one
+- Uses (limited) heuristics to determine channel quality and switches to better channels if necessary.  (working to improve)
+- Detects "stalls" by monitoring the file size every 10 seconds
 - Should be able to start and "forget about it" and simply watch the results on plex (or whatever you use)
 
 ###Caveats:
 - Not very well commented
-- Almost zero exception or error handling.  If something goes wrong (including config), you'll have to read the stack trace
-- Has limited testing I'm using it, but it's not been "in production" very long.  Read: probably has a crap ton of bugs....
+- Has limited testing I'm using it, but it's not been "in production" very long.  
 - My plex did not recognize the embedded meta-data.  Not sure why....
 
 ###Areas to help:
@@ -42,7 +51,8 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 - "numberOfRetries" - Number of time we retry after ffmpeg capture error before giving up
 - "schedTimeOffset" - Schedule appears to be in EST.  This is the offset for local time.  (e.g. PST is -3)
 - "logPath" - Puts the capture thread logs here
-- "outputPath" - Puts the capture video file here (I go directly to my NAS)
+- "outputPath" - Puts the capture video file here (I capture locally, and then move to my NAS - see next param)
+- "nasPath" - Optional parameter will will copy the final .mp4 file to this location (in my case, my NAS)
 - "ffmpegPath" - location of ffmpeg.exe
 - "authURL" - URL to get authentication token for stream
 - "captureCmdLine" - Cmd line for ffmpeg capture. Items in brackets should be self explanatory
@@ -58,6 +68,13 @@ If running in Mode 2, keywords.json is how it's decided which shows to record ba
 - "postMinutes": number of minutes to record late by
 - "langPref": used to order the channels by. (which one to try first, and then 2nd of there's a problem etc)  For example, I use "US" to get the english channels ahead of "DE".  (not sure the full list, see schedule)
 - "qualityPref": also used to order channels.  I use "720p" so it tries to get HD first.
+
+###Troubleshooting###
+- First thing is to check your log file/s for what might have gone wrong.  Most often, this will lead you in the right direction.
+- Double check that .Net Core is working right by compiling and running "hello world" or whatever.
+- Make sure ffmpeg is installed and working correctly
+- Make sure you have disk space and that your internet connection is good.  This is especially true when capturing multiple streams at once.
+- If all else fails, use your debugger (VS Code?) and see what's going on.
 
 ###Compiling:
 - Go to http://www.dot.net and download the right .NET Core for your platform
@@ -79,7 +96,9 @@ This explains how "Mode 2" works.  "Mode 1" is similar, but without the loop.  (
 - Grabs an authentication token
 - Wakes up and spawns ffmpeg to capture the stream in a separate process
 - Loops once a minute for duration 
-- If ffmpeg process has exited, then based on some crappy heuristics change the channel to see if we can do better
+- Monitor file size every 10 seconds and kill capture process if the rate falls below a threshold.
+- If ffmpeg process has exited, then based speed change the server to see if we can do better
+- If still having trouble, after going through all the servers, switch channels if multiple to find the fastest one.
 - If we've reached duration, kill ffmpeg capture
 - If we've captured to multiple files,  (this would happen if there were problem w/ the stream) using ffmpeg to concat them
 - Use ffmpeg to MUX the .ts file to mp4 as well as add embedded metadata

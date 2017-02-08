@@ -30,6 +30,11 @@ namespace StreamCapture
             return channelInfo;
         }
 
+        public ChannelInfo GetChannel(int channelIdx)
+        {
+            return channelDict.ElementAt(channelIdx).Value;
+        }
+
         public List<ChannelInfo> GetChannels()
         {
             return channelDict.Values.ToList();
@@ -67,7 +72,6 @@ namespace StreamCapture
             ChannelInfo channelInfo = new ChannelInfo();
             channelInfo.number = channel;
             channelInfo.description = channel + " (" + quality + "/" + lang + ") ";
-            channelInfo.ratio = 0;
             channelInfo.qualityTag = quality;
             channelInfo.lang = lang;
 

@@ -12,7 +12,6 @@ namespace StreamCapture
         private Dictionary<string, RecordInfo> recordDict;
         private Schedule schedule;
         private Keywords keywords;
-        private ChannelHistory channelHistory;
 
         public Recordings(IConfiguration _configuration)
         {
@@ -20,7 +19,6 @@ namespace StreamCapture
             configuration = _configuration;
             schedule = new Schedule();
             keywords = new Keywords();
-            channelHistory = new ChannelHistory();
         }
 
         public void AddUpdateRecordInfo(string recordInfoKey,RecordInfo recordInfo)
@@ -82,9 +80,9 @@ namespace StreamCapture
                     recordInfo.langPref = keywordInfo.langPref;
 
                     //Clean up description, and then use as filename
-                    recordInfo.fileName = scheduleShow.name + scheduleShow.id;
-                    string myChars = @"|'/\ ,<>#@!+_-&^*()~`";
-                    string invalidChars = myChars + new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+                    recordInfo.fileName = scheduleShow.name.Replace(' ','_');
+                    string myChars = @"|'/\ ,<>#@!+&^*()~`";
+                    string invalidChars = myChars + new string(Path.GetInvalidFileNameChars());
                     foreach (char c in invalidChars)
                     {
                         recordInfo.fileName = recordInfo.fileName.Replace(c.ToString(), "");
