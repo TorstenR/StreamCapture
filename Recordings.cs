@@ -81,7 +81,7 @@ namespace StreamCapture
 
                     //Clean up description, and then use as filename
                     recordInfo.fileName = scheduleShow.name.Replace(' ','_');
-                    string myChars = @"|'/\ ,<>#@!+&^*()~`";
+                    string myChars = @"|'/\ ,<>#@!+&^*()~`;";
                     string invalidChars = myChars + new string(Path.GetInvalidFileNameChars());
                     foreach (char c in invalidChars)
                     {
