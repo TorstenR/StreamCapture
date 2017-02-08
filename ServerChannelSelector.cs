@@ -58,7 +58,7 @@ namespace StreamCapture
                 tupleIdx++;
                 if(tupleIdx < sortedTupleList.Count)
                 {
-                    logWriter.WriteLine($"{DateTime.Now}: Switching Server/Channel Pairs: {sortedTupleList[tupleIdx].Item1}/{sortedTupleList[tupleIdx].Item2.number} Historical Rate: {sortedTupleList[tupleIdx].Item3}KB/s");
+                    logWriter.WriteLine($"{DateTime.Now}: Switching to Server: {sortedTupleList[tupleIdx].Item1} Channel: {sortedTupleList[tupleIdx].Item2.number} Historical Rate: {sortedTupleList[tupleIdx].Item3}KB/s");
                     return sortedTupleList[tupleIdx];
                 }
 
@@ -74,7 +74,7 @@ namespace StreamCapture
                     }
                 }
 
-                logWriter.WriteLine($"{DateTime.Now}: Now using Server/Channel Pair: {sortedTupleList[tupleIdx].Item1}/{sortedTupleList[tupleIdx].Item2.number} Historical Rate: {sortedTupleList[tupleIdx].Item3}KB/s for the rest of the capture");
+                logWriter.WriteLine($"{DateTime.Now}: Now using Server: {sortedTupleList[tupleIdx].Item1} Channel: {sortedTupleList[tupleIdx].Item2.number} Historical Rate: {sortedTupleList[tupleIdx].Item3}KB/s for the rest of the capture");
 
                 bestTupleSelectedFlag=true;
                 return sortedTupleList[tupleIdx];;
@@ -110,7 +110,7 @@ namespace StreamCapture
             logWriter.WriteLine($"{DateTime.Now}: Using the following order of server/channel Pairs:");
             foreach(Tuple<string,ChannelInfo,long> tuple in sortedTupleList)
             {
-                logWriter.WriteLine($"                   Server: {tuple.Item1} Channel: {tuple.Item2.description} Historical Rate: {tuple.Item3}KB/s");
+                logWriter.WriteLine($"                    Server: {tuple.Item1} Channel: {tuple.Item2.description} Historical Rate: {tuple.Item3}KB/s");
             }
         }
 

@@ -4,7 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.CommandLineUtils;
 
 namespace StreamCapture
-{   
+{
+    
     public class Program
     {
         public static void Main(string[] args)
@@ -149,10 +150,7 @@ namespace StreamCapture
             }           
 
             //Check hours in future
-            ValidateInt("appsettings.json","hoursInFuture",configuration["hoursInFuture"],0,48);   
-
-            //Check rention days     
-            ValidateInt("appsettings.json","retentionDays",configuration["retentionDays"],1,120);        
+            ValidateInt("appsettings.json","hoursInFuture",configuration["hoursInFuture"],0,48);             
            
             //Check retries
             ValidateInt("appsettings.json","numberOfRetries",configuration["numberOfRetries"],1,50);          
