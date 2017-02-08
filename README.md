@@ -5,6 +5,7 @@ For the longest time I was frustrated at not being able to reasonably record str
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ###News:
+- Feb 7, 2017: Email alerting now for schedule and completed shows via SMTP
 - Feb 5, 2017: Added the notion of network speed to determine best servers and channels.  There's even an up front general network speed test.  Yes, this means that you can put in multiple servers now in appconfig.  (in fact, it's a requirement)
 - Feb 3, 2017: Finally added long overdue error checking.  It's not yet complete, but at least it'll catch the big configuration errors right away.
 - Feb 2, 2017: I've just posted a pretty major refactor which should make the code more readable.  In additon, there is now a new .json file which defines the keywords and the like.  Please read the documentation below for more information on this.
@@ -16,6 +17,7 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 - Spawns a separate thread and captures stream using ffmpeg, comlete with seperate log file
 - Works cross platform.  (confirmed on Windows and Mac.  If you're using on nix...let me know please)
 - When multiple channels are available, it orders them based on some heuristics (e.g. higher quality first)
+- Email alerting for what's scheduled and what's done
 - Cycles through multiple servers if supplied to find the fastest one
 - Uses (limited) heuristics to determine channel quality and switches to better channels if necessary.  (working to improve)
 - Detects "stalls" by monitoring the file size every 10 seconds

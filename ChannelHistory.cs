@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Newtonsoft.Json;
 using System.IO;
 
@@ -7,7 +7,7 @@ namespace StreamCapture
 {
     public class ChannelHistory
     {
-        Dictionary<string, ChannelHistoryInfo> channelHistoryDict;
+        ConcurrentDictionary<string, ChannelHistoryInfo> channelHistoryDict;
         static readonly object _lock = new object();  //used to lock the json load and save portion
 
         public ChannelHistory()
@@ -16,12 +16,12 @@ namespace StreamCapture
             {
                 lock (_lock)
                 {
-                    channelHistoryDict = JsonConvert.DeserializeObject<Dictionary<string, ChannelHistoryInfo>>(File.ReadAllText("channelhistory.json"));
+                    channelHistoryDict = JsonConvert.DeserializeObject<ConcurrentDictionary<string, ChannelHistoryInfo>>(File.ReadAllText("channelhistory.json"));
                 }
             }
             catch(Exception)
             {
-                channelHistoryDict = new Dictionary<string, ChannelHistoryInfo>();
+                channelHistoryDict = new ConcurrentDictionary<string, ChannelHistoryInfo>();
             }
         }
 
@@ -46,9 +46,9 @@ namespace StreamCapture
                 channelHistoryInfo.lastAttempt = DateTime.Now;
                 channelHistoryInfo.lastSuccess = DateTime.Now;
                 channelHistoryInfo.activeFlag = true;
-                channelHistoryInfo.serverSpeed = new Dictionary<string,long>();
+                channelHistoryInfo.serverSpeed = new ConcurrentDictionary<string,long>();
 
-                channelHistoryDict.Add(channel, channelHistoryInfo);
+                channelHistoryDict.TryAdd(channel, channelHistoryInfo);
             }   
 
             return channelHistoryInfo;
@@ -60,7 +60,7 @@ namespace StreamCapture
 
             //For backwards compat, make sure serverSpeed is init'd
             if(channelHistoryInfo.serverSpeed==null)
-                channelHistoryInfo.serverSpeed = new Dictionary<string,long>();
+                channelHistoryInfo.serverSpeed = new ConcurrentDictionary<string,long>();
 
             long origAvgKBytesSec=0;
             if(channelHistoryInfo.serverSpeed.TryGetValue(server,out origAvgKBytesSec))
@@ -70,7 +70,7 @@ namespace StreamCapture
             }
             else
             {
-                channelHistoryInfo.serverSpeed.Add(server,avgKBytesSec);
+                channelHistoryInfo.serverSpeed.TryAdd(server,avgKBytesSec);
             }
         }
 

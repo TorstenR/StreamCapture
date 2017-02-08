@@ -150,6 +150,9 @@ namespace StreamCapture
             //Dump
             DumpRecordInfo(logWriter,recordInfo);
 
+            //Send alert mail
+            new Mailer().SendNewShowMail(configuration,recordInfo);
+            
             //Wait here until we're ready to start recording
             if(recordInfo.strStartDT != null)
             {
@@ -178,6 +181,9 @@ namespace StreamCapture
             //Cleanup
             logWriter.WriteLine($"{DateTime.Now}: Done Capturing - Cleaning up");
             logWriter.Dispose();
+
+            //Send alert mail
+            new Mailer().SendShowReadyMail(configuration,recordInfo);
         }
         private async Task<string> Authenticate()
         {
