@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 
 namespace StreamCapture
@@ -7,28 +8,29 @@ namespace StreamCapture
     public class FileManager
     {
         IConfiguration configuration;
-        public FileManager(IConfiguration _c)
+        TextWriter logWriter;
+        public FileManager(IConfiguration _c,TextWriter _lw)
         {
             configuration=_c;
+            logWriter=_lw;
         }
 
-        public void ConcatFiles(TextWriter logWriter,int numFiles,string fileName)
+        public void ConcatFiles(Files files)
         {
             //Concat if more than one file
-            logWriter.WriteLine($"{DateTime.Now}: Num Files: {(numFiles+1)}");
+            int numFiles=files.GetNumberOfFiles();
+            logWriter.WriteLine($"{DateTime.Now}: Num Files: {numFiles}");
             if(numFiles > 0)
             {
-                string outputPath = configuration["outputPath"];
-                string outputFile=Path.Combine(outputPath,fileName+".ts");
-
-                //make fileist
-                string fileList = Path.Combine(outputPath,fileName+"0.ts");
+                //make filelist
+                List<FileInfo> fileInfoList = files.GetFileInfoList();
+                string concatList=fileInfoList[0].GetFullFileWithPath();
                 for(int i=1;i<=numFiles;i++)
-                    fileList=fileList+"|"+Path.Combine(outputPath,fileName+i+".ts");
+                    concatList=concatList+"|"+fileInfoList[i].GetFullFileWithPath();;
 
                 //"concatCmdLine": "[FULLFFMPEGPATH] -i \"concat:[FILELIST]\" -c copy [FULLOUTPUTPATH]",
                 string cmdLineArgs = configuration["concatCmdLine"];
-                cmdLineArgs=cmdLineArgs.Replace("[FILELIST]",fileList);
+                cmdLineArgs=cmdLineArgs.Replace("[FILELIST]",concatList);
                 cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",outputFile);
 
                 //Run command to concat
@@ -37,7 +39,7 @@ namespace StreamCapture
             }
         }
 
-        public void MuxFile(TextWriter logWriter,int numFiles,string fileName,string metadata)
+        public void MuxFile(int numFiles,string fileName,string metadata)
         {
             string outputPath = configuration["outputPath"];
 
@@ -64,7 +66,7 @@ namespace StreamCapture
             new ProcessManager(configuration).ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
         }
 
-        public void PublishAndCleanUpAfterCapture(TextWriter logWriter,int numFiles,string fileName)
+        public void PublishAndCleanUpAfterCapture(int numFiles,string fileName)
         {
             string outputPath = configuration["outputPath"];
 
