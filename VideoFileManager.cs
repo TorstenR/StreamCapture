@@ -1,25 +1,36 @@
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 
 namespace StreamCapture
 {
-    public class FileManager
+    public class VideoFileManager
     {
         IConfiguration configuration;
         TextWriter logWriter;
-        public FileManager(IConfiguration _c,TextWriter _lw)
+        VideoFiles files;
+        public VideoFileManager(IConfiguration _c,TextWriter _lw,string _fn)
         {
             configuration=_c;
             logWriter=_lw;
+            files = new VideoFiles(_fn);
         }
 
-        public void ConcatFiles(Files files)
+        public VideoFileInfo AddCaptureFile(string _baseFilePath)
+        {
+            return files.AddCaptureFile(_baseFilePath);
+        }
+
+        public int GetNumberOfFiles()
+        {
+            return files.numberOfFiles;
+        }
+
+        public void ConcatFiles()
         {
             //make filelist
             string concatList=files.fileCaptureList[0].GetFullFile();
-            for(int i=1;i<=numFiles;i++)
+            for(int i=1;i<files.fileCaptureList.Count;i++)
                 concatList=concatList+"|"+files.fileCaptureList[i];
 
             //resulting concat file
@@ -35,14 +46,17 @@ namespace StreamCapture
             new ProcessManager(configuration).ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
         }
 
-        public void MuxFile(Files files,string metadata)
+        public void MuxFile(string metadata)
         {
             //Get the right input file
-            FileInfo inputFile;
+            VideoFileInfo inputFile;
             if(files.numberOfFiles>1)
                 inputFile=files.muxedFile;
             else
                 inputFile=files.fileCaptureList[0];
+
+            //Set
+            files.SetMuxedFile(configuration["outputPath"]);
 
             // "muxCmdLine": "[FULLFFMPEGPATH] -i [VIDEOFILE] -acodec copy -vcodec copy [FULLOUTPUTPATH]"
             string cmdLineArgs = configuration["muxCmdLine"];
@@ -55,7 +69,7 @@ namespace StreamCapture
             new ProcessManager(configuration).ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
         }
 
-        public void PublishAndCleanUpAfterCapture(Files files)
+        public void PublishAndCleanUpAfterCapture()
         {
             //If NAS path exists, move file mp4 file there
             string nasPath = configuration["nasPath"];
@@ -70,42 +84,6 @@ namespace StreamCapture
             if(File.Exists(files.muxedFile.GetFullFile()))
             {
                 files.DeleteCapturedFiles();
-            }
-        }
-
-        public void CleanOldFiles()
-        {
-            string logPath = configuration["logPath"];
-            string outputPath = configuration["outputPath"];
-            string nasPath = configuration["nasPath"];
-            int retentionDays = Convert.ToInt16(configuration["retentionDays"]);
-            
-            DateTime cutDate=DateTime.Now.AddDays(retentionDays*-1);
-            Console.WriteLine($"{DateTime.Now}: Checking for files older than {cutDate}");
-
-            try
-            {
-                RemoveOldFiles(logPath,cutDate);
-                RemoveOldFiles(outputPath,cutDate);
-                if(!string.IsNullOrEmpty(nasPath))
-                    RemoveOldFiles(nasPath,cutDate);
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine($"{DateTime.Now}: ERROR: Problem cleaning up old files.  Error: {e.Message}");
-            }
-        }
-
-        private void RemoveOldFiles(string path,DateTime asOfDate)
-        {
-            string[] fileList=Directory.GetFiles(path);
-            foreach(string file in fileList)
-            {
-                if(File.GetCreationTime(file) < asOfDate)
-                {
-                    Console.WriteLine($"{DateTime.Now}: Removing old file {file} as it is too old  ({File.GetCreationTime(file)})");
-                    File.Delete(file);
-                }
             }
         }
     }

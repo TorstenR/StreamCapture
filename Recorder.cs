@@ -127,7 +127,7 @@ namespace StreamCapture
                 }
 
                 //Since we're awake, let's see if there are any files needing cleaning up
-                new FileManager(configuration).CleanOldFiles();
+                CleanOldFiles();
 
                 //Wait
                 TimeSpan timeToWait = nextRecord - DateTime.Now;
@@ -174,14 +174,18 @@ namespace StreamCapture
                 Environment.Exit(1);               
             }
 
+            //We need to manage our resulting files
+            VideoFileManager videoFileManager = new VideoFileManager(configuration,logWriter,recordInfo.fileName);            
+
             //Capture stream
-            int numFiles=CaptureStream(logWriter,hashValue,recordInfo);
+            CaptureStream(logWriter,hashValue,recordInfo,videoFileManager);
 
             //Let's take care of publishing the video files
-            FileManager fileManager = new FileManager(configuration);
-            fileManager.ConcatFiles(logWriter,numFiles,recordInfo.fileName);
-            fileManager.MuxFile(logWriter,numFiles,recordInfo.fileName,recordInfo.description);
-            fileManager.PublishAndCleanUpAfterCapture(logWriter,numFiles,recordInfo.fileName);
+
+            if(videoFileManager.GetNumberOfFiles()>1)
+                videoFileManager.ConcatFiles();
+            videoFileManager.MuxFile(recordInfo.description);
+            videoFileManager.PublishAndCleanUpAfterCapture();
 
             //Cleanup
             logWriter.WriteLine($"{DateTime.Now}: Done Capturing");
@@ -230,10 +234,8 @@ namespace StreamCapture
             return hashValue;
         }
      
-        private int CaptureStream(TextWriter logWriter,string hashValue,RecordInfo recordInfo)
+        private void CaptureStream(TextWriter logWriter,string hashValue,RecordInfo recordInfo,VideoFileManager videoFileManager)
         {
-            int currentFileNum = 0;
-
             //Process manager for ffmpeg
             ProcessManager processManager = new ProcessManager(configuration);
                         
@@ -259,13 +261,15 @@ namespace StreamCapture
             channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).recordingsAttempted+=1;
             channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).lastAttempt=DateTime.Now;
 
+            //Build output file
+            VideoFileInfo videoFileInfo=videoFileManager.AddCaptureFile(configuration["outputPath"]);
+
             //Build ffmpeg capture command line with first channel and get things rolling
-            string outputPath=BuildOutputPath(recordInfo.fileName);
-            string cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,outputPath);
+            string cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,videoFileInfo.GetFullFile());
             logWriter.WriteLine($"=========================================");
             logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} on server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}.  Expect to be done by {captureTargetEnd}.");
             logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
-            CaptureProcessInfo captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)duration.TotalMinutes,outputPath);  
+            CaptureProcessInfo captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)duration.TotalMinutes,videoFileInfo.GetFullFile());  
             logWriter.WriteLine($"{DateTime.Now}: Exited Capture.  Exit Code: {captureProcessInfo.process.ExitCode}");
 
             //
@@ -278,9 +282,6 @@ namespace StreamCapture
 
                 //Set new avg streaming rate for channel history    
                 channelHistory.SetServerAvgKBytesSec(scs.GetChannelNumber(),scs.GetServerName(),captureProcessInfo.avgKBytesSec);
-                
-                //file number
-                currentFileNum++;
 
                 //Go to next channel if channel has been alive for less than 15 minutes
                 TimeSpan fifteenMin=new TimeSpan(0,15,0);
@@ -304,12 +305,14 @@ namespace StreamCapture
                 channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).lastAttempt=DateTime.Now;
                 channelHistory.Save();
 
+                //Build output file
+                videoFileInfo=videoFileManager.AddCaptureFile(configuration["outputPath"]);                
+
                 //Now get capture setup and going again
-                outputPath=BuildOutputPath(recordInfo.fileName+currentFileNum);
-                cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,outputPath);
+                cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,videoFileInfo.GetFullFile());
                 logWriter.WriteLine($"{DateTime.Now}: Starting Capture (again) on server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}");
                 logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
-                captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,outputPath);
+                captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,videoFileInfo.GetFullFile());
             }
             logWriter.WriteLine($"{DateTime.Now}: Finished Capturing Stream.");             
 
@@ -319,22 +322,6 @@ namespace StreamCapture
             channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).lastSuccess=DateTime.Now;
             channelHistory.SetServerAvgKBytesSec(scs.GetChannelNumber(),scs.GetServerName(),captureProcessInfo.avgKBytesSec);      
             channelHistory.Save();
-
-            return currentFileNum;
-        }
-
-        private string BuildOutputPath(string fileName)
-        {
-            string outputPath = Path.Combine(configuration["outputPath"],fileName+".ts");
-
-            //Make sure file does not already exist.  If so, rename it.
-            if(File.Exists(outputPath))
-            {
-                string newFileName=Path.Combine(configuration["outputPath"],fileName+"_"+Path.GetRandomFileName()+".ts");
-                File.Move(outputPath,newFileName);
-            }
-
-            return outputPath;      
         }
 
         private string BuildCaptureCmdLineArgs(string server,string channel,string hashValue,string outputPath)
@@ -348,6 +335,42 @@ namespace StreamCapture
             cmdLineArgs=cmdLineArgs.Replace("[AUTHTOKEN]",hashValue);
 
             return cmdLineArgs;
-        }              
+        }     
+
+        private void CleanOldFiles()
+        {
+            string logPath = configuration["logPath"];
+            string outputPath = configuration["outputPath"];
+            string nasPath = configuration["nasPath"];
+            int retentionDays = Convert.ToInt16(configuration["retentionDays"]);
+            
+            DateTime cutDate=DateTime.Now.AddDays(retentionDays*-1);
+            Console.WriteLine($"{DateTime.Now}: Checking for files older than {cutDate}");
+
+            try
+            {
+                RemoveOldFiles(logPath,cutDate);
+                RemoveOldFiles(outputPath,cutDate);
+                if(!string.IsNullOrEmpty(nasPath))
+                    RemoveOldFiles(nasPath,cutDate);
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine($"{DateTime.Now}: ERROR: Problem cleaning up old files.  Error: {e.Message}");
+            }
+        }
+
+        private void RemoveOldFiles(string path,DateTime asOfDate)
+        {
+            string[] fileList=Directory.GetFiles(path);
+            foreach(string file in fileList)
+            {
+                if(File.GetCreationTime(file) < asOfDate)
+                {
+                    Console.WriteLine($"{DateTime.Now}: Removing old file {file} as it is too old  ({File.GetCreationTime(file)})");
+                    File.Delete(file);
+                }
+            }
+        }                 
     }
 }

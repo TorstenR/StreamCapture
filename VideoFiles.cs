@@ -3,31 +3,30 @@ using System.IO;
 
 namespace StreamCapture
 {
-    public class Files
+    public class VideoFiles
     {
         public string fileName { set; get; }
-        public List<FileInfo> fileCaptureList { set; get; }
-        public FileInfo concatFile { set; get; }
-        public FileInfo muxedFile { set; get; }
-        public FileInfo publishedfile { set; get; }
+        public List<VideoFileInfo> fileCaptureList { set; get; }
+        public VideoFileInfo concatFile { set; get; }
+        public VideoFileInfo muxedFile { set; get; }
+        public VideoFileInfo publishedfile { set; get; }
 
         public int numberOfFiles { set; get; }
 
-        public Files(string _fileName)
+        public VideoFiles(string _fileName)
         {
             fileName=_fileName;
             numberOfFiles=0;
-            fileCaptureList = new List<FileInfo>();
+            fileCaptureList = new List<VideoFileInfo>();
         }
-
-        public void AddCaptureFile(string _baseFilePath,int _fileNumber)
+        public VideoFileInfo AddCaptureFile(string _baseFilePath)
         {
-            FileInfo fileInfo=new FileInfo
+            VideoFileInfo fileInfo=new VideoFileInfo
             {
                 baseFileName=fileName,
                 exten=".ts",
-                fileNumber=_fileNumber,
-                baseFilePath=_baseFilePath     
+                fileNumber=numberOfFiles,
+                baseFilePath=_baseFilePath
             };
 
             //Increment file count
@@ -38,31 +37,33 @@ namespace StreamCapture
 
             //Add to list
             fileCaptureList.Add(fileInfo);
+
+            return fileInfo;
         }
 
         public void DeleteCapturedFiles()
         {
-            foreach(FileInfo fileInfo in fileCaptureList)
+            foreach(VideoFileInfo fileInfo in fileCaptureList)
             {
                 File.Delete(fileInfo.GetFullFile());
             }
         }
 
-        private void CheckForDup(FileInfo fileInfo)
+        private void CheckForDup(VideoFileInfo fileInfo)
         {
             //Make sure file doesn't already exist
             if(File.Exists(fileInfo.GetFullFile()))
             {
-                FileInfo newFileInfo = CloneFileInfo(fileInfo);
+                VideoFileInfo newFileInfo = CloneFileInfo(fileInfo);
                 newFileInfo.RandomizeFileName();
-                File.Move(fileInfo,newFileInfo);          
+                File.Move(fileInfo.GetFullFile(),newFileInfo.GetFullFile());          
                 fileInfo=newFileInfo;
             }
         }
 
-        private FileInfo CloneFileInfo(FileInfo origFileInfo)
+        private VideoFileInfo CloneFileInfo(VideoFileInfo origFileInfo)
         {
-            return new FileInfo
+            return new VideoFileInfo
             {
                 baseFileName=origFileInfo.baseFileName,
                 fileNumber=origFileInfo.fileNumber,
@@ -73,19 +74,19 @@ namespace StreamCapture
 
         public void SetConcatFile(string _baseFilePath)
         {
-            muxedFile=new FileInfo
+            concatFile=new VideoFileInfo
             {
                 baseFileName=fileName,
                 exten=".concat",
                 baseFilePath=_baseFilePath     
             };
 
-            CheckForDup(muxedFile);
+            CheckForDup(concatFile);
         }
 
         public void SetMuxedFile(string _baseFilePath)
         {
-            muxedFile=new FileInfo
+            muxedFile=new VideoFileInfo
             {
                 baseFileName=fileName,
                 exten=".mp4",
@@ -97,7 +98,7 @@ namespace StreamCapture
 
         public void SetPublishedFile(string _baseFilePath)
         {
-            publishedfile=new FileInfo
+            publishedfile=new VideoFileInfo
             {
                 baseFileName=fileName,
                 exten=".mp4",

@@ -3,7 +3,7 @@ using System.IO;
 
 namespace StreamCapture
 {
-    public class FileInfo
+    public class VideoFileInfo
     {
         public string baseFileName { get; set; }
         public int fileNumber { get; set; }
@@ -14,14 +14,14 @@ namespace StreamCapture
         {
             string fullFilePath=Path.Combine(baseFilePath,baseFileName);
             if(fileNumber>0)
-                fullFilePath=fullFilePath+fileNumber+captureExten;
+                fullFilePath=fullFilePath+fileNumber+exten;
             else
-                fullFilePath=fullFilePath+publishExten;
+                fullFilePath=fullFilePath+exten;
 
             return fullFilePath;
         }
 
-        public string RandomizeFileName()
+        public void RandomizeFileName()
         {
             baseFileName=baseFileName+Path.GetRandomFileName();
         }
