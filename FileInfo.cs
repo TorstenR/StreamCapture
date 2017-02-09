@@ -6,30 +6,24 @@ namespace StreamCapture
     public class FileInfo
     {
         public string baseFileName { get; set; }
-        public int numberOfFiles { get; set; }
+        public int fileNumber { get; set; }
+        public string exten { get; set; }
         public string baseFilePath { get; set; }
-        public int currentFileNumber { get; set; }
-        private string exten { get; set; }
 
-        public FileInfo(string _exten)
-        {
-            numberOfFiles=0;
-            currentFileNumber=0;
-            exten=_exten;
-        }
-
-        public string GetFullFileWithPath()
+        public string GetFullFile()
         {
             string fullFilePath=Path.Combine(baseFilePath,baseFileName);
-            if(!publishMode)
-            {
-                fullFilePath=fullFilePath+currentFileNumber+captureExten;
-            }
+            if(fileNumber>0)
+                fullFilePath=fullFilePath+fileNumber+captureExten;
             else
-            {
                 fullFilePath=fullFilePath+publishExten;
-            }
+
             return fullFilePath;
+        }
+
+        public string RandomizeFileName()
+        {
+            baseFileName=baseFileName+Path.GetRandomFileName();
         }
     }
 }
