@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
+using Microsoft.Extensions.Configuration;
 
 namespace StreamCapture
 {
@@ -41,12 +43,36 @@ namespace StreamCapture
             return fileInfo;
         }
 
-        public void DeleteCapturedFiles()
+        public void DeleteNonPublishedFiles(TextWriter logWriter,IConfiguration configuration)
         {
+            //Make sure we have a published file
+            if(!File.Exists(publishedfile.GetFullFile()))
+            {
+                logWriter.WriteLine($"{DateTime.Now}: ERROR: Not published {publishedfile.GetFullFile()}");
+                new Mailer().SendErrorMail(configuration,"Not Published!",string.Format($"{publishedfile.GetFullFile()} was not published on {DateTime.Now}"));
+                return;
+            }
+
+            //Delete captured files
             foreach(VideoFileInfo fileInfo in fileCaptureList)
             {
-                File.Delete(fileInfo.GetFullFile());
+                if(File.Exists(fileInfo.GetFullFile()))
+                {
+                    logWriter.WriteLine($"{DateTime.Now}: Deleting file {fileInfo.GetFullFile()}");
+                    File.Delete(fileInfo.GetFullFile());
+                }
             }
+
+            //Delete concat file
+            if(numberOfFiles>1)
+            {
+                logWriter.WriteLine($"{DateTime.Now}: Deleting file {concatFile.GetFullFile()}");
+                File.Delete(concatFile.GetFullFile());
+            }
+
+            //Delete mux file
+            logWriter.WriteLine($"{DateTime.Now}: Deleting file {muxedFile.GetFullFile()}");
+            File.Delete(muxedFile.GetFullFile());
         }
 
         private void CheckForDup(VideoFileInfo fileInfo)
@@ -76,8 +102,8 @@ namespace StreamCapture
         {
             concatFile=new VideoFileInfo
             {
-                baseFileName=fileName,
-                exten=".concat",
+                baseFileName=fileName+"_concat",
+                exten=".ts",
                 baseFilePath=_baseFilePath     
             };
 

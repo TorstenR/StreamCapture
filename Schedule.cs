@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -10,20 +11,25 @@ namespace StreamCapture
     {
         private Dictionary<string, ScheduleChannels> scheduleChannelDict;
 
-        public Schedule()
-        {
-            LoadSchedule().Wait();
-        }
-
-        public async Task LoadSchedule()
+        public async Task LoadSchedule(string debugCmdLine)
         {
             string schedString;
             using (var client = new HttpClient())
             {
-                Uri uri = new Uri("https://iptvguide.netlify.com/iptv.json");
-                var response = await client.GetAsync(uri);
-                response.EnsureSuccessStatusCode(); // Throw in not success
-                schedString = await response.Content.ReadAsStringAsync();
+                if(string.IsNullOrEmpty(debugCmdLine))
+                {
+                    Uri uri = new Uri("https://iptvguide.netlify.com/iptv.json");
+                    var response = await client.GetAsync(uri);
+                    response.EnsureSuccessStatusCode(); // Throw in not success
+                    schedString = await response.Content.ReadAsStringAsync();
+                }
+                else
+                {
+                    using (StreamReader sr = File.OpenText("testschedule.json"))
+                    {
+                        schedString = sr.ReadToEnd();
+                    }
+                }
             }
 
             //create schedule objects

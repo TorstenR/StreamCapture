@@ -67,7 +67,7 @@ namespace StreamCapture
                 for(int idx=0;idx<sortedTupleList.Count;idx++)
                 {
                     Tuple<string,ChannelInfo,long> tuple=sortedTupleList[idx];
-                    if(tuple.Item3>bestAvgKB)
+                    if(tuple.Item3>=bestAvgKB)
                     {
                         bestAvgKB=tuple.Item3;
                         tupleIdx=idx;
@@ -128,7 +128,7 @@ namespace StreamCapture
                     if(avgKBytesSec > tuple.Item3)
                     {
                         tupleList.Insert(index,new Tuple<string,ChannelInfo,long>(server,channelInfo,avgKBytesSec));
-                        return;
+                        break;
                     }
                 }
 

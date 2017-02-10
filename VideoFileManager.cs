@@ -28,10 +28,17 @@ namespace StreamCapture
 
         public void ConcatFiles()
         {
+            //Do we need to concatenate at all?
+            if(files.numberOfFiles<2)
+                return;
+
             //make filelist
             string concatList=files.fileCaptureList[0].GetFullFile();
             for(int i=1;i<files.fileCaptureList.Count;i++)
-                concatList=concatList+"|"+files.fileCaptureList[i];
+            {
+                if(File.Exists(files.fileCaptureList[i].GetFullFile()))
+                    concatList=concatList+"|"+files.fileCaptureList[i].GetFullFile();
+            }
 
             //resulting concat file
             files.SetConcatFile(configuration["outputPath"]);
@@ -48,15 +55,15 @@ namespace StreamCapture
 
         public void MuxFile(string metadata)
         {
+            //Set
+            files.SetMuxedFile(configuration["outputPath"]);
+            
             //Get the right input file
             VideoFileInfo inputFile;
             if(files.numberOfFiles>1)
-                inputFile=files.muxedFile;
+                inputFile=files.concatFile;
             else
                 inputFile=files.fileCaptureList[0];
-
-            //Set
-            files.SetMuxedFile(configuration["outputPath"]);
 
             // "muxCmdLine": "[FULLFFMPEGPATH] -i [VIDEOFILE] -acodec copy -vcodec copy [FULLOUTPUTPATH]"
             string cmdLineArgs = configuration["muxCmdLine"];
@@ -73,7 +80,7 @@ namespace StreamCapture
         {
             //If NAS path exists, move file mp4 file there
             string nasPath = configuration["nasPath"];
-            if(nasPath != null)
+            if(!string.IsNullOrEmpty(nasPath))
             {
                 files.SetPublishedFile(configuration["nasPath"]);
                 logWriter.WriteLine($"{DateTime.Now}: Moving {files.muxedFile.GetFullFile()} to {files.publishedfile.GetFullFile()}");
@@ -81,10 +88,43 @@ namespace StreamCapture
             }
 
             //If final file exist, delete old .ts file/s
-            if(File.Exists(files.muxedFile.GetFullFile()))
+            files.DeleteNonPublishedFiles(logWriter,configuration);
+        }
+
+        static public void CleanOldFiles(IConfiguration config)
+        {
+            string logPath = config["logPath"];
+            string outputPath = config["outputPath"];
+            string nasPath = config["nasPath"];
+            int retentionDays = Convert.ToInt16(config["retentionDays"]);
+            
+            DateTime cutDate=DateTime.Now.AddDays(retentionDays*-1);
+            Console.WriteLine($"{DateTime.Now}: Checking for files older than {cutDate}");
+
+            try
             {
-                files.DeleteCapturedFiles();
+                RemoveOldFiles(logPath,cutDate);
+                RemoveOldFiles(outputPath,cutDate);
+                if(!string.IsNullOrEmpty(nasPath))
+                    RemoveOldFiles(nasPath,cutDate);
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine($"{DateTime.Now}: ERROR: Problem cleaning up old files.  Error: {e.Message}");
             }
         }
+
+        static private void RemoveOldFiles(string path,DateTime asOfDate)
+        {
+            string[] fileList=Directory.GetFiles(path);
+            foreach(string file in fileList)
+            {
+                if(File.GetCreationTime(file) < asOfDate)
+                {
+                    Console.WriteLine($"{DateTime.Now}: Removing old file {file} as it is too old  ({File.GetCreationTime(file)})");
+                    File.Delete(file);
+                }
+            }
+        }  
     }
 }

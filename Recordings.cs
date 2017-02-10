@@ -49,7 +49,7 @@ namespace StreamCapture
         public List<RecordInfo> BuildRecordSchedule()
         {
             //Refresh from website
-            schedule.LoadSchedule().Wait();
+            schedule.LoadSchedule(configuration["debug"]).Wait();
             List<ScheduleShow> scheduleShowList = schedule.GetScheduledShows();
 
             //Go through the shows and load up recordings if there's a match
