@@ -560,8 +560,5 @@ namespace StreamCapture
                 File.Move(outputFile,nasFile);
             }
         }
-=======
-        }                    
->>>>>>> refs/remotes/origin/refactor
     }
 }
