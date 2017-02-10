@@ -16,7 +16,10 @@ namespace StreamCapture
             CommandOption filename = commandLineApplication.Option("-f | --filename","File name (no extension)",CommandOptionType.SingleValue);
             CommandOption datetime = commandLineApplication.Option("-d | --datetime","Datetime MM/DD/YY HH:MM (optional)",CommandOptionType.SingleValue);
             commandLineApplication.HelpOption("-? | -h | --help");
-            commandLineApplication.Execute(args);     
+            commandLineApplication.Execute(args);  
+            
+            //Welcome message
+            Console.WriteLine($"{DateTime.Now}: StreamCapture Version 0.9  2/9/2017");
 
             //Read and build config
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
@@ -47,8 +50,9 @@ namespace StreamCapture
                 recordInfo.fileName=filename.Value();
 
                 //Record a single show and then quit
+                ChannelHistory channelHistory = new ChannelHistory();
                 Recorder recorder = new Recorder(configuration);
-                recorder.QueueRecording(recordInfo,configuration,false);
+                recorder.QueueRecording(channelHistory,recordInfo,configuration,false);
                 Environment.Exit(0);
             }
             else

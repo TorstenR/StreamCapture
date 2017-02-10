@@ -69,11 +69,21 @@ namespace StreamCapture
             //Create new recordings object to manage our recordings
             Recordings recordings = new Recordings(configuration);
 
+            //Create channel history object
+            ChannelHistory channelHistory = new ChannelHistory();
+
             //Grab schedule from interwebs and loop forever, checking every n hours for new shows to record
             while(true)
             {
+                //List for items we need to remove from the recordInfoList (we can't while in the loop)
+                List<RecordInfo> toDeleteList = new List<RecordInfo>();
+
                 //Grabs schedule and builds a recording list based on keywords
                 List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
+
+                //Build mail to send out
+                Mailer mailer = new Mailer();
+                string mailText = "";
 
                 //Go through record list, spawn a new process for each show found
                 foreach (RecordInfo recordInfo in recordInfoList)
@@ -88,13 +98,19 @@ namespace StreamCapture
                         recordInfo.processSpawnedFlag=true;
                         DumpRecordInfo(Console.Out,recordInfo); 
 
+                        //Add to mailer
+                        mailText=mailer.AddNewShowToString(mailText,recordInfo);
+
                         // Queue show to be recorded now
-                        Task.Factory.StartNew(() => QueueRecording(recordInfo,configuration,true)); 
+                        Task.Factory.StartNew(() => QueueRecording(channelHistory,recordInfo,configuration,true)); 
                     }
                     else
                     {
                         if(!showInFuture)
+                        {
                             Console.WriteLine($"{DateTime.Now}: Show already finished: {recordInfo.description} at {recordInfo.GetStartDT()}");
+                            toDeleteList.Add(recordInfo); //So we don't leak
+                        }
                         else if(!showClose)
                             Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
                         else if(showQueued)
@@ -102,11 +118,15 @@ namespace StreamCapture
                     }
                 }  
 
+                //Send mail if we have something
+                if(!string.IsNullOrEmpty(mailText))
+                    mailer.SendNewShowMail(configuration,mailText);
+
                 //Determine how long to sleep before next check
                 string[] times=configuration["scheduleCheck"].Split(',');
                 DateTime nextRecord=DateTime.Now;
                 
-                //find out if today
+                //find out if schedule time is still today
                 if(DateTime.Now.Hour < Convert.ToInt32(times[times.Length-1]))
                 {
                     for(int i=0;i<times.Length;i++)
@@ -127,6 +147,15 @@ namespace StreamCapture
                     nextRecord=nextRecord.AddDays(1);
                 }
 
+                //Let's clean up show list now
+                foreach (RecordInfo recordInfo in toDeleteList)
+                {
+                    recordInfoList.Remove(recordInfo);
+                }
+
+                //Since we're awake, let's see if there are any files needing cleaning up
+                VideoFileManager.CleanOldFiles(configuration);
+
                 //Wait
                 TimeSpan timeToWait = nextRecord - DateTime.Now;
                 Console.WriteLine($"{DateTime.Now}: Now sleeping for {timeToWait.Hours+1} hours before checking again at {nextRecord.ToString()}");
@@ -135,7 +164,7 @@ namespace StreamCapture
             } 
         }
 
-        public void QueueRecording(RecordInfo recordInfo,IConfiguration configuration,bool useLogFlag)
+        public void QueueRecording(ChannelHistory channelHistory,RecordInfo recordInfo,IConfiguration configuration,bool useLogFlag)
         {
             //Write to our very own log as there might be other captures going too
             StreamWriter logWriter=new StreamWriter(Console.OpenStandardOutput());
@@ -147,43 +176,61 @@ namespace StreamCapture
             }
             logWriter.AutoFlush = true;
 
-            //Dump
-            DumpRecordInfo(logWriter,recordInfo);
-
-            //Send alert mail
-            new Mailer().SendNewShowMail(configuration,recordInfo);
-            
-            //Wait here until we're ready to start recording
-            if(recordInfo.strStartDT != null)
+            //try-catch so we don't crash the whole thing
+            try
             {
-                DateTime recStart = recordInfo.GetStartDT();
-                TimeSpan timeToWait = recStart - DateTime.Now;
-                logWriter.WriteLine($"{DateTime.Now}: Starting recording at {recStart} - Waiting for {timeToWait.Days} Days, {timeToWait.Hours} Hours, and {timeToWait.Minutes} minutes.");
-                if(timeToWait.Seconds>=0)
-                    Thread.Sleep(timeToWait);
-            }       
+                //Dump
+                DumpRecordInfo(logWriter,recordInfo);
+                
+                //Wait here until we're ready to start recording
+                if(recordInfo.strStartDT != null)
+                {
+                    DateTime recStart = recordInfo.GetStartDT();
+                    TimeSpan timeToWait = recStart - DateTime.Now;
+                    logWriter.WriteLine($"{DateTime.Now}: Starting recording at {recStart} - Waiting for {timeToWait.Days} Days, {timeToWait.Hours} Hours, and {timeToWait.Minutes} minutes.");
+                    if(timeToWait.Seconds>=0)
+                        Thread.Sleep(timeToWait);
+                }       
 
-            //Authenticate
-            Task<string> authTask = Authenticate();
-            string hashValue=authTask.Result;
-            if(string.IsNullOrEmpty(hashValue))                     
-            {
-                Console.WriteLine($"ERROR: Unable to authenticate.  Check username and password?");
-                Environment.Exit(1);               
+                //Authenticate
+                Task<string> authTask = Authenticate();
+                string hashValue=authTask.Result;
+                if(string.IsNullOrEmpty(hashValue))                     
+                {
+                    Console.WriteLine($"ERROR: Unable to authenticate.  Check username and password?");
+                    Environment.Exit(1);               
+                }
+
+                //We need to manage our resulting files
+                VideoFileManager videoFileManager = new VideoFileManager(configuration,logWriter,recordInfo.fileName);            
+
+                //Capture stream
+                CaptureStream(logWriter,hashValue,channelHistory,recordInfo,videoFileManager);
+
+                //Let's take care of processing and publishing the video files
+                videoFileManager.ConcatFiles();
+                videoFileManager.MuxFile(recordInfo.description);
+                videoFileManager.PublishAndCleanUpAfterCapture();
+
+                //Cleanup
+                logWriter.WriteLine($"{DateTime.Now}: Done Capturing");
+                logWriter.Dispose();
+
+                //Send alert mail
+                new Mailer().SendShowReadyMail(configuration,recordInfo);
             }
+            catch(Exception e)
+            {
+                logWriter.WriteLine("======================");
+                logWriter.WriteLine($"{DateTime.Now}: ERROR - Exception!");
+                logWriter.WriteLine("======================");
+                logWriter.WriteLine($"{e.StackTrace}");
 
-            //Capture stream
-            int numFiles=CaptureStream(logWriter,hashValue,recordInfo);
-
-            //Fixup output
-            FixUp(logWriter,numFiles,recordInfo);
-
-            //Cleanup
-            logWriter.WriteLine($"{DateTime.Now}: Done Capturing - Cleaning up");
-            logWriter.Dispose();
-
-            //Send alert mail
-            new Mailer().SendShowReadyMail(configuration,recordInfo);
+                //Send alert mail
+                string body=recordInfo.description+" failed with Exception "+e.Message;
+                body=body+"\n"+e.StackTrace;
+                new Mailer().SendErrorMail(configuration,"StreamCapture Exception! ("+e.Message+")",body);
+            }
         }
         private async Task<string> Authenticate()
         {
@@ -225,15 +272,10 @@ namespace StreamCapture
             return hashValue;
         }
      
-        private int CaptureStream(TextWriter logWriter,string hashValue,RecordInfo recordInfo)
-        {
-            int currentFileNum = 0;
-                        
+        private void CaptureStream(TextWriter logWriter,string hashValue,ChannelHistory channelHistory,RecordInfo recordInfo,VideoFileManager videoFileManager)
+        {                      
             //Test internet connection and get a baseline
             long internetSpeed = TestInternet(logWriter); 
-
-            //Create channel history object
-            ChannelHistory channelHistory = new ChannelHistory();
 
             //Create servers object
             Servers servers=new Servers(configuration["ServerList"]);
@@ -244,6 +286,8 @@ namespace StreamCapture
             //Marking time we started and when we should be done
             DateTime captureStarted = DateTime.Now;
             DateTime captureTargetEnd = recordInfo.GetStartDT().AddMinutes(recordInfo.GetDuration());
+            if(!string.IsNullOrEmpty(configuration["debug"]))
+                captureTargetEnd = DateTime.Now.AddMinutes(1);
             DateTime lastStartedTime = captureStarted;
             TimeSpan duration=captureTargetEnd-captureStarted;
 
@@ -251,13 +295,15 @@ namespace StreamCapture
             channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).recordingsAttempted+=1;
             channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).lastAttempt=DateTime.Now;
 
+            //Build output file
+            VideoFileInfo videoFileInfo=videoFileManager.AddCaptureFile(configuration["outputPath"]);
+
             //Build ffmpeg capture command line with first channel and get things rolling
-            string outputPath=BuildOutputPath(recordInfo.fileName+currentFileNum);
-            string cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,outputPath);
+            string cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,videoFileInfo.GetFullFile());
             logWriter.WriteLine($"=========================================");
             logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} on server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}.  Expect to be done by {captureTargetEnd}.");
             logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
-            CaptureProcessInfo captureProcessInfo = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)duration.TotalMinutes,outputPath);  
+            CaptureProcessInfo captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)duration.TotalMinutes,videoFileInfo.GetFullFile());  
             logWriter.WriteLine($"{DateTime.Now}: Exited Capture.  Exit Code: {captureProcessInfo.process.ExitCode}");
 
             //
@@ -270,9 +316,6 @@ namespace StreamCapture
 
                 //Set new avg streaming rate for channel history    
                 channelHistory.SetServerAvgKBytesSec(scs.GetChannelNumber(),scs.GetServerName(),captureProcessInfo.avgKBytesSec);
-                
-                //file number
-                currentFileNum++;
 
                 //Go to next channel if channel has been alive for less than 15 minutes
                 TimeSpan fifteenMin=new TimeSpan(0,15,0);
@@ -294,14 +337,15 @@ namespace StreamCapture
                 channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).hoursRecorded+=timeJustRecorded.TotalHours;
                 channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).recordingsAttempted+=1;
                 channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).lastAttempt=DateTime.Now;
-                channelHistory.Save();
+
+                //Build output file
+                videoFileInfo=videoFileManager.AddCaptureFile(configuration["outputPath"]);                
 
                 //Now get capture setup and going again
-                outputPath=BuildOutputPath(recordInfo.fileName+currentFileNum);
-                cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,outputPath);
+                cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,videoFileInfo.GetFullFile());
                 logWriter.WriteLine($"{DateTime.Now}: Starting Capture (again) on server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}");
                 logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
-                captureProcessInfo = ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,outputPath);
+                captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,videoFileInfo.GetFullFile());
             }
             logWriter.WriteLine($"{DateTime.Now}: Finished Capturing Stream.");             
 
@@ -311,22 +355,6 @@ namespace StreamCapture
             channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).lastSuccess=DateTime.Now;
             channelHistory.SetServerAvgKBytesSec(scs.GetChannelNumber(),scs.GetServerName(),captureProcessInfo.avgKBytesSec);      
             channelHistory.Save();
-
-            return currentFileNum;
-        }
-
-        private string BuildOutputPath(string fileName)
-        {
-            string outputPath = Path.Combine(configuration["outputPath"],fileName+".ts");
-
-            //Make sure file does not already exist.  If so, rename it.
-            if(File.Exists(outputPath))
-            {
-                string newFileName=Path.Combine(configuration["outputPath"],fileName+"_"+Path.GetRandomFileName()+".ts");
-                File.Move(outputPath,newFileName);
-            }
-
-            return outputPath;      
         }
 
         private string BuildCaptureCmdLineArgs(string server,string channel,string hashValue,string outputPath)
@@ -532,5 +560,8 @@ namespace StreamCapture
                 File.Move(outputFile,nasFile);
             }
         }
+=======
+        }                    
+>>>>>>> refs/remotes/origin/refactor
     }
 }

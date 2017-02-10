@@ -1,0 +1,62 @@
+{
+  "107": {
+    "channel": "107",
+    "hoursRecorded": 0.071447370083333323,
+    "recordingsAttempted": 5,
+    "serverSpeed": {
+      "dNAw1": 522,
+      "dNAw2": 430
+    },
+    "lastAttempt": "2017-02-09T16:39:19.8754653-08:00",
+    "lastSuccess": "2017-02-09T16:40:19.9502777-08:00",
+    "activeFlag": true
+  },
+  "01": {
+    "channel": "01",
+    "hoursRecorded": 0.050043172722222223,
+    "recordingsAttempted": 3,
+    "serverSpeed": {
+      "dNAw2": 534
+    },
+    "lastAttempt": "2017-02-09T16:39:02.8810797-08:00",
+    "lastSuccess": "2017-02-09T16:40:02.9511409-08:00",
+    "activeFlag": true
+  },
+  "10": {
+    "channel": "10",
+    "hoursRecorded": 0.033356833694444442,
+    "recordingsAttempted": 2,
+    "serverSpeed": {
+      "dNAw2": 213
+    },
+    "lastAttempt": "2017-02-09T15:09:59.026507-08:00",
+    "lastSuccess": "2017-02-09T15:10:59.0541225-08:00",
+    "activeFlag": true
+  },
+  "11": {
+    "channel": "11",
+    "hoursRecorded": 0.03853720069444444,
+    "recordingsAttempted": 3,
+    "serverSpeed": {
+      "dNAw1": 336,
+      "dNAw2": 134
+    },
+    "lastAttempt": "2017-02-09T16:39:21.5389571-08:00",
+    "lastSuccess": "2017-02-09T16:40:21.5742782-08:00",
+    "activeFlag": true
+  },
+  "108": {
+    "channel": "108",
+    "hoursRecorded": 0.014127647527777776,
+    "recordingsAttempted": 8,
+    "serverSpeed": {
+      "dNAw1": 0,
+      "dEU.UK2": 0,
+      "dNAw2": 0,
+      "dEU.NL2": 0
+    },
+    "lastAttempt": "2017-02-09T15:10:44.0701342-08:00",
+    "lastSuccess": "2017-02-09T15:10:50.024039-08:00",
+    "activeFlag": true
+  }
+}

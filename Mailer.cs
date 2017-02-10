@@ -8,9 +8,22 @@ namespace StreamCapture
 {
     public class Mailer
     {
+        public string AddNewShowToString(string mailText,RecordInfo recordInfo)
+        {
+            if(string.IsNullOrEmpty(mailText))
+                mailText="";
+
+            return mailText+"\n"+BuildNewShowText(recordInfo);
+        }
+
+        public void SendNewShowMail(IConfiguration configuration,string mailText)
+        {
+            SendMail(configuration,"New Shows Scheduled",mailText);
+        }
+
         public void SendNewShowMail(IConfiguration configuration,RecordInfo recordInfo)
         {
-            SendMail(configuration,recordInfo.description + "Scheduled",BuildNewShowText(recordInfo));
+            SendMail(configuration,"Scheduled: "+recordInfo.description,BuildNewShowText(recordInfo));
         }
 
         public void SendShowReadyMail(IConfiguration configuration,RecordInfo recordInfo)
@@ -19,9 +32,14 @@ namespace StreamCapture
             SendMail(configuration,text,text);
         }
 
+        public void SendErrorMail(IConfiguration configuration,string subject,string body)
+        {
+            SendMail(configuration, subject, body);
+        }
+
         public void SendMail(IConfiguration configuration,string subjectTest,string bodyText)
         {
-            if(string.IsNullOrEmpty(configuration["smtpUser"]))
+            if(string.IsNullOrEmpty(configuration["smtpUser"]) || string.IsNullOrEmpty(configuration["mailAddress"]))
                 return;
 
             try
@@ -54,12 +72,12 @@ namespace StreamCapture
 
         private string BuildNewShowText(RecordInfo recordInfo)
         {
-            return String.Format($"Scheduling {recordInfo.description} starting at {recordInfo.GetStartDT()} on channel/s {recordInfo.GetChannelString()}");
+            return String.Format($"Scheduled: {recordInfo.description} starting at {recordInfo.GetStartDT()} on channel/s {recordInfo.GetChannelString()}");
         }
 
         private string BuildShowReadyText(RecordInfo recordInfo)
         {
-            return String.Format($"{recordInfo.description} is ready");
+            return String.Format($"Published: {recordInfo.description}");
         }
     }
 }
