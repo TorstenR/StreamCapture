@@ -5,6 +5,7 @@ For the longest time I was frustrated at not being able to reasonably record str
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ###News:
+- Feb 9, 2017: Lots of bug fixes and better stability.  Files are now cleaned up according to retention days.
 - Feb 7, 2017: Email alerting now for schedule and completed shows via SMTP
 - Feb 5, 2017: Added the notion of network speed to determine best servers and channels.  There's even an up front general network speed test.  Yes, this means that you can put in multiple servers now in appconfig.  (in fact, it's a requirement)
 - Feb 3, 2017: Finally added long overdue error checking.  It's not yet complete, but at least it'll catch the big configuration errors right away.
