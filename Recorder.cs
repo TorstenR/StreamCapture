@@ -329,6 +329,10 @@ namespace StreamCapture
                     //Get correct server and channel (determined by heuristics)
                     scs.GetNextServerChannel();
                 }
+                else
+                {
+                    retryNum=0; //reset retries since it's been more than 15 minutes
+                }
 
                 //Set new started time and calc new timer     
                 TimeSpan timeJustRecorded=DateTime.Now-lastStartedTime;
