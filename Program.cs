@@ -150,7 +150,10 @@ namespace StreamCapture
             {
                 Console.WriteLine($"ERROR: 'serverList' has servers in appsettings, but 'captureCmdLine' does not have '[SERVER]'");
                 Environment.Exit(1);
-            }           
+            }
+
+            //Check auth minutes
+            ValidateInt("appsettings.json","authMinutes",configuration["authMinutes"],30,1440); 
 
             //Check hours in future
             ValidateInt("appsettings.json","hoursInFuture",configuration["hoursInFuture"],0,48);   

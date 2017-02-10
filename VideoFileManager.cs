@@ -57,6 +57,12 @@ namespace StreamCapture
         {
             //Set
             files.SetMuxedFile(configuration["outputPath"]);
+
+            //If NAS path does not exist, set published file to this output too
+            if(string.IsNullOrEmpty(configuration["nasPath"]))
+            {
+                files.SetPublishedFile(configuration["outputPath"]);
+            }
             
             //Get the right input file
             VideoFileInfo inputFile;
@@ -79,8 +85,7 @@ namespace StreamCapture
         public void PublishAndCleanUpAfterCapture()
         {
             //If NAS path exists, move file mp4 file there
-            string nasPath = configuration["nasPath"];
-            if(!string.IsNullOrEmpty(nasPath))
+            if(!string.IsNullOrEmpty(configuration["nasPath"]))
             {
                 files.SetPublishedFile(configuration["nasPath"]);
                 logWriter.WriteLine($"{DateTime.Now}: Moving {files.muxedFile.GetFullFile()} to {files.publishedfile.GetFullFile()}");

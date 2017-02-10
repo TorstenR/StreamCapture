@@ -69,10 +69,6 @@ namespace StreamCapture
                 logWriter.WriteLine($"{DateTime.Now}: Deleting file {concatFile.GetFullFile()}");
                 File.Delete(concatFile.GetFullFile());
             }
-
-            //Delete mux file
-            logWriter.WriteLine($"{DateTime.Now}: Deleting file {muxedFile.GetFullFile()}");
-            File.Delete(muxedFile.GetFullFile());
         }
 
         private void CheckForDup(VideoFileInfo fileInfo)

@@ -316,6 +316,20 @@ namespace StreamCapture
             {           
                 logWriter.WriteLine($"{DateTime.Now}: Capture Failed for server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}. Retry {retryNum+1} of {configuration["numberOfRetries"]}");
 
+                //Check to see if we need to re-authenticate
+                int authMinutes=Convert.ToInt16(configuration["authMinutes"]);
+                if(DateTime.Now>captureStarted.AddMinutes(authMinutes))
+                {
+                    logWriter.WriteLine($"{DateTime.Now}: It's been more than {authMinutes} authMinutes.  Time to re-authenticate");
+                    Task<string> authTask = Authenticate();
+                    hashValue=authTask.Result;
+                    if(string.IsNullOrEmpty(hashValue))                     
+                    {
+                        Console.WriteLine($"{DateTime.Now}: ERROR: Unable to authenticate.  Check username and password?");
+                        throw new Exception("Unable to authenticate during a retry");
+                    }
+                }
+
                 //Set new avg streaming rate for channel history    
                 channelHistory.SetServerAvgKBytesSec(scs.GetChannelNumber(),scs.GetServerName(),captureProcessInfo.avgKBytesSec);
 
