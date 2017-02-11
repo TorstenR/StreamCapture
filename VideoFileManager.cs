@@ -120,7 +120,11 @@ namespace StreamCapture
             int retentionDays = Convert.ToInt16(config["retentionDays"]);
             
             DateTime cutDate=DateTime.Now.AddDays(retentionDays*-1);
-            Console.WriteLine($"{DateTime.Now}: Checking for files older than {cutDate}");
+            Console.WriteLine($"{DateTime.Now}: Checking the following folders for files older than {cutDate}");
+            Console.WriteLine($"{DateTime.Now}:          {logPath}");
+            Console.WriteLine($"{DateTime.Now}:          {outputPath}");
+            if(!string.IsNullOrEmpty(nasPath))
+                Console.WriteLine($"{DateTime.Now}:          {nasPath}");
 
             try
             {
