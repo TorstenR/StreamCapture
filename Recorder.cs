@@ -291,7 +291,7 @@ namespace StreamCapture
             if(!string.IsNullOrEmpty(configuration["debug"]))
                 captureTargetEnd = DateTime.Now.AddMinutes(1);
             DateTime lastStartedTime = captureStarted;
-            TimeSpan duration=captureTargetEnd-captureStarted;
+            TimeSpan duration=(captureTargetEnd.AddMinutes(1))-captureStarted;  //the 1 minute takes care of alignment slop
 
             //Update capture history
             channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).recordingsAttempted+=1;
@@ -312,7 +312,7 @@ namespace StreamCapture
             //retry loop if we're not done yet
             //
             int numRetries=Convert.ToInt32(configuration["numberOfRetries"]);
-            for(int retryNum=0;DateTime.Now<=captureTargetEnd.AddSeconds(-10) && retryNum<numRetries;retryNum++)
+            for(int retryNum=0;DateTime.Now<=captureTargetEnd && retryNum<numRetries;retryNum++)
             {           
                 logWriter.WriteLine($"{DateTime.Now}: Capture Failed for server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}. Retry {retryNum+1} of {configuration["numberOfRetries"]}");
 
