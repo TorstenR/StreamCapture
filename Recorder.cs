@@ -85,7 +85,8 @@ namespace StreamCapture
 
                 //Build mail to send out
                 Mailer mailer = new Mailer();
-                string mailText = "";
+                string newShowText = "";
+                string concurrentShowText = "";
 
                 //Go through record list, spawn a new process for each show found
                 foreach (RecordInfo recordInfo in recordInfoList)
@@ -102,7 +103,7 @@ namespace StreamCapture
                         DumpRecordInfo(Console.Out,recordInfo); 
 
                         //Add to mailer
-                        mailText=mailer.AddNewShowToString(mailText,recordInfo);
+                        newShowText=mailer.AddNewShowToString(newShowText,recordInfo);
 
                         // Queue show to be recorded now
                         Task.Factory.StartNew(() => QueueRecording(channelHistory,recordInfo,configuration,true)); 
@@ -119,13 +120,22 @@ namespace StreamCapture
                         else if(showQueued)
                             Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");
                         else if(maxConcurrent)
-                            Console.WriteLine($"{DateTime.Now}: Too many for this time slot: {recordInfo.description} at {recordInfo.GetStartDT()}");                                                                    
+                        {
+                            //Add to mailer
+                            concurrentShowText=mailer.AddConcurrentShowToString(concurrentShowText,recordInfo);
+                            Console.WriteLine($"{DateTime.Now}: Too many for this time slot: {recordInfo.description} at {recordInfo.GetStartDT()}");        
+                        }                                                            
                     }
                 }  
 
                 //Send mail if we have something
-                if(!string.IsNullOrEmpty(mailText))
-                    mailer.SendNewShowMail(configuration,mailText);
+                if(!string.IsNullOrEmpty(newShowText))
+                {
+                    if(string.IsNullOrEmpty(concurrentShowText))
+                        mailer.SendNewShowMail(configuration,newShowText);
+                    else
+                        mailer.SendNewShowMail(configuration,newShowText+concurrentShowText);
+                }
 
                 //Determine how long to sleep before next check
                 string[] times=configuration["scheduleCheck"].Split(',');
@@ -257,7 +267,7 @@ namespace StreamCapture
                 logWriter.WriteLine("======================");
                 logWriter.WriteLine($"{DateTime.Now}: ERROR - Exception!");
                 logWriter.WriteLine("======================");
-                logWriter.WriteLine($"{e.StackTrace}");
+                logWriter.WriteLine($"{e.Message}\n{e.StackTrace}");
 
                 //Send alert mail
                 string body=recordInfo.description+" failed with Exception "+e.Message;
@@ -269,37 +279,44 @@ namespace StreamCapture
         {
             string hashValue=null;
 
-            using (var client = new HttpClient())
+            try
             {
-                //http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php?username=foo&password=bar&site=view247
-
-                //Build URL
-                string strURL=configuration["authURL"];
-                strURL=strURL.Replace("[USERNAME]",configuration["user"]);
-                strURL=strURL.Replace("[PASSWORD]",configuration["pass"]);
-
-                var response = await client.GetAsync(strURL);
-                response.EnsureSuccessStatusCode(); // Throw in not success
-
-                string stringResponse = await response.Content.ReadAsStringAsync();
-                
-                //Console.WriteLine($"Response: {stringResponse}");
-
-                //Grab hash
-                JsonTextReader reader = new JsonTextReader(new StringReader(stringResponse));
-                while (reader.Read())
+                using (var client = new HttpClient())
                 {
-                    if (reader.Value != null)
+                    //http://smoothstreams.tv/schedule/admin/dash_new/hash_api.php?username=foo&password=bar&site=view247
+
+                    //Build URL
+                    string strURL=configuration["authURL"];
+                    strURL=strURL.Replace("[USERNAME]",configuration["user"]);
+                    strURL=strURL.Replace("[PASSWORD]",configuration["pass"]);
+
+                    var response = await client.GetAsync(strURL);
+                    response.EnsureSuccessStatusCode(); // Throw in not success
+
+                    string stringResponse = await response.Content.ReadAsStringAsync();
+                    
+                    //Console.WriteLine($"Response: {stringResponse}");
+
+                    //Grab hash
+                    JsonTextReader reader = new JsonTextReader(new StringReader(stringResponse));
+                    while (reader.Read())
                     {
-                        //Console.WriteLine("Token: {0}, Value: {1}", reader.TokenType, reader.Value);
-                        if(reader.TokenType.ToString() == "PropertyName" && reader.Value.ToString() == "hash")
+                        if (reader.Value != null)
                         {
-                            reader.Read();
-                            hashValue=reader.Value.ToString();
-                            break;
+                            //Console.WriteLine("Token: {0}, Value: {1}", reader.TokenType, reader.Value);
+                            if(reader.TokenType.ToString() == "PropertyName" && reader.Value.ToString() == "hash")
+                            {
+                                reader.Read();
+                                hashValue=reader.Value.ToString();
+                                break;
+                            }
                         }
                     }
                 }
+            }
+            catch(Exception e)
+            {
+                throw new Exception("ERROR!  Unable to authenticate.  Unexpected result from service",e);
             }
 
             return hashValue;

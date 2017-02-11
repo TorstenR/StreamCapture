@@ -118,20 +118,28 @@ namespace StreamCapture
             string outputPath = config["outputPath"];
             string nasPath = config["nasPath"];
             int retentionDays = Convert.ToInt16(config["retentionDays"]);
-            
-            DateTime cutDate=DateTime.Now.AddDays(retentionDays*-1);
-            Console.WriteLine($"{DateTime.Now}: Checking the following folders for files older than {cutDate}");
-            Console.WriteLine($"{DateTime.Now}:          {logPath}");
-            Console.WriteLine($"{DateTime.Now}:          {outputPath}");
-            if(!string.IsNullOrEmpty(nasPath))
-                Console.WriteLine($"{DateTime.Now}:          {nasPath}");
-
+                     
             try
             {
+                DateTime cutDate=DateTime.Now.AddDays(retentionDays*-1);
+                Console.WriteLine($"{DateTime.Now}: Checking the following folders for files older than {cutDate}");   
+            
+                Console.WriteLine($"{DateTime.Now}:          {logPath}");                
                 RemoveOldFiles(logPath,cutDate);
+                Console.WriteLine($"{DateTime.Now}:          {outputPath}");
                 RemoveOldFiles(outputPath,cutDate);
                 if(!string.IsNullOrEmpty(nasPath))
+                {
+                    Console.WriteLine($"{DateTime.Now}:          {nasPath}");
+                    //Go throw sub directories too
                     RemoveOldFiles(nasPath,cutDate);
+                    string[] subDirs=Directory.GetDirectories(nasPath);
+                    foreach(string subDir in subDirs)
+                    {
+                        Console.WriteLine($"{DateTime.Now}:          {subDir}");
+                        RemoveOldFiles(subDir,cutDate);
+                    }
+                }
             }
             catch(Exception e)
             {

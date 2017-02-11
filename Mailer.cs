@@ -8,22 +8,25 @@ namespace StreamCapture
 {
     public class Mailer
     {
-        public string AddNewShowToString(string mailText,RecordInfo recordInfo)
+        public string AddNewShowToString(string newShowText,RecordInfo recordInfo)
         {
-            if(string.IsNullOrEmpty(mailText))
-                mailText="";
+            if(string.IsNullOrEmpty(newShowText))
+                newShowText=@"<h3>New Shows Scheduled:</h3>";
 
-            return mailText+"\n"+BuildNewShowText(recordInfo);
+            return newShowText+@"<br>"+BuildNewShowText(recordInfo);
         }
+
+        public string AddConcurrentShowToString(string concurentShowText,RecordInfo recordInfo)
+        {
+            if(string.IsNullOrEmpty(concurentShowText))
+                concurentShowText=@"<p><p><h3>Shows NOT scheduled due to too many concurrent:</h3>";
+
+            return concurentShowText+@"<br>"+BuildConcurrentShowText(recordInfo);
+        }        
 
         public void SendNewShowMail(IConfiguration configuration,string mailText)
         {
-            SendMail(configuration,"New Shows Scheduled",mailText);
-        }
-
-        public void SendNewShowMail(IConfiguration configuration,RecordInfo recordInfo)
-        {
-            SendMail(configuration,"Scheduled: "+recordInfo.description,BuildNewShowText(recordInfo));
+            SendMail(configuration,@"New Shows Scheduled:",mailText);
         }
 
         public void SendShowReadyMail(IConfiguration configuration,RecordInfo recordInfo)
@@ -54,16 +57,15 @@ namespace StreamCapture
                 message.From.Add(new MailboxAddress("StreamCapture", ""));
                 message.To.Add(new MailboxAddress("", configuration["mailAddress"]));
                 message.Subject = subjectTest;
-                message.Body = new TextPart("plain")
-                {
-                    Text = bodyText
-                };
+
+                var bodyBuilder = new BodyBuilder();
+                bodyBuilder.HtmlBody = bodyText;
+                message.Body = bodyBuilder.ToMessageBody();                
 
                 using (var client = new SmtpClient())
                 {
                     client.Connect(configuration["smtpServer"], Convert.ToInt16(configuration["smtpPort"]), false);
-                    client.AuthenticationMechanisms.Remove("XOAUTH2");
-	                // Note: since we don't have an OAuth2 token, disable 	// the XOAUTH2 authentication mechanism.     
+                    client.AuthenticationMechanisms.Remove("XOAUTH2");  
                     client.Authenticate(configuration["smtpUser"], configuration["smtpPass"]);
                     client.Send(message);
                     client.Disconnect(true);
@@ -80,6 +82,11 @@ namespace StreamCapture
         {
             return String.Format($"Scheduled: {recordInfo.description} starting at {recordInfo.GetStartDT()} on channel/s {recordInfo.GetChannelString()}");
         }
+
+        private string BuildConcurrentShowText(RecordInfo recordInfo)
+        {
+            return String.Format($"Not Scheduled: {recordInfo.description} starting at {recordInfo.GetStartDT()} on channel/s {recordInfo.GetChannelString()}");
+        }        
 
         private string BuildShowReadyText(RecordInfo recordInfo)
         {
