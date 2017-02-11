@@ -32,6 +32,12 @@ namespace StreamCapture
             SendMail(configuration,text,text);
         }
 
+        public void SendShowStartedMail(IConfiguration configuration,RecordInfo recordInfo)
+        {
+            string text=BuildShowStartedText(recordInfo);
+            SendMail(configuration,text,text);
+        }
+
         public void SendErrorMail(IConfiguration configuration,string subject,string body)
         {
             SendMail(configuration, subject, body);
@@ -79,5 +85,10 @@ namespace StreamCapture
         {
             return String.Format($"Published: {recordInfo.description}");
         }
+
+        private string BuildShowStartedText(RecordInfo recordInfo)
+        {
+            return String.Format($"Started: {recordInfo.description}");
+        }        
     }
 }

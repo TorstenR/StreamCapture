@@ -334,6 +334,9 @@ namespace StreamCapture
             //Build output file
             VideoFileInfo videoFileInfo=videoFileManager.AddCaptureFile(configuration["outputPath"]);
 
+            //Email that show started
+            new Mailer().SendShowStartedMail(configuration,recordInfo);
+
             //Build ffmpeg capture command line with first channel and get things rolling
             string cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,videoFileInfo.GetFullFile());
             logWriter.WriteLine($"=========================================");
@@ -346,7 +349,8 @@ namespace StreamCapture
             //retry loop if we're not done yet
             //
             int numRetries=Convert.ToInt32(configuration["numberOfRetries"]);
-            for(int retryNum=0;DateTime.Now<=captureTargetEnd && retryNum<numRetries;retryNum++)
+            int retryNum=0;
+            for(retryNum=0;DateTime.Now<=captureTargetEnd && retryNum<numRetries;retryNum++)
             {           
                 logWriter.WriteLine($"{DateTime.Now}: Capture Failed for server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}. Retry {retryNum+1} of {configuration["numberOfRetries"]}");
 
@@ -357,7 +361,7 @@ namespace StreamCapture
                     logWriter.WriteLine($"{DateTime.Now}: It's been more than {authMinutes} authMinutes.  Time to re-authenticate");
                     Task<string> authTask = Authenticate();
                     hashValue=authTask.Result;
-                    if(string.IsNullOrEmpty(hashValue))                     
+                    if(string.IsNullOrEmpty(hashValue))
                     {
                         Console.WriteLine($"{DateTime.Now}: ERROR: Unable to authenticate.  Check username and password?");
                         throw new Exception("Unable to authenticate during a retry");
@@ -401,7 +405,17 @@ namespace StreamCapture
                 logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
                 captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,videoFileInfo.GetFullFile());
             }
-            logWriter.WriteLine($"{DateTime.Now}: Finished Capturing Stream.");             
+            logWriter.WriteLine($"{DateTime.Now}: Finished Capturing Stream.");     
+
+            //check retry
+            if(retryNum > numRetries)
+            {
+                logWriter.WriteLine($"{DateTime.Now}: ERROR!  Too many retries - partial show"); 
+
+                //Send alert mail
+                string body=recordInfo.description+" partially recorded due to too many retries";
+                new Mailer().SendErrorMail(configuration,"Partial: "+recordInfo.description,body);
+            }        
 
             //Update capture history and save
             TimeSpan finalTimeJustRecorded=DateTime.Now-lastStartedTime;
