@@ -111,7 +111,7 @@ namespace StreamCapture
                 RecordInfo[] sortedArray = sortedList.ToArray();
                 for(int idx=0;idx<sortedArray.Length;idx++)
                 {
-                    if(recordInfo.keywordPos>=sortedArray[idx].keywordPos)
+                    if(recordInfo.keywordPos<=sortedArray[idx].keywordPos)
                     {
                         sortedList.Insert(idx,recordInfo);
                         insertedFlag=true;
