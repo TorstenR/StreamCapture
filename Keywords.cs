@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.Linq;
@@ -20,21 +21,23 @@ namespace StreamCapture
         }
 
         //Given a show name, see if there's a match in any of the keywords
-        public KeywordInfo FindMatch(string showName)
+        public Tuple<KeywordInfo,int> FindMatch(string showName)
         {
             KeywordInfo keywordInfo = null;
 
             //Go through keywords seeing if there's a match
-            foreach (KeyValuePair<string, KeywordInfo> kvp in keywordDict)
+            KeyValuePair<string, KeywordInfo>[] kvpArray = keywordDict.ToArray();
+            int kvpIdx;
+            for(kvpIdx=0;kvpIdx<kvpArray.Length;kvpIdx++)
             {
-                string strKeywords = kvp.Value.keywords;
+                string strKeywords = kvpArray[kvpIdx].Value.keywords;
                 string[] kArray = strKeywords.Split(',');
 
                 for (int i = 0; i < kArray.Length; i++)
                 {
                     if (showName.ToLower().Contains(kArray[i].ToLower()))
                     {
-                        string[] excludeArray = kvp.Value.exclude.Split(',');
+                        string[] excludeArray = kvpArray[kvpIdx].Value.exclude.Split(',');
 
                         //Make sure no keywords to exclude are found
                         bool excludedFlag=false;
@@ -49,14 +52,14 @@ namespace StreamCapture
 
                         if(!excludedFlag)
                         {
-                            keywordInfo = kvp.Value;
+                            keywordInfo = kvpArray[kvpIdx].Value;
                             break;
                         }
                     }
                 }
             }
 
-            return keywordInfo;
+            return new Tuple<KeywordInfo,int>(keywordInfo,kvpIdx);
         }
     }
 }

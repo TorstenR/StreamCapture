@@ -82,12 +82,28 @@ namespace StreamCapture
             new ProcessManager(configuration).ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
         }
 
-        public void PublishAndCleanUpAfterCapture()
+        public void PublishAndCleanUpAfterCapture(string category)
         {
             //If NAS path exists, move file mp4 file there
             if(!string.IsNullOrEmpty(configuration["nasPath"]))
             {
-                files.SetPublishedFile(configuration["nasPath"]);
+                string publishedPath=configuration["nasPath"];
+
+                //Category passed in?  If so, let's publish to there instead
+                if(!string.IsNullOrEmpty(category))
+                {
+                    publishedPath=Path.Combine(publishedPath,category);
+
+                    string invalidChars = new string(Path.GetInvalidPathChars());
+                    foreach (char c in invalidChars)
+                        publishedPath = publishedPath.Replace(c.ToString(), "");
+
+                    if(!Directory.Exists(publishedPath))
+                        Directory.CreateDirectory(publishedPath);
+                }
+
+                //Ok, ready to publish
+                files.SetPublishedFile(publishedPath);
                 logWriter.WriteLine($"{DateTime.Now}: Moving {files.muxedFile.GetFullFile()} to {files.publishedfile.GetFullFile()}");
                 File.Move(files.muxedFile.GetFullFile(),files.publishedfile.GetFullFile());
             }

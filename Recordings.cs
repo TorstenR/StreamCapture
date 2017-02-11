@@ -58,7 +58,8 @@ namespace StreamCapture
                 string keyValue = scheduleShow.name + scheduleShow.time;
 
                 //Find any shows that match
-                KeywordInfo keywordInfo = keywords.FindMatch(scheduleShow.name);    
+                Tuple<KeywordInfo,int> tuple = keywords.FindMatch(scheduleShow.name);   
+                KeywordInfo keywordInfo = tuple.Item1; 
                 if (keywordInfo != null)
                 {
                     //Build record info if already exists, otherwise, create new                 
@@ -78,6 +79,9 @@ namespace StreamCapture
                     recordInfo.postMinutes = keywordInfo.postMinutes;
                     recordInfo.qualityPref = keywordInfo.qualityPref;
                     recordInfo.langPref = keywordInfo.langPref;
+                    recordInfo.category = scheduleShow.category;
+
+                    recordInfo.keywordPos = tuple.Item2;  //used for sorting the most important shows 
 
                     //Clean up description, and then use as filename
                     recordInfo.fileName = scheduleShow.name.Replace(' ','_');
@@ -93,7 +97,36 @@ namespace StreamCapture
                 }
             }
 
-            return recordDict.Values.ToList();
+            //Return ordered list based on keyword position
+            return SortBasedOnPos(recordDict.Values.ToList());
+        }
+
+        private List<RecordInfo> SortBasedOnPos(List<RecordInfo> listToBeSorted)
+        {
+            List<RecordInfo> sortedList=new List<RecordInfo>();
+
+            foreach(RecordInfo recordInfo in listToBeSorted)
+            {
+                bool insertedFlag=false;
+                RecordInfo[] sortedArray = sortedList.ToArray();
+                for(int idx=0;idx<sortedArray.Length;idx++)
+                {
+                    if(recordInfo.keywordPos>=sortedArray[idx].keywordPos)
+                    {
+                        sortedList.Insert(idx,recordInfo);
+                        insertedFlag=true;
+                        break;
+                    }
+                }
+
+                //Not found, so add to the end
+                if(!insertedFlag)
+                {
+                    sortedList.Add(recordInfo);
+                }
+            }
+
+            return sortedList;
         }
     }
 }

@@ -80,19 +80,23 @@ namespace StreamCapture
                 //Grabs schedule and builds a recording list based on keywords
                 List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
 
+                //Dictionary to hold count for how many shows are in an hour
+                Dictionary<int,int> concurrentCountDict = new Dictionary<int,int>();
+
                 //Build mail to send out
                 Mailer mailer = new Mailer();
                 string mailText = "";
 
                 //Go through record list, spawn a new process for each show found
                 foreach (RecordInfo recordInfo in recordInfoList)
-                {            
+                {
                     //If show is not already in the past and not already queued, let's go!
                     int hoursInFuture=Convert.ToInt32(configuration["hoursInFuture"]);
                     bool showInFuture=recordInfo.GetEndDT()>DateTime.Now;
                     bool showClose=recordInfo.GetStartDT()<=DateTime.Now.AddHours(hoursInFuture);
                     bool showQueued=recordInfo.processSpawnedFlag;
-                    if(showInFuture && showClose && !showQueued)
+                    bool maxConcurrent=IsMaxConcurrent(recordInfo.GetStartDT(),recordInfo.GetDuration(),Convert.ToInt16(configuration["concurrentCaptures"]),concurrentCountDict);
+                    if(showInFuture && showClose && !showQueued && !maxConcurrent)
                     {
                         recordInfo.processSpawnedFlag=true;
                         DumpRecordInfo(Console.Out,recordInfo); 
@@ -113,7 +117,9 @@ namespace StreamCapture
                         else if(!showClose)
                             Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
                         else if(showQueued)
-                            Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");                    
+                            Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");
+                        else if(maxConcurrent)
+                            Console.WriteLine($"{DateTime.Now}: Too many for this time slot: {recordInfo.description} at {recordInfo.GetStartDT()}");                                                                    
                     }
                 }  
 
@@ -163,6 +169,34 @@ namespace StreamCapture
             } 
         }
 
+        private bool IsMaxConcurrent(DateTime startDT,int duration,int maxConcurrent,Dictionary<int,int> concurrentCountDict)
+        {
+            bool maxFlag=false;
+
+            //Mark each hour
+            int startHour=startDT.Hour;
+            int hourLen=(int)Math.Round((((startDT.AddMinutes(duration))-startDT).TotalHours),0);
+            for(int hour=0;hour<hourLen;hour++)
+            {
+                int currentHour=startHour+hour;
+                int concurrentCount=0;              
+                if(concurrentCountDict.TryGetValue(currentHour,out concurrentCount))
+                {
+                    concurrentCount++;
+                    concurrentCountDict[currentHour]=concurrentCount;
+
+                    if(concurrentCount>maxConcurrent)
+                        maxFlag=true;
+                }
+                else
+                {
+                    concurrentCountDict.Add(currentHour,1);
+                }
+            }
+
+            return maxFlag;
+        }
+
         public void QueueRecording(ChannelHistory channelHistory,RecordInfo recordInfo,IConfiguration configuration,bool useLogFlag)
         {
             //Write to our very own log as there might be other captures going too
@@ -209,7 +243,7 @@ namespace StreamCapture
                 //Let's take care of processing and publishing the video files
                 videoFileManager.ConcatFiles();
                 videoFileManager.MuxFile(recordInfo.description);
-                videoFileManager.PublishAndCleanUpAfterCapture();
+                videoFileManager.PublishAndCleanUpAfterCapture(recordInfo.category);
 
                 //Cleanup
                 logWriter.WriteLine($"{DateTime.Now}: Done Capturing");

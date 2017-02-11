@@ -152,6 +152,9 @@ namespace StreamCapture
                 Environment.Exit(1);
             }
 
+            //Check concurrent captures
+            ValidateInt("appsettings.json","concurrentCaptures",configuration["concurrentCaptures"],1,25);             
+
             //Check auth minutes
             ValidateInt("appsettings.json","authMinutes",configuration["authMinutes"],30,1440); 
 

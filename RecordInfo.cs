@@ -18,8 +18,10 @@ namespace StreamCapture
         public int postMinutes { get; set; }
         public string qualityPref { get; set; }
         public string langPref { get; set; }
+        public string category { get; set; }
 
         public bool processSpawnedFlag  { get; set; }
+        public int keywordPos { get; set;}
 
         public Channels channels;
 
@@ -33,6 +35,7 @@ namespace StreamCapture
             strDTOffset="0";
             qualityPref="";
             langPref="";
+            category="";
         }
 
         public DateTime GetStartDT()
