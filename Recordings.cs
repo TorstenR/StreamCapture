@@ -59,9 +59,10 @@ namespace StreamCapture
 
                 //Find any shows that match
                 Tuple<KeywordInfo,int> tuple = keywords.FindMatch(scheduleShow.name);   
-                KeywordInfo keywordInfo = tuple.Item1; 
-                if (keywordInfo != null)
+                if (tuple != null)
                 {
+                    KeywordInfo keywordInfo = tuple.Item1; 
+
                     //Build record info if already exists, otherwise, create new                 
                     RecordInfo recordInfo=GetRecordInfo(keyValue);
 

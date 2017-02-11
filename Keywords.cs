@@ -53,13 +53,13 @@ namespace StreamCapture
                         if(!excludedFlag)
                         {
                             keywordInfo = kvpArray[kvpIdx].Value;
-                            break;
+                            return new Tuple<KeywordInfo,int>(keywordInfo,kvpIdx);
                         }
                     }
                 }
             }
 
-            return new Tuple<KeywordInfo,int>(keywordInfo,kvpIdx);
+            return null;
         }
     }
 }
