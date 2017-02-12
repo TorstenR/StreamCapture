@@ -51,11 +51,16 @@ namespace StreamCapture
             if(string.IsNullOrEmpty(configuration["smtpUser"]) || string.IsNullOrEmpty(configuration["mailAddress"]))
                 return;
 
+            Console.WriteLine($"{DateTime.Now}: Sending email...");
+
             try
             {
+                string[] addresses = configuration["mailAddress"].Split(',');
+
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress("StreamCapture", ""));
-                message.To.Add(new MailboxAddress("", configuration["mailAddress"]));
+                foreach(string address in addresses)
+                    message.To.Add(new MailboxAddress("", address));
                 message.Subject = subjectTest;
 
                 var bodyBuilder = new BodyBuilder();
