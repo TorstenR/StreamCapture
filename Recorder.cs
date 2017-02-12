@@ -316,7 +316,12 @@ namespace StreamCapture
             }
             catch(Exception e)
             {
-                throw new Exception("ERROR!  Unable to authenticate.  Unexpected result from service",e);
+                //Send alert mail
+                string body="Unable to authenticate. Exception "+e.Message;
+                body=body+"\n"+e.StackTrace;
+                new Mailer().SendErrorMail(configuration,"Authentication Exception! ("+e.Message+")",body);
+
+                throw new Exception("Unable to authenticate.  Unexpected result from service",e);
             }
 
             return hashValue;
@@ -422,17 +427,7 @@ namespace StreamCapture
                 logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
                 captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,videoFileInfo.GetFullFile());
             }
-            logWriter.WriteLine($"{DateTime.Now}: Finished Capturing Stream.");     
-
-            //check retry
-            if(retryNum > numRetries)
-            {
-                logWriter.WriteLine($"{DateTime.Now}: ERROR!  Too many retries - partial show"); 
-
-                //Send alert mail
-                string body=recordInfo.description+" partially recorded due to too many retries";
-                new Mailer().SendErrorMail(configuration,"Partial: "+recordInfo.description,body);
-            }        
+            logWriter.WriteLine($"{DateTime.Now}: Done Capturing Stream.");         
 
             //Update capture history and save
             TimeSpan finalTimeJustRecorded=DateTime.Now-lastStartedTime;
@@ -440,6 +435,17 @@ namespace StreamCapture
             channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).lastSuccess=DateTime.Now;
             channelHistory.SetServerAvgKBytesSec(scs.GetChannelNumber(),scs.GetServerName(),captureProcessInfo.avgKBytesSec);      
             channelHistory.Save();
+
+            //check retry
+            if(retryNum >= numRetries)
+            {
+                logWriter.WriteLine($"{DateTime.Now}: ERROR!  Too many retries - {recordInfo.description}"); 
+
+                //Send alert mail
+                string body=recordInfo.description+" partially recorded due to too many retries";
+                new Mailer().SendErrorMail(configuration,"Partial: "+recordInfo.description,body);
+                throw new Exception("Too many retries for "+recordInfo.description);
+            }                
         }
 
         private string BuildCaptureCmdLineArgs(string server,string channel,string hashValue,string outputPath)

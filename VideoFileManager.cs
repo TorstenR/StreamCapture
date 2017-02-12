@@ -143,7 +143,15 @@ namespace StreamCapture
             }
             catch(Exception e)
             {
-                Console.WriteLine($"{DateTime.Now}: ERROR: Problem cleaning up old files.  Error: {e.Message}");
+                Console.WriteLine("======================");
+                Console.WriteLine($"{DateTime.Now}: ERROR: Problem cleaning up old files.");
+                Console.WriteLine("======================");
+                Console.WriteLine($"{e.Message}\n{e.StackTrace}");
+
+                //Send alert mail
+                string body="Problem cleaning up old files with Exception "+e.Message;
+                body=body+"\n"+e.StackTrace;
+                new Mailer().SendErrorMail(config,"StreamCapture Exception! ("+e.Message+")",body);                
             }
         }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.Linq;
 using System.IO;
+using Microsoft.Extensions.Configuration;
 
 namespace StreamCapture
 {
@@ -10,9 +11,21 @@ namespace StreamCapture
     {
         Dictionary<string, KeywordInfo> keywordDict;
 
-        public Keywords()
+        public Keywords(IConfiguration configuration)
         {
-            keywordDict = JsonConvert.DeserializeObject<Dictionary<string, KeywordInfo>>(File.ReadAllText("keywords.json"));
+            try
+            {
+                keywordDict = JsonConvert.DeserializeObject<Dictionary<string, KeywordInfo>>(File.ReadAllText("keywords.json"));
+            }
+            catch(Exception e)
+            {
+                //Send alert mail
+                string body="Keyword load failed with Exception "+e.Message;
+                body=body+"\n"+e.StackTrace;
+                new Mailer().SendErrorMail(configuration,"ERROR: keywords.json Exception ("+e.Message+")",body);
+
+                throw new Exception("Problem deserializing keywords.json",e);
+            }                
         }
 
         public KeywordInfo[] GetKeywordArray()

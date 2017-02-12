@@ -11,14 +11,12 @@ namespace StreamCapture
         private IConfiguration configuration;
         private Dictionary<string, RecordInfo> recordDict;
         private Schedule schedule;
-        private Keywords keywords;
 
         public Recordings(IConfiguration _configuration)
         {
             recordDict = new Dictionary<string, RecordInfo>();
             configuration = _configuration;
             schedule = new Schedule();
-            keywords = new Keywords();
         }
 
         public void AddUpdateRecordInfo(string recordInfoKey,RecordInfo recordInfo)
@@ -48,6 +46,9 @@ namespace StreamCapture
         
         public List<RecordInfo> BuildRecordSchedule()
         {
+            //Refresh keywords
+            Keywords keywords = new Keywords(configuration);
+
             //Refresh from website
             schedule.LoadSchedule(configuration["debug"]).Wait();
             List<ScheduleShow> scheduleShowList = schedule.GetScheduledShows();
