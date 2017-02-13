@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Net​.NetworkInformation;
 using Newtonsoft.Json;
 using System.IO;
 using System.Threading;
@@ -376,6 +377,16 @@ namespace StreamCapture
             {           
                 logWriter.WriteLine($"{DateTime.Now}: Capture Failed for server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}. Retry {retryNum+1} of {configuration["numberOfRetries"]}");
 
+                //Let's make sure the interwebs are still there.  If not, let's loop until they come back or the show ends.
+                while(!IsInternetOk() && DateTime.Now<=captureTargetEnd)
+                {
+                    bool logFlag=false;
+                    if(!logFlag)
+                        logWriter.WriteLine($"{DateTime.Now}: Interwebs are down.  Checking every minute until back or show ends");
+                    TimeSpan oneMinute = new TimeSpan(0, 1, 0);
+                    Thread.Sleep(oneMinute);
+                }
+
                 //Check to see if we need to re-authenticate
                 int authMinutes=Convert.ToInt16(configuration["authMinutes"]);
                 if(DateTime.Now>captureStarted.AddMinutes(authMinutes))
@@ -444,8 +455,28 @@ namespace StreamCapture
                 //Send alert mail
                 string body=recordInfo.description+" partially recorded due to too many retries";
                 new Mailer().SendErrorMail(configuration,"Partial: "+recordInfo.description,body);
-                throw new Exception("Too many retries for "+recordInfo.description);
+                //throw new Exception("Too many retries for "+recordInfo.description);
             }                
+        }
+
+        private bool IsInternetOk()
+        {
+            bool retval = true;
+
+            try
+            {
+                Ping pingSender = new Ping();
+                Task<PingReply> pingTask = new Ping().SendPingAsync("www.google.com",2);
+                PingReply reply= pingTask.Result;
+                if(reply.Status != IPStatus.Success)
+                    retval = false;
+            }
+            catch(Exception e)
+            {
+                retval = false;
+            }
+
+            return retval;
         }
 
         private string BuildCaptureCmdLineArgs(string server,string channel,string hashValue,string outputPath)
