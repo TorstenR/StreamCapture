@@ -401,6 +401,9 @@ namespace StreamCapture
                     }
                 }
 
+                //Log avg streaming rate for channel history 
+                logWriter.WriteLine($"{DateTime.Now}: Avg rate is {captureProcessInfo.avgKBytesSec}KB/s for {scs.GetServerName()}/{scs.GetChannelNumber()}");                
+
                 //Set new avg streaming rate for channel history    
                 channelHistory.SetServerAvgKBytesSec(scs.GetChannelNumber(),scs.GetServerName(),captureProcessInfo.avgKBytesSec);
 
@@ -412,11 +415,15 @@ namespace StreamCapture
                     scs.SetAvgKBytesSec(captureProcessInfo.avgKBytesSec);
 
                     //Get correct server and channel (determined by heuristics)
-                    scs.GetNextServerChannel();
+                    if(!scs.IsBestSelected())
+                    {
+                        scs.GetNextServerChannel();
+                        retryNum=-1; //reset retries since we haven't got through the server/channel list yet
+                    }
                 }
                 else
                 {
-                    retryNum=0; //reset retries since it's been more than 15 minutes
+                    retryNum=-1; //reset retries since it's been more than 15 minutes
                 }
 
                 //Set new started time and calc new timer     
@@ -447,8 +454,8 @@ namespace StreamCapture
             channelHistory.SetServerAvgKBytesSec(scs.GetChannelNumber(),scs.GetServerName(),captureProcessInfo.avgKBytesSec);      
             channelHistory.Save();
 
-            //check retry
-            if(retryNum >= numRetries)
+            //check if actually done and didn't error out early
+            if(DateTime.Now>=captureTargetEnd)
             {
                 logWriter.WriteLine($"{DateTime.Now}: ERROR!  Too many retries - {recordInfo.description}"); 
 
@@ -471,7 +478,7 @@ namespace StreamCapture
                 if(reply.Status != IPStatus.Success)
                     retval = false;
             }
-            catch(Exception e)
+            catch(Exception)
             {
                 retval = false;
             }

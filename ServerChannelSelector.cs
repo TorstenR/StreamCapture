@@ -27,6 +27,11 @@ namespace StreamCapture
             BuildSortedTupleList();
         }
 
+        public bool IsBestSelected()
+        {
+            return bestTupleSelectedFlag;
+        }
+
         public string GetServerName()
         {
             return sortedTupleList[tupleIdx].Item1;
@@ -44,8 +49,6 @@ namespace StreamCapture
 
             //Replace avgKB w/ the updated value we just observed
             sortedTupleList[tupleIdx]=new Tuple<string,ChannelInfo,long>(currentServer,currentChannel,avgKBytesSec);
-
-            logWriter.WriteLine($"{DateTime.Now}: Setting {avgKBytesSec}KB/s for server/channel {currentServer}/{currentChannel.number}");
         }
 
         public Tuple<string,ChannelInfo,long>  GetNextServerChannel()
