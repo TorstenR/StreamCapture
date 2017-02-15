@@ -7,6 +7,7 @@ This program is intended to run largely unattended, recording shows based on key
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ###News:
+- Feb 15, 2017: Improved scheduling so it works more as expected even when there's a lot of shows
 - Feb 11, 2017: More bug fixes and better emails.
 - Feb 9, 2017: Lots of bug fixes and better stability.  Files are now cleaned up according to retention days.
 - Feb 7, 2017: Email alerting now for schedule and completed shows via SMTP
