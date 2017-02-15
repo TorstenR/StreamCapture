@@ -13,7 +13,7 @@ namespace StreamCapture
             if(string.IsNullOrEmpty(newShowText))
                 newShowText=@"<h3>New Shows Scheduled:</h3>";
 
-            return newShowText+@"<br>"+BuildNewShowText(recordInfo);
+            return newShowText+@"<br>"+BuildShowText(recordInfo);
         }
 
         public string AddCurrentScheduleToString(string currentlyScheduled,RecordInfo recordInfo)
@@ -21,7 +21,7 @@ namespace StreamCapture
             if(string.IsNullOrEmpty(currentlyScheduled))
                 currentlyScheduled=@"<p><p><h3>Current Schedule:</h3>";
 
-            return currentlyScheduled+@"<br>"+BuildNewShowText(recordInfo);
+            return currentlyScheduled+@"<br>"+BuildShowText(recordInfo);
         }        
 
         public string AddConcurrentShowToString(string concurentShowText,RecordInfo recordInfo)
@@ -29,7 +29,7 @@ namespace StreamCapture
             if(string.IsNullOrEmpty(concurentShowText))
                 concurentShowText=@"<p><p><h3>Shows NOT scheduled due to too many concurrent:</h3>";
 
-            return concurentShowText+@"<br>"+BuildConcurrentShowText(recordInfo);
+            return concurentShowText+@"<br>"+BuildShowText(recordInfo);
         }        
 
         public void SendNewShowMail(IConfiguration configuration,string mailText)
@@ -91,15 +91,16 @@ namespace StreamCapture
             }
         }
 
-        private string BuildNewShowText(RecordInfo recordInfo)
+        private string BuildShowText(RecordInfo recordInfo)
         {
-            return String.Format($"Scheduled: {recordInfo.description} starting at {recordInfo.GetStartDT()} on channel/s {recordInfo.GetChannelString()}");
-        }
+            string day = recordInfo.GetStartDT().ToString("ddd");
+            if(recordInfo.GetStartDT().Day==DateTime.Now.Day)
+                day="Today";
+            string startTime = recordInfo.GetStartDT().ToString("HH:mm");
+            string endTime = recordInfo.GetEndDT().ToString("HH:mm");
 
-        private string BuildConcurrentShowText(RecordInfo recordInfo)
-        {
-            return String.Format($"Not Scheduled: {recordInfo.description} starting at {recordInfo.GetStartDT()} on channel/s {recordInfo.GetChannelString()}");
-        }        
+            return String.Format($"{day} {startTime}-{endTime}   {recordInfo.description} on channel/s {recordInfo.GetChannelString()}");
+        }      
 
         private string BuildShowReadyText(RecordInfo recordInfo)
         {
