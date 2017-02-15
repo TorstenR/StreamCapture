@@ -75,62 +75,21 @@ namespace StreamCapture
             //Grab schedule from interwebs and loop forever, checking every n hours for new shows to record
             while(true)
             {
-                //List for items we need to remove from the recordInfoList (we can't while in the loop)
-                List<RecordInfo> toDeleteList = new List<RecordInfo>();
-
                 //Grabs schedule and builds a recording list based on keywords
                 List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
-
-                //Dictionary to hold count for how many shows are in an hour
-                Dictionary<int,int> concurrentCountDict = new Dictionary<int,int>();
-
-                //Build mail to send out
-                Mailer mailer = new Mailer();
-                string newShowText = "";
-                string concurrentShowText = "";
-                string currentScheduleText="";
 
                 //Go through record list, spawn a new process for each show found
                 foreach (RecordInfo recordInfo in recordInfoList)
                 {
-                    //If show is not already in the past and not already queued, let's go!
-                    int hoursInFuture=Convert.ToInt32(configuration["hoursInFuture"]);
-                    bool showInFuture=recordInfo.GetEndDT()>DateTime.Now;
-                    bool showClose=recordInfo.GetStartDT()<=DateTime.Now.AddHours(hoursInFuture);
+                    //If show is not already queued, let's go!
                     bool showQueued=recordInfo.processSpawnedFlag;
-                    bool maxConcurrent=IsMaxConcurrent(recordInfo.GetStartDT(),recordInfo.GetDuration(),Convert.ToInt16(configuration["concurrentCaptures"]),concurrentCountDict);
-                    if(showInFuture && showClose && !showQueued && !maxConcurrent)
+                    if(!showQueued)
                     {
                         recordInfo.processSpawnedFlag=true;
                         DumpRecordInfo(Console.Out,recordInfo); 
 
-                        //Add to mailer
-                        newShowText=mailer.AddNewShowToString(newShowText,recordInfo);
-                        currentScheduleText=mailer.AddCurrentScheduleToString(currentScheduleText,recordInfo);
-
                         // Queue show to be recorded now
                         Task.Factory.StartNew(() => QueueRecording(channelHistory,recordInfo,configuration,true)); 
-                    }
-                    else
-                    {
-                        if(!showInFuture)
-                        {
-                            Console.WriteLine($"{DateTime.Now}: Show already finished: {recordInfo.description} at {recordInfo.GetStartDT()}");
-                            toDeleteList.Add(recordInfo); //So we don't leak
-                        }
-                        else if(!showClose)
-                            Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
-                        else if(showQueued)
-                        {
-                            Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");
-                            currentScheduleText=mailer.AddCurrentScheduleToString(currentScheduleText,recordInfo);
-                        }
-                        else if(maxConcurrent)
-                        {
-                            //Add to mailer
-                            concurrentShowText=mailer.AddConcurrentShowToString(concurrentShowText,recordInfo);
-                            Console.WriteLine($"{DateTime.Now}: Too many for this time slot: {recordInfo.description} at {recordInfo.GetStartDT()}");        
-                        }                                                            
                     }
                 }  
 
@@ -157,22 +116,7 @@ namespace StreamCapture
                     int recHour=Convert.ToInt32(times[0]);  //grab first time in the list
                     nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
                     nextRecord=nextRecord.AddDays(1);
-                }
-
-                //Let's clean up show list now
-                foreach (RecordInfo recordInfo in toDeleteList)
-                    recordInfoList.Remove(recordInfo);
-
-                //Send mail if we have something
-                string mailText="";
-                if(!string.IsNullOrEmpty(newShowText))
-                    mailText=mailText+newShowText;
-                if(!string.IsNullOrEmpty(concurrentShowText))
-                    mailText=mailText+concurrentShowText;
-                if(!string.IsNullOrEmpty(currentScheduleText))
-                    mailText=mailText+currentScheduleText;                    
-                if(!string.IsNullOrEmpty(mailText))
-                        mailer.SendNewShowMail(configuration,mailText);               
+                }             
 
                 //Since we're awake, let's see if there are any files needing cleaning up
                 VideoFileManager.CleanOldFiles(configuration);
@@ -183,34 +127,6 @@ namespace StreamCapture
                 Thread.Sleep(timeToWait);         
                 Console.WriteLine($"{DateTime.Now}: Woke up, now checking again...");
             } 
-        }
-
-        private bool IsMaxConcurrent(DateTime startDT,int duration,int maxConcurrent,Dictionary<int,int> concurrentCountDict)
-        {
-            bool maxFlag=false;
-
-            //Mark each hour
-            int startHour=startDT.Hour;
-            int hourLen=(int)Math.Round((((startDT.AddMinutes(duration))-startDT).TotalHours),0);
-            for(int hour=0;hour<hourLen;hour++)
-            {
-                int currentHour=startHour+hour;
-                int concurrentCount=0;              
-                if(concurrentCountDict.TryGetValue(currentHour,out concurrentCount))
-                {
-                    concurrentCount++;
-                    concurrentCountDict[currentHour]=concurrentCount;
-
-                    if(concurrentCount>maxConcurrent)
-                        maxFlag=true;
-                }
-                else
-                {
-                    concurrentCountDict.Add(currentHour,1);
-                }
-            }
-
-            return maxFlag;
         }
 
         public void QueueRecording(ChannelHistory channelHistory,RecordInfo recordInfo,IConfiguration configuration,bool useLogFlag)
