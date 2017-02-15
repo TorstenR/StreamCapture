@@ -34,7 +34,7 @@ namespace StreamCapture
 
         public void SendNewShowMail(IConfiguration configuration,string mailText)
         {
-            SendMail(configuration,@"New Shows Scheduled:",mailText);
+            SendMail(configuration,@"Current Shows Scheduled:",mailText);
         }
 
         public void SendShowReadyMail(IConfiguration configuration,RecordInfo recordInfo)
