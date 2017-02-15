@@ -455,7 +455,7 @@ namespace StreamCapture
             channelHistory.Save();
 
             //check if actually done and didn't error out early
-            if(DateTime.Now>=captureTargetEnd)
+            if(DateTime.Now>captureTargetEnd)
             {
                 logWriter.WriteLine($"{DateTime.Now}: ERROR!  Too many retries - {recordInfo.description}"); 
 
