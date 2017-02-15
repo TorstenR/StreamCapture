@@ -72,61 +72,76 @@ namespace StreamCapture
             //Create channel history object
             ChannelHistory channelHistory = new ChannelHistory();
 
-            //Grab schedule from interwebs and loop forever, checking every n hours for new shows to record
-            while(true)
+            try
             {
-                //Grabs schedule and builds a recording list based on keywords
-                List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
-
-                //Go through record list, spawn a new process for each show found
-                foreach (RecordInfo recordInfo in recordInfoList)
+                //Grab schedule from interwebs and loop forever, checking every n hours for new shows to record
+                while(true)
                 {
-                    //If show is not already queued, let's go!
-                    bool showQueued=recordInfo.processSpawnedFlag;
-                    if(!showQueued)
-                    {
-                        recordInfo.processSpawnedFlag=true;
-                        DumpRecordInfo(Console.Out,recordInfo); 
+                    //Grabs schedule and builds a recording list based on keywords
+                    List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
 
-                        // Queue show to be recorded now
-                        Task.Factory.StartNew(() => QueueRecording(channelHistory,recordInfo,configuration,true)); 
-                    }
-                }  
-
-                //Determine how long to sleep before next check
-                string[] times=configuration["scheduleCheck"].Split(',');
-                DateTime nextRecord=DateTime.Now;
-                
-                //find out if schedule time is still today
-                if(DateTime.Now.Hour < Convert.ToInt32(times[times.Length-1]))
-                {
-                    for(int i=0;i<times.Length;i++)
+                    //Go through record list, spawn a new process for each show found
+                    foreach (RecordInfo recordInfo in recordInfoList)
                     {
-                        int recHour=Convert.ToInt32(times[i]);
-                        if(DateTime.Now.AddMinutes(10).Hour < recHour)  //add fudge factor for bad timers
+                        //If show is not already queued, let's go!
+                        bool showQueued=recordInfo.processSpawnedFlag;
+                        if(!showQueued)
                         {
-                            nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
-                            break;
+                            recordInfo.processSpawnedFlag=true;
+                            DumpRecordInfo(Console.Out,recordInfo); 
+
+                            // Queue show to be recorded now
+                            Task.Factory.StartNew(() => QueueRecording(channelHistory,recordInfo,configuration,true)); 
+                        }
+                    }  
+
+                    //Determine how long to sleep before next check
+                    string[] times=configuration["scheduleCheck"].Split(',');
+                    DateTime nextRecord=DateTime.Now;
+                    
+                    //find out if schedule time is still today
+                    if(DateTime.Now.Hour < Convert.ToInt32(times[times.Length-1]))
+                    {
+                        for(int i=0;i<times.Length;i++)
+                        {
+                            int recHour=Convert.ToInt32(times[i]);
+                            if(DateTime.Now.AddMinutes(10).Hour < recHour)  //add fudge factor for bad timers
+                            {
+                                nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
+                                break;
+                            }
                         }
                     }
-                }
-                else
-                {
-                    //build date tomorrow
-                    int recHour=Convert.ToInt32(times[0]);  //grab first time in the list
-                    nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
-                    nextRecord=nextRecord.AddDays(1);
-                }             
+                    else
+                    {
+                        //build date tomorrow
+                        int recHour=Convert.ToInt32(times[0]);  //grab first time in the list
+                        nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
+                        nextRecord=nextRecord.AddDays(1);
+                    }             
 
-                //Since we're awake, let's see if there are any files needing cleaning up
-                VideoFileManager.CleanOldFiles(configuration);
+                    //Since we're awake, let's see if there are any files needing cleaning up
+                    VideoFileManager.CleanOldFiles(configuration);
 
-                //Wait
-                TimeSpan timeToWait = nextRecord - DateTime.Now;
-                Console.WriteLine($"{DateTime.Now}: Now sleeping for {timeToWait.Hours+1} hours before checking again at {nextRecord.ToString()}");
-                Thread.Sleep(timeToWait);         
-                Console.WriteLine($"{DateTime.Now}: Woke up, now checking again...");
-            } 
+                    //Wait
+                    TimeSpan timeToWait = nextRecord - DateTime.Now;
+                    Console.WriteLine($"{DateTime.Now}: Now sleeping for {timeToWait.Hours+1} hours before checking again at {nextRecord.ToString()}");
+                    Thread.Sleep(timeToWait);         
+                    Console.WriteLine($"{DateTime.Now}: Woke up, now checking again...");
+                } 
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("======================");
+                Console.WriteLine($"{DateTime.Now}: ERROR - Exception!");
+                Console.WriteLine("======================");
+                Console.WriteLine($"{e.Message}\n{e.StackTrace}");
+
+                //Send alert mail
+                string body="NO LONGER RECORDING!  Main loop failed with Exception "+e.Message;
+                body=body+"\n"+e.StackTrace;
+                new Mailer().SendErrorMail(configuration,"NO LONGER RECORDING!  StreamCapture Exception: ("+e.Message+")",body);
+            }
         }
 
         public void QueueRecording(ChannelHistory channelHistory,RecordInfo recordInfo,IConfiguration configuration,bool useLogFlag)
