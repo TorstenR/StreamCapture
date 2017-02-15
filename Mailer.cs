@@ -16,6 +16,14 @@ namespace StreamCapture
             return newShowText+@"<br>"+BuildNewShowText(recordInfo);
         }
 
+        public string AddCurrentScheduleToString(string currentlyScheduled,RecordInfo recordInfo)
+        {
+            if(string.IsNullOrEmpty(currentlyScheduled))
+                currentlyScheduled=@"<p><p><h3>Current Schedule:</h3>";
+
+            return currentlyScheduled+@"<br>"+BuildNewShowText(recordInfo);
+        }        
+
         public string AddConcurrentShowToString(string concurentShowText,RecordInfo recordInfo)
         {
             if(string.IsNullOrEmpty(concurentShowText))

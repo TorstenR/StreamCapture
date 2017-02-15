@@ -88,6 +88,7 @@ namespace StreamCapture
                 Mailer mailer = new Mailer();
                 string newShowText = "";
                 string concurrentShowText = "";
+                string currentScheduleText="";
 
                 //Go through record list, spawn a new process for each show found
                 foreach (RecordInfo recordInfo in recordInfoList)
@@ -105,6 +106,7 @@ namespace StreamCapture
 
                         //Add to mailer
                         newShowText=mailer.AddNewShowToString(newShowText,recordInfo);
+                        currentScheduleText=mailer.AddCurrentScheduleToString(currentScheduleText,recordInfo);
 
                         // Queue show to be recorded now
                         Task.Factory.StartNew(() => QueueRecording(channelHistory,recordInfo,configuration,true)); 
@@ -119,7 +121,10 @@ namespace StreamCapture
                         else if(!showClose)
                             Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
                         else if(showQueued)
+                        {
                             Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");
+                            currentScheduleText=mailer.AddCurrentScheduleToString(currentScheduleText,recordInfo);
+                        }
                         else if(maxConcurrent)
                         {
                             //Add to mailer
@@ -128,15 +133,6 @@ namespace StreamCapture
                         }                                                            
                     }
                 }  
-
-                //Send mail if we have something
-                if(!string.IsNullOrEmpty(newShowText))
-                {
-                    if(string.IsNullOrEmpty(concurrentShowText))
-                        mailer.SendNewShowMail(configuration,newShowText);
-                    else
-                        mailer.SendNewShowMail(configuration,newShowText+concurrentShowText);
-                }
 
                 //Determine how long to sleep before next check
                 string[] times=configuration["scheduleCheck"].Split(',');
@@ -165,9 +161,18 @@ namespace StreamCapture
 
                 //Let's clean up show list now
                 foreach (RecordInfo recordInfo in toDeleteList)
-                {
                     recordInfoList.Remove(recordInfo);
-                }
+
+                //Send mail if we have something
+                string mailText="";
+                if(!string.IsNullOrEmpty(newShowText))
+                    mailText=mailText+newShowText;
+                if(!string.IsNullOrEmpty(concurrentShowText))
+                    mailText=mailText+concurrentShowText;
+                if(!string.IsNullOrEmpty(currentScheduleText))
+                    mailText=mailText+currentScheduleText;                    
+                if(!string.IsNullOrEmpty(mailText))
+                        mailer.SendNewShowMail(configuration,mailText);               
 
                 //Since we're awake, let's see if there are any files needing cleaning up
                 VideoFileManager.CleanOldFiles(configuration);
