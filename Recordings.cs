@@ -175,25 +175,23 @@ namespace StreamCapture
             return queuedRecordings;
         }
 
-        private List<RecordInfo> AddToSortedList(RecordInfo recordInfoToAdd,List<RecordInfo> origList)
+        private List<RecordInfo> AddToSortedList(RecordInfo recordInfoToAdd,List<RecordInfo> list)
         {
             //Add to a sorted list based on start time
-            List<RecordInfo> newList = new List<RecordInfo>(origList);
-
-            RecordInfo[] recordInfoArray = origList.ToArray();
+            RecordInfo[] recordInfoArray = list.ToArray();
             for(int idx=0;idx<recordInfoArray.Length;idx++)
             {
                 if(recordInfoToAdd.GetStartDT()<recordInfoArray[idx].GetStartDT())
                 {
-                    newList.Insert(idx,recordInfoToAdd);
-                    return newList;
+                    list.Insert(idx,recordInfoToAdd);
+                    return list;
                 }
 
             }
 
             //If we've made it this far, then add to the end
-            newList.Add(recordInfoToAdd);
-            return newList;
+            list.Add(recordInfoToAdd);
+            return list;
         }
 
         private bool IsConcurrencyOk(RecordInfo recordingToAdd,List<RecordInfo> recordingList)
@@ -201,6 +199,9 @@ namespace StreamCapture
             //Temp list to test with
             List<RecordInfo> tempList = new List<RecordInfo>(recordingList);
             bool okToAddFlag=true;
+
+            //Add to this temp list and then we'll check for concurrency
+            tempList=AddToSortedList(recordingToAdd,tempList);
 
             //stack to keep track of end dates
             List<DateTime> endTimeStack = new List<DateTime>();
