@@ -134,7 +134,7 @@ namespace StreamCapture
                 if(showAlreadyDone)
                 {
                     Console.WriteLine($"{DateTime.Now}: Show already finished: {recordInfo.description} at {recordInfo.GetStartDT()}");
-                    recordingList.RemoveAt(idx);
+                    recordingList.Remove(recordInfo);
                 }
                 else if(showTooFarAway)
                     Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
