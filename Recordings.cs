@@ -119,41 +119,40 @@ namespace StreamCapture
             //Starting new as this is always time dependent
             queuedRecordings=new List<RecordInfo>();
 
-            //List for items we need to remove from the recordInfoList (we can't while in the loop)
-            List<RecordInfo> toDeleteList = new List<RecordInfo>();
-
             //Go through potential shows and add the ones we should record
             //Omit those which are already done, too far in the future, or too many concurrent.  (already queued is fine)
-            foreach(RecordInfo recordInfo in SortBasedOnKeywordPos(recordDict.Values.ToList()))
+            List<RecordInfo> recordingList = SortBasedOnKeywordPos(recordDict.Values.ToList());
+            RecordInfo[] recordingListArray = recordingList.ToArray();
+            for(int idx=0;idx<recordingListArray.Length;idx++)
             {
+                RecordInfo recordInfo = recordingListArray[idx];
+
                 bool showAlreadyDone=recordInfo.GetEndDT()<DateTime.Now;
                 bool showTooFarAway=recordInfo.GetStartDT()>DateTime.Now.AddHours(Convert.ToInt32(configuration["hoursInFuture"]));
+                bool tooManyConcurrent=!IsConcurrencyOk(recordInfo,queuedRecordings);
 
                 if(showAlreadyDone)
                 {
                     Console.WriteLine($"{DateTime.Now}: Show already finished: {recordInfo.description} at {recordInfo.GetStartDT()}");
-                    toDeleteList.Add(recordInfo); //So we don't leak
+                    recordingList.RemoveAt(idx);
                 }
                 if(showTooFarAway)
                     Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
+
+                if(tooManyConcurrent)
+                    Console.WriteLine($"{DateTime.Now}: Too many at once: {recordInfo.description} at {recordInfo.GetStartDT()} - {recordInfo.GetEndDT()}"); 
+
 
                 if(recordInfo.processSpawnedFlag)
                     Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");                    
 
                 //Let's queue this since it looks good so far
-                if(!showAlreadyDone && !showTooFarAway)
+                if(!showAlreadyDone && !showTooFarAway && !tooManyConcurrent)
                 {
-                    AddToQueued(recordInfo);
+                    queuedRecordings = AddToSortedList(recordInfo,queuedRecordings);
                 }
             }
-
-            //Remove too many concurrent shows
-            RemoveConcurrent();
-
-            //Let's clean up master dictionary now of old shows
-            foreach (RecordInfo recordInfo in toDeleteList)
-                DeleteRecordInfo(recordInfo);                
-
+             
             //build email and print schedule
             Console.WriteLine($"{DateTime.Now}: Current Schedule ==================");
             foreach(RecordInfo recordInfo in queuedRecordings)
@@ -176,28 +175,32 @@ namespace StreamCapture
             return queuedRecordings;
         }
 
-        private void AddToQueued(RecordInfo recordInfoToAdd)
+        private List<RecordInfo> AddToSortedList(RecordInfo recordInfoToAdd,List<RecordInfo> origList)
         {
-            //Make a sorted list based on start time
-            // We'll make sure concurrent shows are respected
-            RecordInfo[] recordInfoArray = queuedRecordings.ToArray();
+            //Add to a sorted list based on start time
+            List<RecordInfo> newList = new List<RecordInfo>(origList);
+
+            RecordInfo[] recordInfoArray = origList.ToArray();
             for(int idx=0;idx<recordInfoArray.Length;idx++)
             {
                 if(recordInfoToAdd.GetStartDT()<recordInfoArray[idx].GetStartDT())
                 {
-                    queuedRecordings.Insert(idx,recordInfoToAdd);
-                    return;
+                    newList.Insert(idx,recordInfoToAdd);
+                    return newList;
                 }
 
             }
 
             //If we've made it this far, then add to the end
-            queuedRecordings.Add(recordInfoToAdd);
+            newList.Add(recordInfoToAdd);
+            return newList;
         }
 
-        private void RemoveConcurrent()
+        private bool IsConcurrencyOk(RecordInfo recordingToAdd,List<RecordInfo> recordingList)
         {
-            Console.WriteLine($"{DateTime.Now}: Concurrency Removals ==================");
+            //Temp list to test with
+            List<RecordInfo> tempList = new List<RecordInfo>(recordingList);
+            bool okToAddFlag=true;
 
             //stack to keep track of end dates
             List<DateTime> endTimeStack = new List<DateTime>();
@@ -205,7 +208,7 @@ namespace StreamCapture
             int maxConcurrent=Convert.ToInt16(configuration["concurrentCaptures"]);
             int concurrent=0;
 
-            RecordInfo[] recordInfoArray = queuedRecordings.ToArray();
+            RecordInfo[] recordInfoArray = tempList.ToArray();
             for(int idx=0;idx<recordInfoArray.Length;idx++)
             {
                 concurrent++;  //increment because it's a new record              
@@ -225,10 +228,11 @@ namespace StreamCapture
                 //Let's make sure we're not over max
                 if(concurrent>maxConcurrent)
                 {
-                    queuedRecordings.Remove(recordInfoArray[idx]);
-                    Console.WriteLine($"{DateTime.Now}: Too many for this time slot: {recordInfoArray[idx].description} at {recordInfoArray[idx].GetStartDT()} - {recordInfoArray[idx].GetEndDT()}"); 
+                    okToAddFlag=false;
                 }
-            }           
+            } 
+
+            return okToAddFlag;         
         }
 
         private List<RecordInfo> SortBasedOnKeywordPos(List<RecordInfo> listToBeSorted)
