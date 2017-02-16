@@ -136,15 +136,16 @@ namespace StreamCapture
                     Console.WriteLine($"{DateTime.Now}: Show already finished: {recordInfo.description} at {recordInfo.GetStartDT()}");
                     recordingList.RemoveAt(idx);
                 }
-                if(showTooFarAway)
+                else if(showTooFarAway)
                     Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
-
-                if(tooManyConcurrent)
+                else if(recordInfo.processSpawnedFlag)
+                    Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");    
+                else if(tooManyConcurrent)
+                {
                     Console.WriteLine($"{DateTime.Now}: Too many at once: {recordInfo.description} at {recordInfo.GetStartDT()} - {recordInfo.GetEndDT()}"); 
-
-
-                if(recordInfo.processSpawnedFlag)
-                    Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");                    
+                    concurrentShowText=mailer.AddConcurrentShowToString(concurrentShowText,recordInfo);  
+                }
+                
 
                 //Let's queue this since it looks good so far
                 if(!showAlreadyDone && !showTooFarAway && !tooManyConcurrent)
