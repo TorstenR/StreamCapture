@@ -31,8 +31,8 @@ namespace StreamCapture
         private void DumpRecordInfo(TextWriter logWriter,RecordInfo recordInfo)
         {
             logWriter.WriteLine($"{DateTime.Now}: Queuing show: {recordInfo.description}");
-            logWriter.WriteLine($"                      Starting on {recordInfo.GetStartDT()} for {recordInfo.GetDuration()} minutes ({recordInfo.GetDuration()/60}hrs ish)");
-            logWriter.WriteLine($"                      Channel list is: {recordInfo.GetChannelString()}");           
+            logWriter.WriteLine($"                     Starting on {recordInfo.GetStartDT()} for {recordInfo.GetDuration()} minutes ({recordInfo.GetDuration()/60}hrs ish)");
+            logWriter.WriteLine($"                     Channel list is: {recordInfo.GetChannelString()}");           
         }
 
         private long TestInternet(TextWriter logWriter)
@@ -264,18 +264,29 @@ namespace StreamCapture
             return hashValue;
         }
      
+        //A key member function (along with BuildRecordSchedule) which does the bulk of the work
+        //
+        //I'll be a bit more verbose then usual so I can remember later what I was thinking
         private void CaptureStream(TextWriter logWriter,string hashValue,ChannelHistory channelHistory,RecordInfo recordInfo,VideoFileManager videoFileManager)
         {
             //Process manager for ffmpeg
+            //
+            //This is there ffmpeg is called, and a watchdog timer created to make sure things are going ok
             ProcessManager processManager = new ProcessManager(configuration);
                         
             //Test internet connection and get a baseline
+            //Right now, the baseline is not used for anything other than a number in the logs.
+            //This could be taken out...
             long internetSpeed = TestInternet(logWriter); 
 
             //Create servers object
+            //This is the list of live247 servers we'll use to cycle through, finding the best quality stream
             Servers servers=new Servers(configuration["ServerList"]);
 
             //Create the server/channel selector object
+            //
+            //This object is what uses the heurstics to determine the right server/channel combo to use.  
+            //Factors like language, quality, and rate factor in.
             ServerChannelSelector scs=new ServerChannelSelector(logWriter,channelHistory,servers,recordInfo);
 
             //Marking time we started and when we should be done
@@ -287,10 +298,12 @@ namespace StreamCapture
             TimeSpan duration=(captureTargetEnd.AddMinutes(1))-captureStarted;  //the 1 minute takes care of alignment slop
 
             //Update capture history
+            //This saves to channelhistory.json file and is used to help determine the initial order of server/channel combos
             channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).recordingsAttempted+=1;
             channelHistory.GetChannelHistoryInfo(scs.GetChannelNumber()).lastAttempt=DateTime.Now;
 
-            //Build output file
+            //Build output file - the resulting capture file.
+            //See VideoFileManager for specifics around file management (e.g. there can be multiple if errors are encountered etc)
             VideoFileInfo videoFileInfo=videoFileManager.AddCaptureFile(configuration["outputPath"]);
 
             //Email that show started
@@ -304,9 +317,11 @@ namespace StreamCapture
             CaptureProcessInfo captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)duration.TotalMinutes,videoFileInfo.GetFullFile());  
             logWriter.WriteLine($"{DateTime.Now}: Exited Capture.  Exit Code: {captureProcessInfo.process.ExitCode}");
 
+            //Main loop to capture
             //
-            //retry loop if we're not done yet
-            //
+            //This loop is never entered if the first capture section completes without incident.  However, it is not uncommon
+            //for errors to occur, and this loop takes care of determining the right next server/channel combo
+            //as well as making sure that we don't just try forever.
             int numRetries=Convert.ToInt32(configuration["numberOfRetries"]);
             int retryNum=0;
             for(retryNum=0;DateTime.Now<=captureTargetEnd && retryNum<numRetries;retryNum++)
@@ -323,7 +338,7 @@ namespace StreamCapture
                     Thread.Sleep(oneMinute);
                 }
 
-                //Check to see if we need to re-authenticate
+                //Check to see if we need to re-authenticate  (most tokens have a lifespan)
                 int authMinutes=Convert.ToInt16(configuration["authMinutes"]);
                 if(DateTime.Now>captureStarted.AddMinutes(authMinutes))
                 {
@@ -344,6 +359,7 @@ namespace StreamCapture
                 channelHistory.SetServerAvgKBytesSec(scs.GetChannelNumber(),scs.GetServerName(),captureProcessInfo.avgKBytesSec);
 
                 //Go to next channel if channel has been alive for less than 15 minutes
+                //The idea is that if a server/channel has been stable for at least 15 minutes, no sense trying to find another.  (could make it worse)
                 TimeSpan fifteenMin=new TimeSpan(0,15,0);
                 if((DateTime.Now-lastStartedTime) < fifteenMin)
                 {
@@ -391,6 +407,7 @@ namespace StreamCapture
             channelHistory.Save();
 
             //check if actually done and didn't error out early
+            //We assume too many retries as that's really the only way out of the loop (outside of an exception which is caught elsewhere)
             if(DateTime.Now<captureTargetEnd)
             {
                 logWriter.WriteLine($"{DateTime.Now}: ERROR!  Too many retries - {recordInfo.description}"); 
