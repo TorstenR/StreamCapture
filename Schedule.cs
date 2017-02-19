@@ -18,7 +18,8 @@ namespace StreamCapture
             {
                 if(string.IsNullOrEmpty(debugCmdLine))
                 {
-                    Uri uri = new Uri("https://iptvguide.netlify.com/iptv.json");
+                    //Uri uri = new Uri("https://iptvguide.netlify.com/iptv.json");
+                    Uri uri = new Uri("http://guide.smoothstreams.tv/feed.json");
                     var response = await client.GetAsync(uri);
                     response.EnsureSuccessStatusCode(); // Throw in not success
                     schedString = await response.Content.ReadAsStringAsync();
@@ -41,7 +42,8 @@ namespace StreamCapture
             List<ScheduleShow> scheduledShowList = new List<ScheduleShow>();
             foreach (KeyValuePair<string, ScheduleChannels> kvp in scheduleChannelDict)
             {
-                scheduledShowList.AddRange(kvp.Value.items);
+                if(kvp.Value.items!=null)
+                    scheduledShowList.AddRange(kvp.Value.items);
             }
 
             return scheduledShowList;
