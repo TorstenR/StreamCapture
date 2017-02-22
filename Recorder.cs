@@ -197,7 +197,8 @@ namespace StreamCapture
                 logWriter.Dispose();
 
                 //Send alert mail
-                new Mailer().SendShowReadyMail(configuration,recordInfo);
+                if(recordInfo.emailFlag)
+                    new Mailer().SendShowReadyMail(configuration,recordInfo);
             }
             catch(Exception e)
             {
@@ -307,7 +308,8 @@ namespace StreamCapture
             VideoFileInfo videoFileInfo=videoFileManager.AddCaptureFile(configuration["outputPath"]);
 
             //Email that show started
-            new Mailer().SendShowStartedMail(configuration,recordInfo);
+            if(recordInfo.emailFlag)
+                new Mailer().SendShowStartedMail(configuration,recordInfo);
 
             //Build ffmpeg capture command line with first channel and get things rolling
             string cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,videoFileInfo.GetFullFile());
