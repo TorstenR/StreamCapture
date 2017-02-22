@@ -78,8 +78,12 @@ namespace StreamCapture
                     recordInfo.strDTOffset = configuration["schedTimeOffset"];
                     recordInfo.preMinutes = keywordInfo.preMinutes;
                     recordInfo.postMinutes = keywordInfo.postMinutes;
+                    recordInfo.starredFlag = keywordInfo.starredFlag;
+                    recordInfo.emailFlag = keywordInfo.emailFlag;
                     recordInfo.qualityPref = keywordInfo.qualityPref;
+                    recordInfo.categoryPref = keywordInfo.categoryPref;
                     recordInfo.langPref = keywordInfo.langPref;
+                    recordInfo.channelPref = keywordInfo.channelPref;
                     recordInfo.category = scheduleShow.category;
 
                     recordInfo.keywordPos = tuple.Item2;  //used for sorting the most important shows 
@@ -92,6 +96,10 @@ namespace StreamCapture
                     {
                         recordInfo.fileName = recordInfo.fileName.Replace(c.ToString(), "");
                     }
+
+                    //If starred, add designator to filename
+                    if(recordInfo.starredFlag)
+                        recordInfo.fileName = "+_" + recordInfo.fileName;
 
                     //Update or add
                     AddUpdateRecordInfo(BuildRecordInfoKeyValue(recordInfo),recordInfo);

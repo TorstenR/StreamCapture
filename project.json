@@ -12,8 +12,9 @@
     "Microsoft.Extensions.Configuration.Json": "1.1.0",
     "Microsoft.Extensions.CommandLineUtils": "1.1.0",
     "System.Diagnostics.Process": "4.3.0",
-    "MailKit" : "1.*",
-    "System.Net.Ping":"*"
+    "MailKit": "1.*",
+    "System.Net.Ping": "*",
+    "System.Text.RegularExpressions": "4.*"
   },
   "frameworks": {
     "netcoreapp1.1": {

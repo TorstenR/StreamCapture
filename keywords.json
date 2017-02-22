@@ -1,51 +1,33 @@
 {
   "Soccer": {
-    "keywords": "liverpool,chelsea,FA Cup,sounders",
-    "exclude": "",
+    "starred": true,
+    "email": true,
+    "keywords": {
+      "1": "liverpool",
+      "2": "chelsea",
+      "3": "zealand"
+    },
+    "exclude": {},
     "preMinutes": 0,
     "postMinutes": 15,
-    "langPref": "US",
-    "qualityPref": "720P"
+    "langPref": "US,++CA",
+    "qualityPref": "720P",
+    "categoryPref": "",
+    "channelPref": "+114"
   },
   "USA National": {
-    "keywords": "usa",
-    "exclude": "tennis",
+    "starred": true,
+    "email": true,
+    "keywords": {
+      "1": "usa"
+    },
+    "exclude": {},
     "preMinutes": 0,
     "postMinutes": 15,
     "langPref": "US",
-    "qualityPref": "720P"
-  },
-  "F1": {
-    "keywords": "f1",
-    "exclude": "",
-    "preMinutes": 0,
-    "postMinutes": 5,
-    "langPref": "US",
-    "qualityPref": "720P"
-  },
-  "World Rally": {
-    "keywords": "wrc",
-    "exclude": "",
-    "preMinutes": 0,
-    "postMinutes": 30,
-    "langPref": "US",
-    "qualityPref": "720P"
-  },
-  "NHL": {
-    "keywords": "blackhawks,red wings,rangers",
-    "exclude": "",
-    "preMinutes": 0,
-    "postMinutes": 20,
-    "langPref": "US",
-    "qualityPref": "720P"
-  },
-  "EXTRA": {
-    "keywords": "NHL:,EPL,Liga",
-    "exclude": "",
-    "preMinutes": 0,
-    "postMinutes": 20,
-    "langPref": "US",
-    "qualityPref": "720P"
-  }  
-} 
+    "qualityPref": "720P",
+    "categoryPref": "",
+    "channelPref": ""
+  }
+  } 
 

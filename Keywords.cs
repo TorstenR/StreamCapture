@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System.Linq;
 using System.IO;
 using Microsoft.Extensions.Configuration;
+using System.Text.RegularExpressions;
 
 namespace StreamCapture
 {
@@ -28,51 +29,63 @@ namespace StreamCapture
             }                
         }
 
-        public KeywordInfo[] GetKeywordArray()
-        {
-            return keywordDict.Values.ToArray();
-        }
-
         //Given a show name, see if there's a match in any of the keywords
         public Tuple<KeywordInfo,int> FindMatch(string showName)
         {
-            KeywordInfo keywordInfo = null;
-
-            //Go through keywords seeing if there's a match
+            //Go through each keyword section, seeing if there's a match for the show 
             KeyValuePair<string, KeywordInfo>[] kvpArray = keywordDict.ToArray();
-            int kvpIdx;
-            for(kvpIdx=0;kvpIdx<kvpArray.Length;kvpIdx++)
+            for(int kvpIdx=0;kvpIdx<kvpArray.Length;kvpIdx++)
             {
-                string strKeywords = kvpArray[kvpIdx].Value.keywords;
-                string[] kArray = strKeywords.Split(',');
+                //Loop through all keyword rows checking for a match
+                bool showMatched=CheckForMatchHelper(kvpArray[kvpIdx].Value.keywords, showName);
 
-                for (int i = 0; i < kArray.Length; i++)
+                if (showMatched)
                 {
-                    if (showName.ToLower().Contains(kArray[i].ToLower()))
+                    //Loop through all exclude rows to make sure we're still ok
+                    bool excludeMatched = CheckForMatchHelper(kvpArray[kvpIdx].Value.exclude, showName);
+
+                    //If we're still good, return the match
+                    if(!excludeMatched)
                     {
-                        string[] excludeArray = kvpArray[kvpIdx].Value.exclude.Split(',');
-
-                        //Make sure no keywords to exclude are found
-                        bool excludedFlag=false;
-                        for(int e=0;e<excludeArray.Length;e++)
-                        {
-                            if(excludeArray[e].Length>0)
-                            {
-                                if (showName.ToLower().Contains(excludeArray[e].ToLower()))
-                                    excludedFlag=true;
-                            }
-                        }
-
-                        if(!excludedFlag)
-                        {
-                            keywordInfo = kvpArray[kvpIdx].Value;
-                            return new Tuple<KeywordInfo,int>(keywordInfo,kvpIdx);
-                        }
+                        return new Tuple<KeywordInfo, int>(kvpArray[kvpIdx].Value, kvpIdx);
                     }
                 }
             }
 
             return null;
+        }
+
+        //See if there's a match in a list of strings
+        private bool CheckForMatchHelper(Dictionary<string,string> rows,string stringToMatch)
+        {
+            bool matchedFlag = true;
+
+            //make sure there are rows
+            if (rows == null || rows.Count < 1)
+                return false;
+
+            //Loop through each 'row' in the list
+            foreach (KeyValuePair<string, string> row in rows)
+            {
+                //we'll start with true and then get proven otherwise
+                matchedFlag = true;
+
+                //Grab the AND values and then loop through them
+                string[] itemArray = row.Value.Split(','); 
+                for (int i = 0; i< itemArray.Length; i++)
+                {
+                    //We'll use regex to do the matching (all on lower case)
+                    Regex regex = new Regex(itemArray[i].ToLower());
+                    Match match = regex.Match(stringToMatch.ToLower());
+                    if(!match.Success)
+                    {
+                        matchedFlag=false;
+                        break;
+                    }
+                }
+            }
+
+            return matchedFlag;
         }
     }
 }
