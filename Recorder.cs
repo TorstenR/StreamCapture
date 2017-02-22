@@ -415,7 +415,7 @@ namespace StreamCapture
                 logWriter.WriteLine($"{DateTime.Now}: ERROR!  Too many retries - {recordInfo.description}"); 
 
                 //Send alert mail
-                string body=recordInfo.description+" partially recorded due to too many retries";
+                string body=recordInfo.description+" partially recorded due to too many retries.  Time actually recorded is "+finalTimeJustRecorded.TotalHours;
                 new Mailer().SendErrorMail(configuration,"Partial: "+recordInfo.description,body);
                 //throw new Exception("Too many retries for "+recordInfo.description);
             }                
