@@ -7,6 +7,7 @@ This program is intended to run largely unattended, recording shows based on key
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ###News:
+- Feb 22, 2017: Big upgrade to keywords.  Please see below for more info.  (regex, scoring, etc)
 - Feb 15, 2017: Improved scheduling so it works more as expected even when there's a lot of shows
 - Feb 11, 2017: More bug fixes and better emails.
 - Feb 9, 2017: Lots of bug fixes and better stability.  Files are now cleaned up according to retention days.
@@ -76,14 +77,23 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 **keywords.json**
 If running in Mode 2, keywords.json is how it's decided which shows to record based on the schedule.  More specifically:
 - Top level node: name of whatever you want to name the "grouping".  This is arbitrary and doesn't affect anything programatically.
-- "keywords": comma delimted list of keywords to use for which shows to record
-- "exclude": comma delimited list of keywords to use to EXCLUDE any shows.  (for example, I exclude "tennis" for usa keywords)
+- "starred": when 'true', this will annotate the file so you can see it better
+- "email": when 'true', an email is sent when capture is started and published for this keyword group
+- "keywords": array of keyword rows.  Each row is comma delimmted (AND), and the rows are OR'd together.  In addition, Regular expressions are supported.
+- "exclude": same as with keywords, but are exclusions.
 - "preMinutes": number of minutes to start early by
 - "postMinutes": number of minutes to record late by
 - "langPref": used to order the channels by. (which one to try first, and then 2nd of there's a problem etc)  For example, I use "US" to get the english channels ahead of "DE".  (not sure the full list, see schedule)
 - "qualityPref": also used to order channels.  I use "720p" so it tries to get HD first.
+- "categoryPref": support smoothstream's categories (world football, ice hockey, etc)
+- "channelPref": support channel number preference
 
 Please note that the order in which you put the groups is important as this is the order in which the shows will be scheduled.  This means that you want to put the stuff you care about the most first, so that if there are too many concurrent shows, it'll be the ones with lower priority.  For exampple, I put keywords for my favorite EPL teams first, and then put a general "EPL" towards the bottom.  That way, it'll make sure my favorite teams get the open slots, but if there is "room", it'll fit other EPL games in opportunistically.
+
+Scoring: If you put one or more '+' and '-' signs in any of your preferences, it will affect which channel is chosen.  For example, if you put '+US' for language, then when
+caculating the "score" for a channel, US will be worth +1 higher.  Same is true for '-'.  You can put multiple + or -.  Basically, a "score" is determined for each channel.  This
+score is what is used to determine which order the channels are tried in.  This should allow you to configure things such that your preferences are respected, but 
+the show will get recorded regardless.
 
 ###Troubleshooting###
 - First thing is to check your log file/s for what might have gone wrong.  Most often, this will lead you in the right direction.
