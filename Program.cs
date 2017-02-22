@@ -14,6 +14,7 @@ namespace StreamCapture
             CommandOption duration = commandLineApplication.Option("-d | --duration","Duration in minutes to record",CommandOptionType.SingleValue);
             CommandOption filename = commandLineApplication.Option("-f | --filename","File name (no extension)",CommandOptionType.SingleValue);
             CommandOption datetime = commandLineApplication.Option("-d | --datetime","Datetime MM/DD/YY HH:MM (optional)",CommandOptionType.SingleValue);
+            CommandOption test = commandLineApplication.Option("-t | --test","Does a dryrun based on keywords.json (optional)",CommandOptionType.SingleValue);
             commandLineApplication.HelpOption("-? | -h | --help");
             commandLineApplication.Execute(args);  
             
@@ -52,6 +53,13 @@ namespace StreamCapture
                 ChannelHistory channelHistory = new ChannelHistory();
                 Recorder recorder = new Recorder(configuration);
                 recorder.QueueRecording(channelHistory,recordInfo,configuration,false);
+                Environment.Exit(0);
+            }
+            else if(test.HasValue())
+            {
+                //grab schedule and do a dryrun based on keywords.json to see what would happen, but don't actually do it
+                Recorder recorder = new Recorder(configuration);
+                recorder.DryRun();
                 Environment.Exit(0);
             }
             else

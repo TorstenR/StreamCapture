@@ -98,15 +98,14 @@ namespace StreamCapture
                 sortedChannelList=AddToSortedList(new Tuple<ChannelInfo, int>(channelInfo,channelScore),sortedChannelList);
             }
 
-            //Now let's add servers based on speed to for each channel
-            
+            //Now let's add servers based on speed to for each channel          
             foreach (Tuple<ChannelInfo,int> channelInfoScore in sortedChannelList)
             {
                 //new list
                 List<Tuple<string,ChannelInfo,long>> tempSortedTupleList = new List<Tuple<string,ChannelInfo,long>>();
 
                 //Insert based on channel history of bytes per second
-                InsertChannelInfo(tempSortedTupleList,channelInfoScore.Item1);
+                tempSortedTupleList=InsertChannelInfo(tempSortedTupleList,channelInfoScore.Item1);
 
                 //Now add to the end of the actual sorted list
                 sortedTupleList.AddRange(tempSortedTupleList);
@@ -139,7 +138,7 @@ namespace StreamCapture
         }
 
         //Take a single channel and insert it into the server list
-        private void InsertChannelInfo(List<Tuple<string,ChannelInfo,long>> tupleList,ChannelInfo channelInfo)
+        private List<Tuple<string,ChannelInfo,long>> InsertChannelInfo(List<Tuple<string,ChannelInfo,long>> tupleList,ChannelInfo channelInfo)
         {
             List<string> serverList=servers.GetServerList();
             foreach(string server in serverList)
@@ -161,26 +160,33 @@ namespace StreamCapture
 
                 //If not inserted, let's add it to the end
                 if(!insertedFlag)
+                {
                     tupleList.Add(new Tuple<string,ChannelInfo,long>(server,channelInfo,avgKBytesSec));
+                }
             }
+        
+            return tupleList;
         }
 
         //Determine score for channel.  The higher the score, the higher in the list 
         private int DetermineChannelScore(ChannelInfo channelInfo)
         {
-            int score=0;
-
             //Get quality preference score
-            score=score+DetermineScore(channelInfo.qualityTag,recordInfo.qualityPref);
+            int qualScore=DetermineScore(channelInfo.qualityTag,recordInfo.qualityPref);
 
             //Get lang preference score
-            score=score+DetermineScore(channelInfo.lang,recordInfo.langPref);
+            int langScore=DetermineScore(channelInfo.lang,recordInfo.langPref);
 
             //Get channel preference score
-            score=score+DetermineScore(channelInfo.number,recordInfo.channelPref);
+            int chanScore=DetermineScore(channelInfo.number,recordInfo.channelPref);
 
             //Get category preference score
-            score=score+DetermineScore(recordInfo.category,recordInfo.categoryPref);
+            int catScore=DetermineScore(recordInfo.category,recordInfo.categoryPref);
+
+            //total
+            int score = qualScore+langScore+chanScore+catScore;
+
+            Console.WriteLine($"Score for {channelInfo.number}: {score} qual: {qualScore} lang: {langScore} chan: {chanScore} cat: {catScore}");
 
             return score;
         }
@@ -192,12 +198,12 @@ namespace StreamCapture
             foreach(string str in strArray)
             {
                 //Determine potential score, plus strip score chars
-                int potentialScore=0;
+                int potentialScore=0;  
                 string newStr=DeterminePotentialScore(str,out potentialScore);
 
                 //Now let's see if there's a match.  If so, add the score
-                if(pref.ToLower().Contains(newStr.ToLower()))
-                    score=score+potentialScore;
+                if(!string.IsNullOrEmpty(newStr) && pref.ToLower().Contains(newStr.ToLower()))
+                    score=score+potentialScore; 
             }
 
             return score;
@@ -213,7 +219,7 @@ namespace StreamCapture
             string newStr=str;
 
             //Find all instances of chr1, count them and add them
-            score=0;
+            score=0; 
             foreach(char ch in str)
             {
                 if(ch==chr1)
@@ -221,6 +227,10 @@ namespace StreamCapture
                 if(ch==chr2)
                     score--;
             }
+
+            //If score is zero or bigger, add the default '1' for the match itself
+            if(score>=0)
+                score++;
 
             //get rid of chr1 and chr2
             newStr = newStr.Replace(chr1.ToString(), "");

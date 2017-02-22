@@ -64,6 +64,34 @@ namespace StreamCapture
 
             return bytesPerSecond;
         }    
+
+        //Does a dryrun using keywords.json - showing what it *would* do, but not actually doing it
+        public void DryRun()
+        {
+            //Create new recordings object to manage our recordings
+            Recordings recordings = new Recordings(configuration);
+
+            //Create channel history object
+            ChannelHistory channelHistory = new ChannelHistory();
+
+            //Grabs schedule and builds a recording list based on keywords
+            List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
+
+            //Go through record list and display
+            foreach (RecordInfo recordInfo in recordInfoList)
+            {
+                //Dump record info
+                DumpRecordInfo(Console.Out,recordInfo); 
+
+                //Create servers object
+                Servers servers=new Servers(configuration["ServerList"]);
+
+                //Create the server/channel selector object
+                ServerChannelSelector scs=new ServerChannelSelector(new StreamWriter(Console.OpenStandardOutput()),channelHistory,servers,recordInfo);                
+            }      
+
+            Thread.Sleep(3000);
+        }
         public void MonitorMode()
         {
             //Create new recordings object to manage our recordings

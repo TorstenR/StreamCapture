@@ -3,9 +3,7 @@
     "starred": true,
     "email": true,
     "keywords": {
-      "1": "liverpool",
-      "2": "chelsea",
-      "3": "zealand"
+      "1": "foobar"
     },
     "exclude": {},
     "preMinutes": 0,
@@ -19,14 +17,15 @@
     "starred": true,
     "email": true,
     "keywords": {
-      "1": "usa"
+      "1": "hotspur",
+      "2": "Fiorentina"
     },
     "exclude": {},
     "preMinutes": 0,
     "postMinutes": 15,
-    "langPref": "US",
-    "qualityPref": "720P",
-    "categoryPref": "",
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+720p",
+    "categoryPref": "world",
     "channelPref": ""
   }
   } 
