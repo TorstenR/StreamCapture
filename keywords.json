@@ -1,6 +1,11 @@
 {
   "USA National": {
+<<<<<<< HEAD
     "starredFlag": true,"emailFlag": true,    
+=======
+    "starredFlag": true,
+    "emailFlag": true,    
+>>>>>>> 7ea53e1... fixed keywords.json
     "keywords": ["usa"],
     "exclude": ["tennis"],
     "categories": [],
@@ -10,7 +15,12 @@
     "channelPref": ""    
   },
  "World Rally": {
+<<<<<<< HEAD
     "starredFlag": true,"emailFlag": true,   
+=======
+    "starredFlag": true,
+    "emailFlag": true,   
+>>>>>>> 7ea53e1... fixed keywords.json
     "keywords": ["wrc"],
     "exclude": [],"categories": [],
     "preMinutes": 0,"postMinutes": 0,
@@ -19,7 +29,12 @@
     "channelPref": ""    
   },
   "Soccer": {
+<<<<<<< HEAD
     "starredFlag": true, "emailFlag": true,    
+=======
+    "starredFlag": true,
+    "emailFlag": true,    
+>>>>>>> 7ea53e1... fixed keywords.json
     "keywords": [
       "bayern",
       "real madrid",
@@ -36,7 +51,12 @@
     "channelPref": ""    
   },
   "Soccer Tournaments": {
+<<<<<<< HEAD
     "starredFlag": false, "emailFlag": true,    
+=======
+    "starredFlag": false,
+    "emailFlag": true,    
+>>>>>>> 7ea53e1... fixed keywords.json
     "keywords": [
       "UCL:",
       "FA Cup",
@@ -56,6 +76,7 @@
     "qualityPref": "+720p",
     "channelPref": ""    
   },
+<<<<<<< HEAD
   "MotorSports": {
     "starredFlag": false,
     "emailFlag": true,    
@@ -66,12 +87,26 @@
        "formula"
        ],
     "preMinutes": 0, "postMinutes": 5,
+=======
+  "F1": {
+    "starredFlag": true,
+    "emailFlag": true,    
+    "keywords": ["f1"],
+    "exclude": [],
+    "preMinutes": 0,
+    "postMinutes": 5,
+>>>>>>> 7ea53e1... fixed keywords.json
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
     "channelPref": ""    
   },
   "NHL": {
+<<<<<<< HEAD
     "starredFlag": true, "emailFlag": true,    
+=======
+    "starredFlag": false,
+    "emailFlag": false,    
+>>>>>>> 7ea53e1... fixed keywords.json
     "keywords": [
       "blackhawks",
       "red wings",
@@ -86,8 +121,14 @@
     "qualityPref": "+720p",
     "channelPref": ""    
   },
+<<<<<<< HEAD
   "EPL": {
     "starredFlag": false, "emailFlag": true,    
+=======
+  "EPL2": {
+    "starredFlag": false,
+    "emailFlag": true,    
+>>>>>>> 7ea53e1... fixed keywords.json
     "keywords": ["epl:"],
     "exclude": [],
     "categories": [],
@@ -97,9 +138,20 @@
     "qualityPref": "+720p",
     "channelPref": ""    
   },
+<<<<<<< HEAD
   "Rest of Soccer": {
     "starredFlag": false, "emailFlag": false,    
     "keywords": ["BL:"],
+=======
+  "Liga-BL": {
+    "starredFlag": false,
+    "emailFlag": true,    
+    "keywords": [
+      "liga:",
+      "bl:",
+      "el:"
+      ],
+>>>>>>> 7ea53e1... fixed keywords.json
     "exclude": [
       "sky90",
       "Konferenz",
@@ -112,11 +164,19 @@
     "qualityPref": "+720p",
     "channelPref": ""    
   },
+<<<<<<< HEAD
   "Hockey": {
     "starredFlag": false, "emailFlag": false,    
     "keywords": [""],
     "exclude": [], 
     "categories": ["ice hockey"],
+=======
+  "NHL2": {
+    "starredFlag": false,
+    "emailFlag": true,    
+    "keywords": ["nhl:"],
+    "exclude": [],
+>>>>>>> 7ea53e1... fixed keywords.json
     "preMinutes": 0,
     "postMinutes": 0,
     "langPref": "+us,ca,uk,-de,-es",
