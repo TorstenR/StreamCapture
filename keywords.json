@@ -4,11 +4,11 @@
     "email": true,    
     "keywords": ["usa"],
     "exclude": ["tennis"],
+    "categories": [],
     "preMinutes": 0,
     "postMinutes": 30,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
-    "categoryPref": "",
     "channelPref": ""    
   },
  "World Rally": {
@@ -16,11 +16,11 @@
     "email": true,   
     "keywords": ["wrc"],
     "exclude": [],
+    "categories": [],
     "preMinutes": 0,
     "postMinutes": 30,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
-    "categoryPref": "",
     "channelPref": ""    
   },
   "Soccer": {
@@ -36,11 +36,11 @@
       "sounders"
       ],
     "exclude": [],
+    "categories": [],
     "preMinutes": 0,
     "postMinutes": 15,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
-    "categoryPref": "",
     "channelPref": ""    
   },
   "Soccer Tournaments": {
@@ -56,11 +56,11 @@
       "konferenz",
       "Alle Spiele"
       ],
+    "categories": [],
     "preMinutes": 0,
     "postMinutes": 15,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
-    "categoryPref": "",
     "channelPref": ""    
   },
   "F1": {
@@ -68,11 +68,11 @@
     "email": true,    
     "keywords": ["f1"],
     "exclude": [],
+    "categories": [],
     "preMinutes": 0,
     "postMinutes": 5,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
-    "categoryPref": "",
     "channelPref": ""    
   },
   "NHL": {
@@ -85,11 +85,11 @@
       "Penguins"
       ],
     "exclude": [],
+    "categories": [],
     "preMinutes": 0,
     "postMinutes": 20,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
-    "categoryPref": "",
     "channelPref": ""    
   },
   "EPL2": {
@@ -97,11 +97,11 @@
     "email": true,    
     "keywords": ["epl:"],
     "exclude": [],
+    "categories": [],
     "preMinutes": 0,
     "postMinutes": 0,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
-    "categoryPref": "",
     "channelPref": ""    
   },
   "Liga-BL": {
@@ -117,11 +117,11 @@
       "Konferenz",
       "Alle Spiele"
       ],
+    "categories": [],
     "preMinutes": 0,
     "postMinutes": 0,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
-    "categoryPref": "",
     "channelPref": ""    
   },
   "NHL2": {
@@ -129,11 +129,11 @@
     "email": true,    
     "keywords": ["nhl:"],
     "exclude": [],
+    "categories": [],
     "preMinutes": 0,
     "postMinutes": 0,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
-    "categoryPref": "",
     "channelPref": ""    
   }
 } 

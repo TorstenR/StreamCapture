@@ -9,6 +9,7 @@ namespace StreamCapture
         IConfiguration configuration;
         TextWriter logWriter;
         VideoFiles files;
+        static readonly object _lock = new object();  //used to lock file move to not overload disk
         public VideoFileManager(IConfiguration _c,TextWriter _lw,string _fn)
         {
             configuration=_c;
@@ -105,11 +106,19 @@ namespace StreamCapture
                 //Ok, ready to publish
                 files.SetPublishedFile(publishedPath);
                 logWriter.WriteLine($"{DateTime.Now}: Moving {files.muxedFile.GetFullFile()} to {files.publishedfile.GetFullFile()}");
-                File.Move(files.muxedFile.GetFullFile(),files.publishedfile.GetFullFile());
+                VideoFileManager.MoveFile(files.muxedFile.GetFullFile(),files.publishedfile.GetFullFile());
             }
 
             //If final file exist, delete old .ts file/s
             files.DeleteNonPublishedFiles(logWriter,configuration);
+        }
+
+        static public void MoveFile(string sourcePath,string targetPath)
+        {
+            lock (_lock)
+            {
+                File.Move(sourcePath,targetPath);
+            }
         }
 
         static public void CleanOldFiles(IConfiguration config)
