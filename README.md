@@ -1,4 +1,4 @@
-#Program to capture streams from live247 (and other Smoothstream offerings) using .Net Core
+#Program to capture streams from live247 (and other Smoothstream offerings) using .Net Core.
 
 For the longest time I was frustrated at not being able to reasonably record streams from Live247 to watch my favorite sporting events.  That frustration is what this project was born out of.  
 
