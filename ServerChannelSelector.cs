@@ -187,8 +187,6 @@ namespace StreamCapture
             //total
             int score = qualScore+langScore+chanScore+catScore;
 
-            Console.WriteLine($"Score for {channelInfo.number}: {score} qual: {qualScore} lang: {langScore} chan: {chanScore} cat: {catScore}");
-
             return score;
         }
 

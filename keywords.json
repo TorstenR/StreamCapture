@@ -1,32 +1,140 @@
 {
-  "Soccer": {
-    "starred": true,
-    "email": true,
-    "keywords": [
-      "foobar"
-    ],
-    "exclude": [],
-    "preMinutes": 0,
-    "postMinutes": 15,
-    "langPref": "US,++CA",
-    "qualityPref": "720P",
-    "categoryPref": "",
-    "channelPref": "+114"
-  },
   "USA National": {
     "starred": true,
-    "email": true,
+    "email": true,    
+    "keywords": ["usa"],
+    "exclude": ["tennis"],
+    "preMinutes": 0,
+    "postMinutes": 30,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+720p",
+    "categoryPref": "",
+    "channelPref": ""    
+  },
+ "World Rally": {
+    "starred": true,
+    "email": true,   
+    "keywords": ["wrc"],
+    "exclude": [],
+    "preMinutes": 0,
+    "postMinutes": 30,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+720p",
+    "categoryPref": "",
+    "channelPref": ""    
+  },
+  "Soccer": {
+    "starred": true,
+    "email": true,    
     "keywords": [
-      "hotspur",
-      "Fiorentina"
-    ],
+      "bayern munich",
+      "real madrid",
+      "barcelona",
+      "liverpool",
+      "chelsea",
+      "tottenham",
+      "sounders"
+      ],
     "exclude": [],
     "preMinutes": 0,
     "postMinutes": 15,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
-    "categoryPref": "world",
-    "channelPref": ""
+    "categoryPref": "",
+    "channelPref": ""    
+  },
+  "Soccer Tournaments": {
+    "starred": true,
+    "email": true,    
+    "keywords": [
+      "UCL:",
+      "FA Cup",
+      "CONCACAF",
+      "EFL:"
+      ],
+    "exclude": [
+      "konferenz",
+      "Alle Spiele"
+      ],
+    "preMinutes": 0,
+    "postMinutes": 15,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+720p",
+    "categoryPref": "",
+    "channelPref": ""    
+  },
+  "F1": {
+    "starred": true,
+    "email": true,    
+    "keywords": ["f1"],
+    "exclude": [],
+    "preMinutes": 0,
+    "postMinutes": 5,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+720p",
+    "categoryPref": "",
+    "channelPref": ""    
+  },
+  "NHL": {
+    "starred": true,
+    "email": true,    
+    "keywords": [
+      "blackhawks",
+      "red wings",
+      "canucks",
+      "Penguins"
+      ],
+    "exclude": [],
+    "preMinutes": 0,
+    "postMinutes": 20,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+720p",
+    "categoryPref": "",
+    "channelPref": ""    
+  },
+  "EPL2": {
+    "starred": true,
+    "email": true,    
+    "keywords": ["epl:"],
+    "exclude": [],
+    "preMinutes": 0,
+    "postMinutes": 0,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+720p",
+    "categoryPref": "",
+    "channelPref": ""    
+  },
+  "Liga-BL": {
+    "starred": true,
+    "email": true,    
+    "keywords": [
+      "liga:",
+      "bl:",
+      "el:"
+      ],
+    "exclude": [
+      "sky90",
+      "Konferenz",
+      "Alle Spiele"
+      ],
+    "preMinutes": 0,
+    "postMinutes": 0,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+720p",
+    "categoryPref": "",
+    "channelPref": ""    
+  },
+  "NHL2": {
+    "starred": true,
+    "email": true,    
+    "keywords": ["nhl:"],
+    "exclude": [],
+    "preMinutes": 0,
+    "postMinutes": 0,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+720p",
+    "categoryPref": "",
+    "channelPref": ""    
   }
 } 
 
