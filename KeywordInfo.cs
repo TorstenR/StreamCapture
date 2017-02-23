@@ -6,8 +6,8 @@ namespace StreamCapture
     {
         public bool starredFlag { get; set; }
         public bool emailFlag { get; set; }
-        public Dictionary<string,string> keywords { get; set; }
-        public Dictionary<string,string> exclude { get; set; }
+        public List<string> keywords { get; set; }
+        public List<string> exclude { get; set; }
         public int preMinutes { get; set; }
         public int postMinutes { get; set; }
         public string langPref { get; set; }

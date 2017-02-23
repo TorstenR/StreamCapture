@@ -56,7 +56,7 @@ namespace StreamCapture
         }
 
         //See if there's a match in a list of strings
-        private bool CheckForMatchHelper(Dictionary<string,string> rows,string stringToMatch)
+        private bool CheckForMatchHelper(List<string> rows,string stringToMatch)
         {
             bool matchedFlag = true;
 
@@ -65,13 +65,13 @@ namespace StreamCapture
                 return false;
 
             //Loop through each 'row' in the list
-            foreach (KeyValuePair<string, string> row in rows)
+            foreach (string row in rows)
             {
                 //we'll start with true and then get proven otherwise
                 matchedFlag = true;
 
                 //Grab the AND values and then loop through them
-                string[] itemArray = row.Value.Split(','); 
+                string[] itemArray = row.Split(','); 
                 for (int i = 0; i< itemArray.Length; i++)
                 {
                     //We'll use regex to do the matching (all on lower case)

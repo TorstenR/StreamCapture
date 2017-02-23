@@ -89,23 +89,24 @@ namespace StreamCapture
             sortedTupleList = new List<Tuple<string,ChannelInfo,long>>();
 
             //Let's start by creating a sorted (by score) channel list, with highest scoring first
-            List<Tuple<ChannelInfo,int>> sortedChannelList = new List<Tuple<ChannelInfo,int>>();
+            List<ChannelInfo> sortedChannelList = new List<ChannelInfo>();
             List<ChannelInfo> channelInfoLIst = recordInfo.channels.GetChannels();
             foreach (ChannelInfo channelInfo in channelInfoLIst)
             {
                 //Determine score and create sorted channel list
                 int channelScore=DetermineChannelScore(channelInfo);
-                sortedChannelList=AddToSortedList(new Tuple<ChannelInfo, int>(channelInfo,channelScore),sortedChannelList);
+                channelInfo.score=channelScore;
+                sortedChannelList=AddToSortedList(channelInfo,sortedChannelList);
             }
 
             //Now let's add servers based on speed to for each channel          
-            foreach (Tuple<ChannelInfo,int> channelInfoScore in sortedChannelList)
+            foreach (ChannelInfo channelInfoScore in sortedChannelList)
             {
                 //new list
                 List<Tuple<string,ChannelInfo,long>> tempSortedTupleList = new List<Tuple<string,ChannelInfo,long>>();
 
                 //Insert based on channel history of bytes per second
-                tempSortedTupleList=InsertChannelInfo(tempSortedTupleList,channelInfoScore.Item1);
+                tempSortedTupleList=InsertChannelInfo(tempSortedTupleList,channelInfoScore);
 
                 //Now add to the end of the actual sorted list
                 sortedTupleList.AddRange(tempSortedTupleList);
@@ -115,17 +116,17 @@ namespace StreamCapture
             logWriter.WriteLine($"{DateTime.Now}: Using the following order of server/channel Pairs:");
             foreach(Tuple<string,ChannelInfo,long> tuple in sortedTupleList)
             {
-                logWriter.WriteLine($"                   Server: {tuple.Item1} Channel: {tuple.Item2.description} Historical Rate: {tuple.Item3}KB/s");
+                logWriter.WriteLine($"                   Server: {tuple.Item1} Channel: {tuple.Item2.description} Score: {tuple.Item2.score} Historical Rate: {tuple.Item3}KB/s");
             }
         }
 
-        private List<Tuple<ChannelInfo,int>> AddToSortedList(Tuple<ChannelInfo,int> channelScoreToAdd, List<Tuple<ChannelInfo,int>> channelScoreList)
+        private List<ChannelInfo> AddToSortedList(ChannelInfo channelScoreToAdd, List<ChannelInfo> channelScoreList)
         {
             //Add to a sorted list based on score
-            Tuple<ChannelInfo,int>[] channelScoresArray = channelScoreList.ToArray();
+            ChannelInfo[] channelScoresArray = channelScoreList.ToArray();
             for(int idx=0;idx<channelScoresArray.Length;idx++)
             {
-                if(channelScoreToAdd.Item2>channelScoresArray[idx].Item2)
+                if(channelScoreToAdd.score>channelScoresArray[idx].score)
                 {
                     channelScoreList.Insert(idx,channelScoreToAdd);
                     return channelScoreList;

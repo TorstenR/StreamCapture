@@ -2,10 +2,10 @@
   "Soccer": {
     "starred": true,
     "email": true,
-    "keywords": {
-      "1": "foobar"
-    },
-    "exclude": {},
+    "keywords": [
+      "foobar"
+    ],
+    "exclude": [],
     "preMinutes": 0,
     "postMinutes": 15,
     "langPref": "US,++CA",
@@ -16,11 +16,11 @@
   "USA National": {
     "starred": true,
     "email": true,
-    "keywords": {
-      "1": "hotspur",
-      "2": "Fiorentina"
-    },
-    "exclude": {},
+    "keywords": [
+      "hotspur",
+      "Fiorentina"
+    ],
+    "exclude": [],
     "preMinutes": 0,
     "postMinutes": 15,
     "langPref": "+us,ca,uk,-de,-es",
@@ -28,5 +28,5 @@
     "categoryPref": "world",
     "channelPref": ""
   }
-  } 
+} 
 
