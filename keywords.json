@@ -1,7 +1,7 @@
 {
   "USA National": {
-    "starred": true,
-    "email": true,    
+    "starredFlag": true,
+    "emailFlag": true,    
     "keywords": ["usa"],
     "exclude": ["tennis"],
     "preMinutes": 0,
@@ -12,8 +12,8 @@
     "channelPref": ""    
   },
  "World Rally": {
-    "starred": true,
-    "email": true,   
+    "starredFlag": true,
+    "emailFlag": true,   
     "keywords": ["wrc"],
     "exclude": [],
     "preMinutes": 0,
@@ -24,8 +24,8 @@
     "channelPref": ""    
   },
   "Soccer": {
-    "starred": true,
-    "email": true,    
+    "starredFlag": true,
+    "emailFlag": true,    
     "keywords": [
       "bayern munich",
       "real madrid",
@@ -44,8 +44,8 @@
     "channelPref": ""    
   },
   "Soccer Tournaments": {
-    "starred": true,
-    "email": true,    
+    "starredFlag": false,
+    "emailFlag": true,    
     "keywords": [
       "UCL:",
       "FA Cup",
@@ -64,8 +64,8 @@
     "channelPref": ""    
   },
   "F1": {
-    "starred": true,
-    "email": true,    
+    "starredFlag": true,
+    "emailFlag": true,    
     "keywords": ["f1"],
     "exclude": [],
     "preMinutes": 0,
@@ -76,8 +76,8 @@
     "channelPref": ""    
   },
   "NHL": {
-    "starred": true,
-    "email": true,    
+    "starredFlag": false,
+    "emailFlag": false,    
     "keywords": [
       "blackhawks",
       "red wings",
@@ -93,8 +93,8 @@
     "channelPref": ""    
   },
   "EPL2": {
-    "starred": true,
-    "email": true,    
+    "starredFlag": false,
+    "emailFlag": true,    
     "keywords": ["epl:"],
     "exclude": [],
     "preMinutes": 0,
@@ -105,8 +105,8 @@
     "channelPref": ""    
   },
   "Liga-BL": {
-    "starred": true,
-    "email": true,    
+    "starredFlag": false,
+    "emailFlag": true,    
     "keywords": [
       "liga:",
       "bl:",
@@ -125,8 +125,8 @@
     "channelPref": ""    
   },
   "NHL2": {
-    "starred": true,
-    "email": true,    
+    "starredFlag": false,
+    "emailFlag": true,    
     "keywords": ["nhl:"],
     "exclude": [],
     "preMinutes": 0,
