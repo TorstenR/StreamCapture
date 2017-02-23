@@ -169,7 +169,7 @@ namespace StreamCapture
             string[] fileList=Directory.GetFiles(path);
             foreach(string file in fileList)
             {
-                if(File.GetCreationTime(file) < asOfDate)
+                if(File.GetLastWriteTime(file) < asOfDate)
                 {
                     Console.WriteLine($"{DateTime.Now}: Removing old file {file} as it is too old  ({File.GetLastWriteTime(file)})");
                     File.Delete(file);
