@@ -1,12 +1,10 @@
 {
   "USA National": {
-    "starred": true,
-    "email": true,    
+    "starred": true,"email": true,    
     "keywords": ["usa"],
     "exclude": ["tennis"],
     "categories": [],
-    "preMinutes": 0,
-    "postMinutes": 30,
+    "preMinutes": 0, "postMinutes": 30,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
     "channelPref": ""    
@@ -15,19 +13,16 @@
     "starred": true,
     "email": true,   
     "keywords": ["wrc"],
-    "exclude": [],
-    "categories": [],
-    "preMinutes": 0,
-    "postMinutes": 30,
+    "exclude": [],"categories": [],
+    "preMinutes": 0,"postMinutes": 0,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
     "channelPref": ""    
   },
   "Soccer": {
-    "starred": true,
-    "email": true,    
+    "starred": true, "email": true,    
     "keywords": [
-      "bayern munich",
+      "bayern",
       "real madrid",
       "barcelona",
       "liverpool",
@@ -35,49 +30,49 @@
       "tottenham",
       "sounders"
       ],
-    "exclude": [],
-    "categories": [],
-    "preMinutes": 0,
-    "postMinutes": 15,
+    "exclude": [],"categories": [],
+    "preMinutes": 0,"postMinutes": 15,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
     "channelPref": ""    
   },
   "Soccer Tournaments": {
-    "starred": true,
-    "email": true,    
+    "starred": false, "email": true,    
     "keywords": [
       "UCL:",
       "FA Cup",
       "CONCACAF",
-      "EFL:"
+      "EFL:",
+      "EL:",
+      "EDL:"
       ],
     "exclude": [
-      "konferenz",
+      "sky90",
+      "Konferenz",
       "Alle Spiele"
       ],
     "categories": [],
-    "preMinutes": 0,
-    "postMinutes": 15,
+    "preMinutes": 0, "postMinutes": 15,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
     "channelPref": ""    
   },
-  "F1": {
-    "starred": true,
+  "MotorSports": {
+    "starred": false,
     "email": true,    
-    "keywords": ["f1"],
-    "exclude": [],
-    "categories": [],
-    "preMinutes": 0,
-    "postMinutes": 5,
+    "keywords": [""],
+    "exclude": ["nascar"],
+    "categories": [
+       "Motor Sports",
+       "formula"
+       ],
+    "preMinutes": 0, "postMinutes": 5,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
     "channelPref": ""    
   },
   "NHL": {
-    "starred": true,
-    "email": true,    
+    "starred": true, "email": true,    
     "keywords": [
       "blackhawks",
       "red wings",
@@ -92,9 +87,8 @@
     "qualityPref": "+720p",
     "channelPref": ""    
   },
-  "EPL2": {
-    "starred": true,
-    "email": true,    
+  "EPL": {
+    "starred": false, "email": true,    
     "keywords": ["epl:"],
     "exclude": [],
     "categories": [],
@@ -104,32 +98,26 @@
     "qualityPref": "+720p",
     "channelPref": ""    
   },
-  "Liga-BL": {
-    "starred": true,
-    "email": true,    
-    "keywords": [
-      "liga:",
-      "bl:",
-      "el:"
-      ],
+  "Rest of Soccer": {
+    "starred": false, "email": false,    
+    "keywords": ["BL:"],
     "exclude": [
       "sky90",
       "Konferenz",
       "Alle Spiele"
       ],
-    "categories": [],
+    "categories": ["world football"],
     "preMinutes": 0,
     "postMinutes": 0,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+720p",
     "channelPref": ""    
   },
-  "NHL2": {
-    "starred": true,
-    "email": true,    
-    "keywords": ["nhl:"],
-    "exclude": [],
-    "categories": [],
+  "Hockey": {
+    "starred": false, "email": false,    
+    "keywords": [""],
+    "exclude": [], 
+    "categories": ["ice hockey"],
     "preMinutes": 0,
     "postMinutes": 0,
     "langPref": "+us,ca,uk,-de,-es",

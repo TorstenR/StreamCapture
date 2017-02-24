@@ -44,7 +44,7 @@ namespace StreamCapture
                 {
                     List<string> rows=kvpArray[kvpIdx].Value.categories;
                     if(rows!=null && rows.Count>0)
-                        showMatched = CheckForMatchHelper(rows, scheduleShow.category);
+                        showMatched = CheckForMatchHelper(rows, scheduleShow.category);                  
                 }
 
                 //Look for exclusions to verify match
@@ -57,7 +57,7 @@ namespace StreamCapture
 
                     //If we're still good, return the match
                     if(!excludeMatched)
-                    {
+                    {             
                         return new Tuple<KeywordInfo, int>(kvpArray[kvpIdx].Value, kvpIdx);
                     }
                 }
@@ -88,14 +88,18 @@ namespace StreamCapture
                     //We'll use regex to do the matching (all on lower case)
                     Regex regex = new Regex(itemArray[i].ToLower());
                     Match match = regex.Match(stringToMatch.ToLower());
+
                     if(!match.Success)
                     {
                         matchedFlag=false;
                         break;
                     }
                 }
-            }
 
+                //Each row is an OR, so if we're matched, exit of the loop as we're done
+                if(matchedFlag)
+                    break;
+            }
             return matchedFlag;
         }
     }
