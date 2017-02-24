@@ -30,19 +30,30 @@ namespace StreamCapture
         }
 
         //Given a show name, see if there's a match in any of the keywords
-        public Tuple<KeywordInfo,int> FindMatch(string showName)
+        public Tuple<KeywordInfo,int> FindMatch(ScheduleShow scheduleShow)
         {
             //Go through each keyword section, seeing if there's a match for the show 
             KeyValuePair<string, KeywordInfo>[] kvpArray = keywordDict.ToArray();
             for(int kvpIdx=0;kvpIdx<kvpArray.Length;kvpIdx++)
             {
                 //Loop through all keyword rows checking for a match
-                bool showMatched=CheckForMatchHelper(kvpArray[kvpIdx].Value.keywords, showName);
+                bool showMatched=CheckForMatchHelper(kvpArray[kvpIdx].Value.keywords, scheduleShow.name);
 
-                if (showMatched)
+                //Make sure categories match (if empty, then no-op)
+                if(showMatched)
                 {
-                    //Loop through all exclude rows to make sure we're still ok
-                    bool excludeMatched = CheckForMatchHelper(kvpArray[kvpIdx].Value.exclude, showName);
+                    List<string> rows=kvpArray[kvpIdx].Value.categories;
+                    if(rows!=null && rows.Count>0)
+                        showMatched = CheckForMatchHelper(rows, scheduleShow.category);
+                }
+
+                //Look for exclusions to verify match
+                if(showMatched)
+                {
+                    bool excludeMatched = false;
+                    List<string> rows=kvpArray[kvpIdx].Value.exclude;
+                    if(rows!=null && rows.Count>0)                    
+                        excludeMatched = CheckForMatchHelper(rows, scheduleShow.name);
 
                     //If we're still good, return the match
                     if(!excludeMatched)

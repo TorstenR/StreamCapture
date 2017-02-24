@@ -58,7 +58,7 @@ namespace StreamCapture
             foreach(ScheduleShow scheduleShow in scheduleShowList)
             {
                 //Find any shows that match
-                Tuple<KeywordInfo,int> tuple = keywords.FindMatch(scheduleShow.name);   
+                Tuple<KeywordInfo,int> tuple = keywords.FindMatch(scheduleShow);   
                 if (tuple != null)
                 {
                     KeywordInfo keywordInfo = tuple.Item1; 
@@ -81,7 +81,6 @@ namespace StreamCapture
                     recordInfo.starredFlag = keywordInfo.starredFlag;
                     recordInfo.emailFlag = keywordInfo.emailFlag;
                     recordInfo.qualityPref = keywordInfo.qualityPref;
-                    recordInfo.categoryPref = keywordInfo.categoryPref;
                     recordInfo.langPref = keywordInfo.langPref;
                     recordInfo.channelPref = keywordInfo.channelPref;
                     recordInfo.category = scheduleShow.category;

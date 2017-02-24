@@ -19,7 +19,6 @@ namespace StreamCapture
         public bool starredFlag { get; set; }
         public bool emailFlag {get; set; }
         public string qualityPref { get; set; }
-        public string categoryPref { get; set; }
         public string langPref { get; set; }
         public string channelPref { get; set; }
         public string category { get; set; }

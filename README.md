@@ -1,4 +1,4 @@
-#Program to capture streams from live247 (and apparently other Smoothstream offerings) using .Net Core
+#Program to capture streams from live247 (and other Smoothstream offerings) using .Net Core.
 
 For the longest time I was frustrated at not being able to reasonably record streams from Live247 to watch my favorite sporting events.  That frustration is what this project was born out of.  
 
@@ -25,7 +25,7 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 - When multiple channels are available, it orders them based on some heuristics (e.g. higher quality first)
 - Email alerting for what's scheduled and what's done
 - Cycles through multiple servers if supplied to find the fastest one
-- Uses (limited) heuristics to determine channel quality and switches to better channels if necessary.  (working to improve)
+- Uses user defined heuristics to determine best channel and then switches to better channels if necessary.
 - Detects "stalls" by monitoring the file size every 10 seconds
 - Should be able to start and "forget about it" and simply watch the results on plex (or whatever you use)
 
@@ -81,11 +81,11 @@ If running in Mode 2, keywords.json is how it's decided which shows to record ba
 - "email": when 'true', an email is sent when capture is started and published for this keyword group
 - "keywords": array of keyword rows.  Each row is comma delimmted (AND), and the rows are OR'd together.  In addition, Regular expressions are supported.
 - "exclude": same as with keywords, but are exclusions.
+- "categories": same as with keywords, but matching against the smoothstream categories.  These are AND'd with keywords. Use double quotes for wildcard  (e.g. world footbatll etc)
 - "preMinutes": number of minutes to start early by
 - "postMinutes": number of minutes to record late by
 - "langPref": used to order the channels by. (which one to try first, and then 2nd of there's a problem etc)  For example, I use "US" to get the english channels ahead of "DE".  (not sure the full list, see schedule)
 - "qualityPref": also used to order channels.  I use "720p" so it tries to get HD first.
-- "categoryPref": support smoothstream's categories (world football, ice hockey, etc)
 - "channelPref": support channel number preference
 
 Please note that the order in which you put the groups is important as this is the order in which the shows will be scheduled.  This means that you want to put the stuff you care about the most first, so that if there are too many concurrent shows, it'll be the ones with lower priority.  For exampple, I put keywords for my favorite EPL teams first, and then put a general "EPL" towards the bottom.  That way, it'll make sure my favorite teams get the open slots, but if there is "room", it'll fit other EPL games in opportunistically.

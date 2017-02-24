@@ -181,11 +181,8 @@ namespace StreamCapture
             //Get channel preference score
             int chanScore=DetermineScore(channelInfo.number,recordInfo.channelPref);
 
-            //Get category preference score
-            int catScore=DetermineScore(recordInfo.category,recordInfo.categoryPref);
-
             //total
-            int score = qualScore+langScore+chanScore+catScore;
+            int score = qualScore+langScore+chanScore;
 
             return score;
         }
