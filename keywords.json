@@ -1,6 +1,6 @@
 {
   "USA National": {
-    "starred": true,"email": true,    
+    "starredFlag": true,"emailFlag": true,    
     "keywords": ["usa"],
     "exclude": ["tennis"],
     "categories": [],
@@ -10,8 +10,7 @@
     "channelPref": ""    
   },
  "World Rally": {
-    "starred": true,
-    "email": true,   
+    "starredFlag": true,"emailFlag": true,   
     "keywords": ["wrc"],
     "exclude": [],"categories": [],
     "preMinutes": 0,"postMinutes": 0,
@@ -20,7 +19,7 @@
     "channelPref": ""    
   },
   "Soccer": {
-    "starred": true, "email": true,    
+    "starredFlag": true, "emailFlag": true,    
     "keywords": [
       "bayern",
       "real madrid",
@@ -37,7 +36,7 @@
     "channelPref": ""    
   },
   "Soccer Tournaments": {
-    "starred": false, "email": true,    
+    "starredFlag": false, "emailFlag": true,    
     "keywords": [
       "UCL:",
       "FA Cup",
@@ -58,8 +57,8 @@
     "channelPref": ""    
   },
   "MotorSports": {
-    "starred": false,
-    "email": true,    
+    "starredFlag": false,
+    "emailFlag": true,    
     "keywords": [""],
     "exclude": ["nascar"],
     "categories": [
@@ -72,7 +71,7 @@
     "channelPref": ""    
   },
   "NHL": {
-    "starred": true, "email": true,    
+    "starredFlag": true, "emailFlag": true,    
     "keywords": [
       "blackhawks",
       "red wings",
@@ -88,7 +87,7 @@
     "channelPref": ""    
   },
   "EPL": {
-    "starred": false, "email": true,    
+    "starredFlag": false, "emailFlag": true,    
     "keywords": ["epl:"],
     "exclude": [],
     "categories": [],
@@ -99,7 +98,7 @@
     "channelPref": ""    
   },
   "Rest of Soccer": {
-    "starred": false, "email": false,    
+    "starredFlag": false, "emailFlag": false,    
     "keywords": ["BL:"],
     "exclude": [
       "sky90",
@@ -114,7 +113,7 @@
     "channelPref": ""    
   },
   "Hockey": {
-    "starred": false, "email": false,    
+    "starredFlag": false, "emailFlag": false,    
     "keywords": [""],
     "exclude": [], 
     "categories": ["ice hockey"],
