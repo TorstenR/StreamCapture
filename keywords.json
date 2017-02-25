@@ -2,6 +2,7 @@
   "USA National": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "starredFlag": true,"emailFlag": true,    
 =======
     "starredFlag": true,
@@ -11,6 +12,9 @@
     "starredFlag": true,
     "emailFlag": true,    
 >>>>>>> 141ab2d2f8a632779fb0694cad84468a0791dfa6
+=======
+    "starred": true,"email": true,    
+>>>>>>> parent of 8129e1f... ooops
     "keywords": ["usa"],
     "exclude": ["tennis"],
     "categories": [],
@@ -23,6 +27,7 @@
  "World Rally": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "starredFlag": true,"emailFlag": true,   
 =======
     "starredFlag": true,
@@ -32,6 +37,10 @@
     "starredFlag": true,
     "emailFlag": true,   
 >>>>>>> 141ab2d2f8a632779fb0694cad84468a0791dfa6
+=======
+    "starred": true,
+    "email": true,   
+>>>>>>> parent of 8129e1f... ooops
     "keywords": ["wrc"],
     "exclude": [],
     "categories": [],
@@ -44,6 +53,7 @@
   "Soccer": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "starredFlag": true, "emailFlag": true,    
 =======
     "starredFlag": true,
@@ -53,6 +63,9 @@
     "starredFlag": true,
     "emailFlag": true,    
 >>>>>>> 141ab2d2f8a632779fb0694cad84468a0791dfa6
+=======
+    "starred": true, "email": true,    
+>>>>>>> parent of 8129e1f... ooops
     "keywords": [
       "bayern munich",
       "real madrid",
@@ -73,6 +86,7 @@
   "Soccer Tournaments": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "starredFlag": false, "emailFlag": true,    
 =======
     "starredFlag": false,
@@ -82,6 +96,9 @@
     "starredFlag": false,
     "emailFlag": true,    
 >>>>>>> 141ab2d2f8a632779fb0694cad84468a0791dfa6
+=======
+    "starred": false, "email": true,    
+>>>>>>> parent of 8129e1f... ooops
     "keywords": [
       "UCL:",
       "FA Cup",
@@ -102,8 +119,8 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
   "MotorSports": {
-    "starredFlag": false,
-    "emailFlag": true,    
+    "starred": false,
+    "email": true,    
     "keywords": [""],
     "exclude": ["nascar"],
     "categories": [
@@ -137,6 +154,7 @@
   "NHL": {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "starredFlag": true, "emailFlag": true,    
 =======
     "starredFlag": false,
@@ -146,6 +164,9 @@
     "starredFlag": false,
     "emailFlag": false,    
 >>>>>>> 141ab2d2f8a632779fb0694cad84468a0791dfa6
+=======
+    "starred": true, "email": true,    
+>>>>>>> parent of 8129e1f... ooops
     "keywords": [
       "blackhawks",
       "red wings",
@@ -163,6 +184,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
   "EPL": {
+<<<<<<< HEAD
     "starredFlag": false, "emailFlag": true,    
 =======
   "EPL2": {
@@ -174,6 +196,9 @@
     "starredFlag": false,
     "emailFlag": true,    
 >>>>>>> 141ab2d2f8a632779fb0694cad84468a0791dfa6
+=======
+    "starred": false, "email": true,    
+>>>>>>> parent of 8129e1f... ooops
     "keywords": ["epl:"],
     "exclude": [],
     "categories": [],
@@ -186,7 +211,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
   "Rest of Soccer": {
-    "starredFlag": false, "emailFlag": false,    
+    "starred": false, "email": false,    
     "keywords": ["BL:"],
 =======
 =======
@@ -218,7 +243,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
   "Hockey": {
-    "starredFlag": false, "emailFlag": false,    
+    "starred": false, "email": false,    
     "keywords": [""],
     "exclude": [], 
     "categories": ["ice hockey"],
