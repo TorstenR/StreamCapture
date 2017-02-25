@@ -77,9 +77,6 @@ namespace StreamCapture
             //Grabs schedule and builds a recording list based on keywords
             List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
 
-            //Send digest
-            new Mailer().SendDailyDigest(configuration,recordings);      
-
             //Go through record list and display
             foreach (RecordInfo recordInfo in recordInfoList)
             {
@@ -110,7 +107,7 @@ namespace StreamCapture
                 {
                     //Grabs schedule and builds a recording list based on keywords
                     List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
-            
+
                     //Go through record list, spawn a new process for each show found
                     foreach (RecordInfo recordInfo in recordInfoList)
                     {
@@ -131,11 +128,11 @@ namespace StreamCapture
                     DateTime nextRecord=DateTime.Now;
                     
                     //find out if schedule time is still today
-                    if(DateTime.Now.Hour < Convert.ToInt16(times[times.Length-1]))
+                    if(DateTime.Now.Hour < Convert.ToInt32(times[times.Length-1]))
                     {
                         for(int i=0;i<times.Length;i++)
                         {
-                            int recHour=Convert.ToInt16(times[i]);
+                            int recHour=Convert.ToInt32(times[i]);
                             if(DateTime.Now.AddMinutes(10).Hour < recHour)  //add fudge factor for bad timers
                             {
                                 nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
@@ -146,17 +143,10 @@ namespace StreamCapture
                     else
                     {
                         //build date tomorrow
-                        int recHour=Convert.ToInt16(times[0]);  //grab first time in the list
+                        int recHour=Convert.ToInt32(times[0]);  //grab first time in the list
                         nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
                         nextRecord=nextRecord.AddDays(1);
-                    }  
-
-                    //Time to mail the daily digest and clean up master list (but only if it's the first hour on the hour list)
-                    if(DateTime.Now.Hour == Convert.ToInt16(times[0]))
-                    {           
-                        new Mailer().SendDailyDigest(configuration,recordings);
-                        recordings.CleanupOldShows();
-                    }
+                    }             
 
                     //Since we're awake, let's see if there are any files needing cleaning up
                     VideoFileManager.CleanOldFiles(configuration);
@@ -437,7 +427,6 @@ namespace StreamCapture
                 logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
                 captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,videoFileInfo.GetFullFile());
             }
-            recordInfo.completedFlag=true;
             logWriter.WriteLine($"{DateTime.Now}: Done Capturing Stream.");         
 
             //Update capture history and save
@@ -453,14 +442,11 @@ namespace StreamCapture
             {
                 logWriter.WriteLine($"{DateTime.Now}: ERROR!  Too many retries - {recordInfo.description}"); 
 
-                //set partial flag
-                recordInfo.partialFlag=true;
-
                 //Send alert mail
                 string body=recordInfo.description+" partially recorded due to too many retries.  Time actually recorded is "+finalTimeJustRecorded.TotalHours;
                 new Mailer().SendErrorMail(configuration,"Partial: "+recordInfo.description,body);
                 //throw new Exception("Too many retries for "+recordInfo.description);
-            }
+            }                
         }
 
         private bool IsInternetOk()

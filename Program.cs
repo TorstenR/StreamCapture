@@ -19,7 +19,7 @@ namespace StreamCapture
             commandLineApplication.Execute(args);  
             
             //Welcome message
-            Console.WriteLine($"{DateTime.Now}: StreamCapture Version 1.01  2/24/2017");
+            Console.WriteLine($"{DateTime.Now}: StreamCapture Version 0.99  2/12/2017");
 
             //Read and build config
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");

@@ -1,6 +1,5 @@
 using System;
 using Microsoft.Extensions.Configuration;
-using System.Collections.Generic;
 using MailKit.Net.Smtp;
 using MailKit;
 using MimeKit;
@@ -9,42 +8,6 @@ namespace StreamCapture
 {
     public class Mailer
     {
-        public void SendDailyDigest(IConfiguration configuration,Recordings recordings)
-        {
-            string scheduledShows="";
-            string notScheduleShows="";
-            string recordedShows="";
-            string partialShows="";
-            string notRecordedShows="";
-
-            //Build each portion of the mail
-            List<RecordInfo> sortedRecordInfoList = recordings.GetSortedMasterRecordList();
-            foreach(RecordInfo recordInfo in sortedRecordInfoList)
-            {
-                string showText=BuildShowText(recordInfo)+"<br>";
-
-                if(recordInfo.processSpawnedFlag && !recordInfo.completedFlag)
-                    scheduledShows=scheduledShows+showText;
-                else if(!recordInfo.processSpawnedFlag && recordInfo.GetStartDT()>DateTime.Now)
-                    notScheduleShows=notScheduleShows+showText;
-                else if(recordInfo.completedFlag && !recordInfo.partialFlag)
-                    recordedShows=recordedShows+showText;
-                else if(recordInfo.partialFlag)
-                    partialShows=partialShows+showText;
-                else
-                    notRecordedShows=notRecordedShows+showText;
-            }
-
-            string emailText=@"<p><p><h3>Scheduled Shows:</h3><br>"+scheduledShows;
-            emailText=emailText+@"<p><p><h3>Shows NOT Scheduled:</h3><br>"+notScheduleShows;
-            emailText=emailText+@"<p><p><h3>Shows Recorded:</h3><br>"+recordedShows;
-            emailText=emailText+@"<p><p><h3>Shows PARTIALLY Recorded:</h3><br>"+partialShows;
-            emailText=emailText+@"<p><p><h3>Shows NOT Recorded: (probably concurrent)</h3><br>"+notRecordedShows;
-
-            //Send mail
-            SendMail(configuration,"Daily Digest",emailText);
-        }
-
         public string AddNewShowToString(string newShowText,RecordInfo recordInfo)
         {
             if(string.IsNullOrEmpty(newShowText))
@@ -133,8 +96,6 @@ namespace StreamCapture
             string day = recordInfo.GetStartDT().ToString("ddd");
             if(recordInfo.GetStartDT().Day==DateTime.Now.Day)
                 day="Today";
-            if(recordInfo.GetStartDT().Day==DateTime.Now.AddDays(1).Day)
-                day="Tomorrow";            
             string startTime = recordInfo.GetStartDT().ToString("HH:mm");
             string endTime = recordInfo.GetEndDT().ToString("HH:mm");
 

@@ -22,11 +22,9 @@ namespace StreamCapture
         public string langPref { get; set; }
         public string channelPref { get; set; }
         public string category { get; set; }
-        public int keywordPos { get; set;}
 
         public bool processSpawnedFlag  { get; set; }
-        public bool partialFlag { get; set; }
-        public bool completedFlag { get; set; }
+        public int keywordPos { get; set;}
 
         public Channels channels;
 
@@ -37,8 +35,6 @@ namespace StreamCapture
             //Init certain properties 
             id=DateTime.Now.Ticks.ToString();
             processSpawnedFlag=false;
-            completedFlag=false;
-            partialFlag=false;
             strDTOffset="0";
             qualityPref="";
             langPref="";
