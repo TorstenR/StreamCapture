@@ -191,7 +191,10 @@ namespace StreamCapture
                 else if(tooManyConcurrent)
                 {
                     Console.WriteLine($"{DateTime.Now}: Too many at once: {recordInfo.description} at {recordInfo.GetStartDT()} - {recordInfo.GetEndDT()}"); 
+                    recordInfo.tooManyFlag=true;
                     concurrentShowText=mailer.AddConcurrentShowToString(concurrentShowText,recordInfo);  
+                    if(recordInfo.starredFlag)
+                        mailer.SendShowAlertMail(configuration,recordInfo,"Starred show won't record - too many at once");
                 }
                 
                 //Let's queue this since it looks good

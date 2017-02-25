@@ -16,6 +16,7 @@ namespace StreamCapture
             string recordedShows="";
             string partialShows="";
             string notRecordedShows="";
+            string tooManyShows="";
 
             //Build each portion of the mail
             List<RecordInfo> sortedRecordInfoList = recordings.GetSortedMasterRecordList();
@@ -25,6 +26,8 @@ namespace StreamCapture
 
                 if(recordInfo.processSpawnedFlag && !recordInfo.completedFlag)
                     scheduledShows=scheduledShows+showText;
+                else if(recordInfo.tooManyFlag)
+                    tooManyShows=tooManyShows+showText;
                 else if(!recordInfo.processSpawnedFlag && recordInfo.GetStartDT()>DateTime.Now)
                     notScheduleShows=notScheduleShows+showText;
                 else if(recordInfo.completedFlag && !recordInfo.partialFlag)
@@ -36,10 +39,11 @@ namespace StreamCapture
             }
 
             string emailText=@"<p><p><h3>Scheduled Shows:</h3><br>"+scheduledShows;
-            emailText=emailText+@"<p><p><h3>Shows NOT Scheduled:</h3><br>"+notScheduleShows;
+            emailText=emailText+@"<p><p><h3>Shows NOT Scheduled: (too many at once) </h3><br>"+tooManyShows;
+            emailText=emailText+@"<p><p><h3>Shows not queued yet: (</h3><br>"+notScheduleShows;
             emailText=emailText+@"<p><p><h3>Shows Recorded:</h3><br>"+recordedShows;
             emailText=emailText+@"<p><p><h3>Shows PARTIALLY Recorded:</h3><br>"+partialShows;
-            emailText=emailText+@"<p><p><h3>Shows NOT Recorded: (probably concurrent)</h3><br>"+notRecordedShows;
+            emailText=emailText+@"<p><p><h3>Shows NOT Recorded: (left overs) </h3><br>"+notRecordedShows;
 
             //Send mail
             SendMail(configuration,"Daily Digest",emailText);
@@ -84,6 +88,12 @@ namespace StreamCapture
         {
             string text=BuildShowStartedText(recordInfo);
             SendMail(configuration,text,text);
+        }
+
+        public void SendShowAlertMail(IConfiguration configuration,RecordInfo recordInfo,string subject)
+        {
+            string text=BuildShowStartedText(recordInfo);
+            SendMail(configuration,subject,text);
         }
 
         public void SendErrorMail(IConfiguration configuration,string subject,string body)

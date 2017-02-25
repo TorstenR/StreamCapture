@@ -25,6 +25,7 @@ namespace StreamCapture
         public int keywordPos { get; set;}
 
         public bool processSpawnedFlag  { get; set; }
+        public bool tooManyFlag { get; set; }
         public bool partialFlag { get; set; }
         public bool completedFlag { get; set; }
 
@@ -39,6 +40,7 @@ namespace StreamCapture
             processSpawnedFlag=false;
             completedFlag=false;
             partialFlag=false;
+            tooManyFlag=false;
             strDTOffset="0";
             qualityPref="";
             langPref="";
