@@ -111,6 +111,15 @@ namespace StreamCapture
             return GetShowsToQueue();
         }
 
+        public List<RecordInfo> GetSortedMasterRecordList()
+        {
+            List<RecordInfo> sortedRecordInfoList = new List<RecordInfo>();
+            foreach(RecordInfo recordInfo in recordDict.Values.ToList())
+                sortedRecordInfoList = AddToSortedList(recordInfo,sortedRecordInfoList);
+
+            return sortedRecordInfoList;
+        }
+
         public RecordInfo GetRecordInfo(string recordInfoKey)
         {
             RecordInfo recordInfo=null;
@@ -173,7 +182,7 @@ namespace StreamCapture
                 if(showAlreadyDone)
                 {
                     Console.WriteLine($"{DateTime.Now}: Show already finished: {recordInfo.description} at {recordInfo.GetStartDT()}");
-                    DeleteRecordInfo(recordInfo);
+                    //DeleteRecordInfo(recordInfo);
                 }
                 else if(showTooFarAway)
                     Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
@@ -212,6 +221,15 @@ namespace StreamCapture
 
             //Ok, we can now return the list
             return queuedRecordings;
+        }
+
+        public void CleanupOldShows()
+        {
+            foreach(RecordInfo recordInfo in recordDict.Values.ToList())
+            {
+                if(recordInfo.GetEndDT()<DateTime.Now)
+                    DeleteRecordInfo(recordInfo);
+            }
         }
 
         private List<RecordInfo> AddToSortedList(RecordInfo recordInfoToAdd,List<RecordInfo> list)
