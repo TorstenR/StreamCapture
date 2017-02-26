@@ -22,7 +22,7 @@ namespace StreamCapture
             List<RecordInfo> sortedRecordInfoList = recordings.GetSortedMasterRecordList();
             foreach(RecordInfo recordInfo in sortedRecordInfoList)
             {
-                string showText=BuildShowText(recordInfo)+"<br>";
+                string showText=BuildTableRow(recordInfo);
 
                 if(recordInfo.processSpawnedFlag && !recordInfo.completedFlag)
                     scheduledShows=scheduledShows+showText;
@@ -37,16 +37,43 @@ namespace StreamCapture
                 else
                     notRecordedShows=notRecordedShows+showText;
             }
-
-            string emailText=@"<p><p><h3>Scheduled Shows:</h3><br>"+scheduledShows;
-            emailText=emailText+@"<p><p><h3>Shows NOT Scheduled: (too many at once) </h3><br>"+tooManyShows;
-            emailText=emailText+@"<p><p><h3>Shows not queued yet: (</h3><br>"+notScheduleShows;
-            emailText=emailText+@"<p><p><h3>Shows Recorded:</h3><br>"+recordedShows;
-            emailText=emailText+@"<p><p><h3>Shows PARTIALLY Recorded:</h3><br>"+partialShows;
-            emailText=emailText+@"<p><p><h3>Shows NOT Recorded: (left overs) </h3><br>"+notRecordedShows;
+            string emailText=StartTable("Scheduled Shows")+scheduledShows+EndTable();
+            emailText=emailText+StartTable("Shows NOT Scheduled (too many at once)")+tooManyShows+EndTable();
+            emailText=emailText+StartTable("Shows not queued yet")+notScheduleShows+EndTable();
+            emailText=emailText+StartTable("Shows Recorded")+recordedShows+EndTable();
+            emailText=emailText+StartTable("Shows PARTIALLY Recorded")+partialShows+EndTable();
+            emailText=emailText+StartTable("Shows NOT Recorded")+notRecordedShows+EndTable();
 
             //Send mail
             SendMail(configuration,"Daily Digest",emailText);
+        }
+
+        private string StartTable(string caption)
+        {
+            string tableStr=@"<p><p><TABLE border='2' frame='hsides' rules='groups'><CAPTION>" + caption + @"</CAPTION>";
+            tableStr=tableStr+@"<TR><TH><TH>Day<TH>Start<TH>Duration<TH>Category<TH>Description<TBODY>";
+            return tableStr;
+        }
+
+        private string BuildTableRow(RecordInfo recordInfo)
+        {
+            string day = recordInfo.GetStartDT().ToString("ddd");
+            if(recordInfo.GetStartDT().Day==DateTime.Now.Day)
+                day="Today";
+            if(recordInfo.GetStartDT().Day==DateTime.Now.AddDays(1).Day)
+                day="Tomorrow";            
+            string startTime = recordInfo.GetStartDT().ToString("HH:mm");
+            double duration = Math.Round((double)recordInfo.GetDuration()/60.0,1);
+            string star="";
+            if(recordInfo.starredFlag)
+                star="*";
+
+            return String.Format($"<TR><TD>{star}<TD>{day}<TD>{startTime}<TD align='center'>{duration}H<TD>{recordInfo.category}<TD>{recordInfo.description}");           
+        }            
+
+        private string EndTable()
+        {
+            return "</TABLE>";
         }
 
         public string AddNewShowToString(string newShowText,RecordInfo recordInfo)
@@ -149,7 +176,7 @@ namespace StreamCapture
             string endTime = recordInfo.GetEndDT().ToString("HH:mm");
 
             return String.Format($"{day} {startTime}-{endTime}   {recordInfo.description} on channel/s {recordInfo.GetChannelString()}");
-        }      
+        }  
 
         private string BuildShowReadyText(RecordInfo recordInfo)
         {

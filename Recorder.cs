@@ -92,7 +92,6 @@ namespace StreamCapture
                 //Create the server/channel selector object
                 ServerChannelSelector scs=new ServerChannelSelector(new StreamWriter(Console.OpenStandardOutput()),channelHistory,servers,recordInfo);                
             }      
-
             Thread.Sleep(3000);
         }
         public void MonitorMode()

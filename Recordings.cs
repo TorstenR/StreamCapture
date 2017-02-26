@@ -211,6 +211,11 @@ namespace StreamCapture
                     if((recordInfo.GetEndDT()-recordInfo.GetStartDT()).Hours>4)
                         mailer.SendShowAlertMail(configuration,recordInfo,"WARNING - Show really long");
 
+                    //if this show "popped up" during the day after the initial load, send send alert
+                    //string[] scheduleArray = configuration["scheduleCheck"].Split(',');
+                    //if(DateTime.Now.Hour!=Convert.ToInt16(scheduleArray[0]) && recordInfo.starredFlag)
+                    //    mailer.SendShowAlertMail(configuration,recordInfo,"New starred show popped up");
+
                     //queue it up
                     queuedRecordings = AddToSortedList(recordInfo,queuedRecordings);
                 }
