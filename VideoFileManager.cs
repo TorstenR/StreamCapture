@@ -134,19 +134,20 @@ namespace StreamCapture
                 Console.WriteLine($"{DateTime.Now}: Checking the following folders for files older than {cutDate}");   
             
                 Console.WriteLine($"{DateTime.Now}:          {logPath}");                
-                RemoveOldFiles(logPath,cutDate);
+                RemoveOldFiles(logPath,"*log.txt",cutDate);
                 Console.WriteLine($"{DateTime.Now}:          {outputPath}");
-                RemoveOldFiles(outputPath,cutDate);
+                RemoveOldFiles(outputPath,"*.ts",cutDate);
+                RemoveOldFiles(outputPath,"*.mp4",cutDate);
                 if(!string.IsNullOrEmpty(nasPath))
                 {
                     Console.WriteLine($"{DateTime.Now}:          {nasPath}");
                     //Go throw sub directories too
-                    RemoveOldFiles(nasPath,cutDate);
+                    RemoveOldFiles(nasPath,"*.mp4",cutDate);
                     string[] subDirs=Directory.GetDirectories(nasPath);
                     foreach(string subDir in subDirs)
                     {
                         Console.WriteLine($"{DateTime.Now}:          {subDir}");
-                        RemoveOldFiles(subDir,cutDate);
+                        RemoveOldFiles(subDir,"*.mp4",cutDate);
                     }
                 }
             }
@@ -164,9 +165,9 @@ namespace StreamCapture
             }
         }
 
-        static private void RemoveOldFiles(string path,DateTime asOfDate)
+        static private void RemoveOldFiles(string path,string filter,DateTime asOfDate)
         {
-            string[] fileList=Directory.GetFiles(path);
+            string[] fileList=Directory.GetFiles(path,filter);
             foreach(string file in fileList)
             {
                 if(File.GetLastWriteTime(file) < asOfDate)

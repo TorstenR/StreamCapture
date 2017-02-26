@@ -167,7 +167,8 @@ namespace StreamCapture
             ValidateInt("appsettings.json","authMinutes",configuration["authMinutes"],30,1440); 
 
             //Check hours in future
-            ValidateInt("appsettings.json","hoursInFuture",configuration["hoursInFuture"],0,48);   
+            if(configuration["hoursInFuture"]!="today")
+                ValidateInt("appsettings.json","hoursInFuture",configuration["hoursInFuture"],0,48);   
 
             //Check rention days     
             ValidateInt("appsettings.json","retentionDays",configuration["retentionDays"],1,120);        

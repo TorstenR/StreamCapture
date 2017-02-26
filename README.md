@@ -52,7 +52,7 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 - "user" - Yes, username and password
 - "pass"
 - "scheduleCheck" - Comma separated hours (24 hour format) for when you want the scheduled checked.
-- "hoursInFuture" - Don't schedule anything farther out than this number of hours
+- "hoursInFuture" - Don't schedule anything farther out than this number of hours.  Use 'today' for same day only.
 - "numberOfRetries" - Number of time we retry after ffmpeg capture error before giving up inside of a 15 window.  
 - "schedTimeOffset" - Schedule appears to be in EST.  This is the offset for local time.  (e.g. PST is -3)
 - "acceptableRate" - KB/s, below which it will error out and retry.  Meant to catch "dead" or "hung" streams.  I use 50...

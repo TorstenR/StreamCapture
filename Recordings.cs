@@ -165,6 +165,13 @@ namespace StreamCapture
             string concurrentShowText = "";
             string currentScheduleText="";
 
+            //check timeframe in the future to queue
+            DateTime futureCutoff;
+            if(configuration["hoursInFuture"]=="today")
+                futureCutoff=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,23,59,59,0,DateTime.Now.Kind);
+            else
+                futureCutoff=DateTime.Now.AddHours(Convert.ToInt32(configuration["hoursInFuture"]));
+
             //Starting new as this is always time dependent
             queuedRecordings=new List<RecordInfo>();
 
@@ -176,7 +183,7 @@ namespace StreamCapture
             foreach(RecordInfo recordInfo in recordingList.ToArray())
             {
                 bool showAlreadyDone=recordInfo.GetEndDT()<DateTime.Now;
-                bool showTooFarAway=recordInfo.GetStartDT()>DateTime.Now.AddHours(Convert.ToInt32(configuration["hoursInFuture"]));
+                bool showTooFarAway=recordInfo.GetStartDT()>futureCutoff;
                 bool tooManyConcurrent=!IsConcurrencyOk(recordInfo,queuedRecordings);
 
                 if(showAlreadyDone)
@@ -200,6 +207,11 @@ namespace StreamCapture
                 //Let's queue this since it looks good
                 if(!showAlreadyDone && !showTooFarAway && !tooManyConcurrent)
                 {
+                    //see if the show is super long
+                    if((recordInfo.GetEndDT()-recordInfo.GetStartDT()).Hours>4)
+                        mailer.SendShowAlertMail(configuration,recordInfo,"WARNING - Show really long");
+
+                    //queue it up
                     queuedRecordings = AddToSortedList(recordInfo,queuedRecordings);
                 }
             }
