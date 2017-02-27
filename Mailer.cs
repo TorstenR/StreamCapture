@@ -172,7 +172,7 @@ namespace StreamCapture
 
         private string BuildShowStartedText(RecordInfo recordInfo)
         {
-            return String.Format($"Started: {recordInfo.description}.  Should be done by {recordInfo.GetEndDT()}");
+            return String.Format($"Started: {recordInfo.description}.  Should be done by {recordInfo.GetEndDT().ToString("HH:mm")}");
         }        
     }
 }
