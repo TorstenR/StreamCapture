@@ -2,11 +2,12 @@
 
 For the longest time I was frustrated at not being able to reasonably record streams from Live247 to watch my favorite sporting events.  That frustration is what this project was born out of.  
 
-This program is intended to run largely unattended, recording shows based on keywords, recovering gracefully from network glitches, and alerting via email about what's going on.  
+This program is intended to run largely unattended, recording shows based on keywords (with many options to help it decide which channel to use, and which show has precedence), recovering gracefully from network glitches, and alerting via email about what's going on.  
 
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ###News:
+- Feb 27, 2017: Program is now feature complete.  I don't plan on doing much more except to fix any bugs that crop up.
 - Feb 22, 2017: Big upgrade to keywords.  Please see below for more info.  (regex, scoring, etc)
 - Feb 15, 2017: Improved scheduling so it works more as expected even when there's a lot of shows
 - Feb 11, 2017: More bug fixes and better emails.
@@ -22,15 +23,15 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 - Allows "pre" and "post" minutes to be specified per show.  (e.g. some events potentially have overtime, some don't...)
 - Spawns a separate thread and captures stream using ffmpeg, comlete with seperate log file
 - Works cross platform.  (confirmed on Windows and Mac.  If you're using on nix...let me know please)
-- When multiple channels are available, it orders them based on some heuristics (e.g. higher quality first)
-- Email alerting for what's scheduled and what's done
+- When multiple channels are available, it orders them based on heuristics (e.g. language preference, quality, etc)
+- Email alerting for what's scheduled and what's done.  Includes a daily digest, and any changes that happen during the day.
 - Cycles through multiple servers if supplied to find the fastest one
-- Uses user defined heuristics to determine best channel and then switches to better channels if necessary.
+- Switches servers and channels if problems are encountered to find a better one
 - Detects "stalls" by monitoring the file size every 10 seconds
+- Cleans files up after a user defined period of time.
 - Should be able to start and "forget about it" and simply watch the results on plex (or whatever you use)
 
 ###Caveats:
-- Not very well commented
 - My plex did not recognize the embedded meta-data.  Not sure why....
 
 ###Areas to help:
@@ -49,7 +50,7 @@ Simply run StreamCapture with no parameters.  It will read keywords.json every n
 
 **appsettings.json**
 There are multiple config values in appsettings.json.  By looking at these you'll get a better idea what's happening.
-- "user" - Yes, username and password
+- "user" - Yes, username and password for smooth streams
 - "pass"
 - "scheduleCheck" - Comma separated hours (24 hour format) for when you want the scheduled checked.
 - "hoursInFuture" - Don't schedule anything farther out than this number of hours.  Use 'today' for same day only.
@@ -79,21 +80,18 @@ If running in Mode 2, keywords.json is how it's decided which shows to record ba
 - Top level node: name of whatever you want to name the "grouping".  This is arbitrary and doesn't affect anything programatically.
 - "starred": when 'true', this will annotate the file so you can see it better
 - "email": when 'true', an email is sent when capture is started and published for this keyword group
-- "keywords": array of keyword rows.  Each row is comma delimmted (AND), and the rows are OR'd together.  In addition, Regular expressions are supported.
+- "keywords": array of keywords.  Each string in the array is comma delimmted and is ANDed together, and each seperate string in the array is OR'd together.  In addition, Regular expressions are supported.
 - "exclude": same as with keywords, but are exclusions.
-- "categories": same as with keywords, but matching against the smoothstream categories.  These are AND'd with keywords. Use double quotes for wildcard  (e.g. world footbatll etc)
+- "categories": same as with keywords, but matching against the smoothstream categories.  These are AND'd with keywords. Use double quotes or empty to include "everything".  
 - "preMinutes": number of minutes to start early by
 - "postMinutes": number of minutes to record late by
-- "langPref": used to order the channels by. (which one to try first, and then 2nd of there's a problem etc)  For example, I use "US" to get the english channels ahead of "DE".  (not sure the full list, see schedule)
+- "langPref": used to order the channels by. (which one to try first, and then 2nd of there's a problem etc)  For example, I use "US" to get the english channels ahead of "DE". 
 - "qualityPref": also used to order channels.  I use "720p" so it tries to get HD first.
 - "channelPref": support channel number preference
 
-Please note that the order in which you put the groups is important as this is the order in which the shows will be scheduled.  This means that you want to put the stuff you care about the most first, so that if there are too many concurrent shows, it'll be the ones with lower priority.  For exampple, I put keywords for my favorite EPL teams first, and then put a general "EPL" towards the bottom.  That way, it'll make sure my favorite teams get the open slots, but if there is "room", it'll fit other EPL games in opportunistically.
+Please note that the order in which you put the groups is important as this is the order in which the shows will be scheduled.  This means that you want to put the stuff you care about the most first for when there are too many concurrent shows For example, I put keywords for my favorite EPL teams first, and then put a general "EPL" towards the bottom.  That way, it'll make sure my favorite teams get priority, but if there is "room", it'll fit other EPL games in opportunistically.
 
-Scoring: If you put one or more '+' and '-' signs in any of your preferences, it will affect which channel is chosen.  For example, if you put '+US' for language, then when
-caculating the "score" for a channel, US will be worth +1 higher.  Same is true for '-'.  You can put multiple + or -.  Basically, a "score" is determined for each channel.  This
-score is what is used to determine which order the channels are tried in.  This should allow you to configure things such that your preferences are respected, but 
-the show will get recorded regardless.
+Scoring: If you put one or more '+' and '-' signs in any of your preferences, it will affect which channel is chosen. (there are preferences for language, quality, and channel)  For example, if you put '+US' for language, then when caculating the "score" for a channel, US will be worth +1 higher.  Same is true for '-'.  You can put multiple + or -.  Basically, a "score" is determined for each channel.  This score is what is used to determine which order the channels are tried in.  This should allow you to configure things such that your preferences are respected, but the show will get recorded regardless.  In other words, preferences are just that - preferences for what to grab first. 
 
 ###Troubleshooting###
 - First thing is to check your log file/s for what might have gone wrong.  Most often, this will lead you in the right direction.
@@ -105,7 +103,7 @@ the show will get recorded regardless.
 ###Compiling:
 - Go to http://www.dot.net and download the right .NET Core for your platform
 - Make "hello world" to make sure your environment is correct and you understand at least the basics
-- Compile streamCapture by typing 'dotnet build'
+- Compile streamCapture by typing 'dotnet restore' and then 'dotnet build'
 
 ###How the program works
 This explains how "Mode 2" works.  "Mode 1" is similar, but without the loop.  (go figure)
@@ -114,17 +112,20 @@ This explains how "Mode 2" works.  "Mode 1" is similar, but without the loop.  (
 - Grabs schedule on the configured hours
 - Searches for keywords
 - For each match, spawns a capture thread IF there's not already one going, and it's not more than n hours in the future
+- Send update email if appropriate
+- Cleans up older files
 - Goes to sleep until it's time to repeat...
 
 **In each child thread:**
-- Puts the output in the log file using the schedule ID as the name
+- Puts the output in the log file in the log directory specified
 - Sleeps until it's time to record
 - Grabs an authentication token
 - Wakes up and spawns ffmpeg to capture the stream in a separate process
 - Timer is set for capture stop time 
-- Monitor file size every 10 seconds and kill capture process if the rate falls below a threshold.
-- If ffmpeg process has exited early, then based speed change the server to see if we can do better
+- Monitors file size every 10 seconds and kills capture process if the rate falls below a user defined threshold.
+- If ffmpeg process has exited early, then change the server to see if we can do better
 - If still having trouble, after going through all the servers, switch channels if multiple to find the fastest one.
-- If we've reached duration, kill ffmpeg capture
+- If we've reached intended duration (or we've retried too many times), kill ffmpeg capture
 - If we've captured to multiple files,  (this would happen if there were problem w/ the stream) using ffmpeg to concat them
 - Use ffmpeg to MUX the .ts file to mp4 as well as add embedded metadata
+- Copy mp4 file to NAS if defined
