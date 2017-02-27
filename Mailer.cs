@@ -102,6 +102,7 @@ namespace StreamCapture
 
             //Send mail if there are updates
             if(!string.IsNullOrEmpty(emailText))
+                SendMail(configuration,"Schedule Updates",emailText);
         }    
 
         public void SendShowReadyMail(IConfiguration configuration,RecordInfo recordInfo)
