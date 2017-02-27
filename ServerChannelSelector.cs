@@ -190,6 +190,12 @@ namespace StreamCapture
         private int DetermineScore(string pref,string stringList)
         {
             int score=0;
+
+            //return zero if strings are empty
+            if(string.IsNullOrEmpty(pref) || string.IsNullOrEmpty(stringList))
+                return 0;
+
+            //Go get score now
             string[] strArray = stringList.Split(',');
             foreach(string str in strArray)
             {
