@@ -24,7 +24,7 @@ namespace StreamCapture
             {
                 string showText=BuildTableRow(recordInfo);
 
-                if(recordInfo.processSpawnedFlag && !recordInfo.completedFlag)
+                if(recordInfo.queuedFlag && !recordInfo.completedFlag)
                     scheduledShows=scheduledShows+showText;
                 else if(recordInfo.tooManyFlag)
                     tooManyShows=tooManyShows+showText;
@@ -37,15 +37,23 @@ namespace StreamCapture
                 else
                     notRecordedShows=notRecordedShows+showText;
             }
-            string emailText=StartTable("Scheduled Shows")+scheduledShows+EndTable();
-            emailText=emailText+StartTable("Shows NOT Scheduled (too many at once)")+tooManyShows+EndTable();
-            emailText=emailText+StartTable("Shows not queued yet")+notScheduleShows+EndTable();
-            emailText=emailText+StartTable("Shows Recorded")+recordedShows+EndTable();
-            emailText=emailText+StartTable("Shows PARTIALLY Recorded")+partialShows+EndTable();
-            emailText=emailText+StartTable("Shows NOT Recorded")+notRecordedShows+EndTable();
+            string emailText="";
+            if(!string.IsNullOrEmpty(scheduledShows))
+                emailText=emailText+StartTable("Scheduled Shows")+scheduledShows+EndTable();
+            if(!string.IsNullOrEmpty(tooManyShows))
+                emailText=emailText+StartTable("Shows NOT Scheduled (too many at once)")+tooManyShows+EndTable();
+            if(!string.IsNullOrEmpty(notScheduleShows))
+                emailText=emailText+StartTable("Shows not scheduled yet")+notScheduleShows+EndTable();
+            if(!string.IsNullOrEmpty(recordedShows))
+                emailText=emailText+StartTable("Shows Recorded")+recordedShows+EndTable();
+            if(!string.IsNullOrEmpty(partialShows))
+                emailText=emailText+StartTable("Shows PARTIALLY Recorded")+partialShows+EndTable();
+            if(!string.IsNullOrEmpty(notRecordedShows))
+                emailText=emailText+StartTable("Shows NOT Recorded")+notRecordedShows+EndTable();
 
             //Send mail
-            SendMail(configuration,"Daily Digest",emailText);
+            if(!string.IsNullOrEmpty(emailText))
+                SendMail(configuration,"Daily Digest",emailText);
         }
 
         private string StartTable(string caption)
@@ -58,6 +66,8 @@ namespace StreamCapture
         private string BuildTableRow(RecordInfo recordInfo)
         {
             string day = recordInfo.GetStartDT().ToString("ddd");
+            if(recordInfo.GetStartDT().Day==DateTime.Now.AddDays(-1).Day)
+                day="Yesterday";           
             if(recordInfo.GetStartDT().Day==DateTime.Now.Day)
                 day="Today";
             if(recordInfo.GetStartDT().Day==DateTime.Now.AddDays(1).Day)
@@ -76,34 +86,23 @@ namespace StreamCapture
             return "</TABLE>";
         }
 
-        public string AddNewShowToString(string newShowText,RecordInfo recordInfo)
+        public string AddTableRow(string currentlyScheduled,RecordInfo recordInfo)
         {
-            if(string.IsNullOrEmpty(newShowText))
-                newShowText=@"<h3>New Shows Scheduled:</h3>";
-
-            return newShowText+@"<br>"+BuildShowText(recordInfo);
-        }
-
-        public string AddCurrentScheduleToString(string currentlyScheduled,RecordInfo recordInfo)
-        {
-            if(string.IsNullOrEmpty(currentlyScheduled))
-                currentlyScheduled=@"<p><p><h3>Current Schedule:</h3>";
-
-            return currentlyScheduled+@"<br>"+BuildShowText(recordInfo);
+            return currentlyScheduled+BuildTableRow(recordInfo);
         }        
 
-        public string AddConcurrentShowToString(string concurentShowText,RecordInfo recordInfo)
+        public void SendUpdateEmail(IConfiguration configuration,string currentScheduleText,string concurrentShowText)
         {
-            if(string.IsNullOrEmpty(concurentShowText))
-                concurentShowText=@"<p><p><h3>Shows NOT scheduled due to too many concurrent:</h3>";
+            string emailText="";
 
-            return concurentShowText+@"<br>"+BuildShowText(recordInfo);
-        }        
+            if(!string.IsNullOrEmpty(currentScheduleText))
+                emailText=emailText+StartTable("Shows Newly Scheduled")+currentScheduleText+EndTable();
+            if(!string.IsNullOrEmpty(concurrentShowText))
+                emailText=emailText+StartTable("Shows NOT recording due to too many")+concurrentShowText+EndTable();
 
-        public void SendNewShowMail(IConfiguration configuration,string mailText)
-        {
-            SendMail(configuration,@"Current Shows Scheduled:",mailText);
-        }
+            //Send mail if there are updates
+            if(!string.IsNullOrEmpty(emailText))
+        }    
 
         public void SendShowReadyMail(IConfiguration configuration,RecordInfo recordInfo)
         {
@@ -165,19 +164,6 @@ namespace StreamCapture
             }
         }
 
-        private string BuildShowText(RecordInfo recordInfo)
-        {
-            string day = recordInfo.GetStartDT().ToString("ddd");
-            if(recordInfo.GetStartDT().Day==DateTime.Now.Day)
-                day="Today";
-            if(recordInfo.GetStartDT().Day==DateTime.Now.AddDays(1).Day)
-                day="Tomorrow";            
-            string startTime = recordInfo.GetStartDT().ToString("HH:mm");
-            string endTime = recordInfo.GetEndDT().ToString("HH:mm");
-
-            return String.Format($"{day} {startTime}-{endTime}   {recordInfo.description} on channel/s {recordInfo.GetChannelString()}");
-        }  
-
         private string BuildShowReadyText(RecordInfo recordInfo)
         {
             return String.Format($"Published: {recordInfo.description}");
@@ -185,7 +171,7 @@ namespace StreamCapture
 
         private string BuildShowStartedText(RecordInfo recordInfo)
         {
-            return String.Format($"Started: {recordInfo.description}");
+            return String.Format($"Started: {recordInfo.description}.  Should be done by {recordInfo.GetEndDT()}");
         }        
     }
 }

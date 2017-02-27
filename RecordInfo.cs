@@ -24,6 +24,7 @@ namespace StreamCapture
         public string category { get; set; }
         public int keywordPos { get; set;}
 
+        public bool queuedFlag { get; set; }
         public bool processSpawnedFlag  { get; set; }
         public bool tooManyFlag { get; set; }
         public bool partialFlag { get; set; }
@@ -37,6 +38,7 @@ namespace StreamCapture
 
             //Init certain properties 
             id=DateTime.Now.Ticks.ToString();
+            queuedFlag=false;
             processSpawnedFlag=false;
             completedFlag=false;
             partialFlag=false;

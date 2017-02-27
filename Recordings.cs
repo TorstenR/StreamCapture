@@ -189,34 +189,42 @@ namespace StreamCapture
                 if(showAlreadyDone)
                 {
                     Console.WriteLine($"{DateTime.Now}: Show already finished: {recordInfo.description} at {recordInfo.GetStartDT()}");
-                    //DeleteRecordInfo(recordInfo);
                 }
                 else if(showTooFarAway)
+                {
                     Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
-                else if(recordInfo.processSpawnedFlag)
-                    Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");    
+                }
                 else if(tooManyConcurrent)
                 {
                     Console.WriteLine($"{DateTime.Now}: Too many at once: {recordInfo.description} at {recordInfo.GetStartDT()} - {recordInfo.GetEndDT()}"); 
+
+                    //Send mail is newly too many
+                    if(recordInfo.tooManyFlag==false)
+                        concurrentShowText=mailer.AddTableRow(concurrentShowText,recordInfo); //send email
+
+                    //Set flag
                     recordInfo.tooManyFlag=true;
-                    concurrentShowText=mailer.AddConcurrentShowToString(concurrentShowText,recordInfo);  
+
+                    //Alert if show is starred
                     if(recordInfo.starredFlag)
                         mailer.SendShowAlertMail(configuration,recordInfo,"Starred show won't record - too many at once");
                 }
-                
-                //Let's queue this since it looks good
-                if(!showAlreadyDone && !showTooFarAway && !tooManyConcurrent)
+                else //Let's queue this since it looks good
                 {
+                    //Log if we've already spawned
+                    if(recordInfo.processSpawnedFlag)
+                        Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");
+
+                    //If this is newly queued, then add to email
+                    if(recordInfo.queuedFlag==false)
+                        currentScheduleText=mailer.AddTableRow(currentScheduleText,recordInfo); ;//mail update
+
                     //see if the show is super long
                     if((recordInfo.GetEndDT()-recordInfo.GetStartDT()).Hours>4)
                         mailer.SendShowAlertMail(configuration,recordInfo,"WARNING - Show really long");
 
-                    //if this show "popped up" during the day after the initial load, send send alert
-                    //string[] scheduleArray = configuration["scheduleCheck"].Split(',');
-                    //if(DateTime.Now.Hour!=Convert.ToInt16(scheduleArray[0]) && recordInfo.starredFlag)
-                    //    mailer.SendShowAlertMail(configuration,recordInfo,"New starred show popped up");
-
-                    //queue it up
+                    //Add this to the queue so it's up to date
+                    recordInfo.queuedFlag=true;
                     queuedRecordings = AddToSortedList(recordInfo,queuedRecordings);
                 }
             }
@@ -226,18 +234,12 @@ namespace StreamCapture
             foreach(RecordInfo recordInfo in queuedRecordings)
             {
                 Console.WriteLine($"{DateTime.Now}: {recordInfo.description} at {recordInfo.GetStartDT()} - {recordInfo.GetEndDT()}");
-                currentScheduleText=mailer.AddCurrentScheduleToString(currentScheduleText,recordInfo);  
+                //currentScheduleText=mailer.AddCurrentScheduleToString(currentScheduleText,recordInfo);  
             }
             Console.WriteLine($"{DateTime.Now}: ===================================");
 
             //Send mail if we have something
-            string mailText="";
-            if(!string.IsNullOrEmpty(currentScheduleText))
-                mailText=mailText+currentScheduleText;   
-            if(!string.IsNullOrEmpty(concurrentShowText))
-                mailText=mailText+concurrentShowText;                 
-            if(!string.IsNullOrEmpty(mailText))
-                mailer.SendNewShowMail(configuration,mailText);                   
+            mailer.SendUpdateEmail(configuration,currentScheduleText,concurrentShowText);                
 
             //Ok, we can now return the list
             return queuedRecordings;
