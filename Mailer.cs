@@ -119,7 +119,7 @@ namespace StreamCapture
 
         public void SendShowAlertMail(IConfiguration configuration,RecordInfo recordInfo,string subject)
         {
-            string text=BuildShowStartedText(recordInfo);
+            string text=String.Format($"Show: {recordInfo.description}.  Start Time: {recordInfo.GetStartDT().ToString("HH:mm")}");
             SendMail(configuration,subject,text);
         }
 
