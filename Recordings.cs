@@ -100,8 +100,9 @@ namespace StreamCapture
                     if(recordInfo.starredFlag)
                         recordInfo.fileName = "+_" + recordInfo.fileName;
 
-                    //Update or add
-                    AddUpdateRecordInfo(BuildRecordInfoKeyValue(recordInfo),recordInfo);
+                    //Update or add  (assuming the show has not already ended)
+                    if(recordInfo.GetEndDT()>DateTime.Now)
+                        AddUpdateRecordInfo(BuildRecordInfoKeyValue(recordInfo),recordInfo);
                 }
             }
 
