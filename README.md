@@ -31,25 +31,20 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 - Cleans files up after a user defined period of time.
 - Should be able to start and "forget about it" and simply watch the results on plex (or whatever you use)
 
-#More about Email:
+###More about Email:
 There are 4 kinds of email: 
 - Daily digests
 - Schedule updates
 - Program updates
 - Alerts/problems. 
 
-**Daily Digests**: These are summary emails sent out once a day on the first hour listed in 'scheduleCheck' (appsettings).  Please note that 'hoursInFuture' now supports 
-the keyword 'today' so that the digest includes only a 24 hour period.  However, it will include whatever window you've defined.  For me, I get this digest at 1am 
-every day and it gives me a good summary and what just happened, and what is planned to happen today capture/recording wise.
-**Schedule Updates**: Everytime the schedule is checked ('scheduleCheck'), any schedule changes are sent out in an update email.  I usually only get one of these a 
-day (1am) since I've got my 'hoursInFuture' set to 'today'.  If you have the window set to say 12 hours, then everytime something new shows up inside 12 hours,
-you'll get an email.  The idea is that you're alerted of changes - and setting the window to 'today' means I pretty much don't get them.
-**Program Updates**: If the 'starredFlag' is set to 'true' the the keyword block that matched the program you're capturing, you'll get an email saying when that
-specific program has started recording, and when it's published.  In practice, I set this flag for keyword blocks that I really care about so I'm alerted as soon as 
-it's ready.
-**Alerts/Problems**: If there's a problem, you'll always get an email.  The most common one is that a starred ('starredFlag') program will not
-record because there's already too many going at once ('concurrentCaptures').  Another somewhat common failure is that the program did not complete, usually due to too many retries.
-(network errors)   However, if there's any kind of failure, an email is send out.  (this includes things like unhandled exceptions, no internet access, etc) 
+**Daily Digests**: These are summary emails sent out once a day on the first hour listed in 'scheduleCheck' (appsettings).  Please note that 'hoursInFuture' now supports the keyword 'today' so that the digest includes only a 24 hour period.  However, it will include whatever window you've defined.  For me, I get this digest at 1am every day and it gives me a good summary and what just happened, and what is planned to happen today capture/recording wise.
+
+**Schedule Updates**: Everytime the schedule is checked ('scheduleCheck'), any schedule changes are sent out in an update email.  I usually only get one of these a day (1am) since I've got my 'hoursInFuture' set to 'today'.  If you have the window set to say 12 hours, then everytime something new shows up inside 12 hours, you'll get an email.  The idea is that you're alerted of changes - and setting the window to 'today' means I pretty much don't get them.
+
+**Program Updates**: If the 'starredFlag' is set to 'true' the the keyword block that matched the program you're capturing, you'll get an email saying when that specific program has started recording, and when it's published.  In practice, I set this flag for keyword blocks that I really care about so I'm alerted as soon as it's ready.
+
+**Alerts/Problems**: If there's a problem, you'll always get an email.  The most common one is that a starred ('starredFlag') program will not record because there's already too many going at once ('concurrentCaptures').  Another somewhat common failure is that the program did not complete, usually due to too many retries. (network errors)   However, if there's any kind of failure, an email is send out.  (this includes things like unhandled exceptions, no internet access, etc) 
 
 ###Caveats:
 - My plex did not recognize the embedded meta-data.  Not sure why....
