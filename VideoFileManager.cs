@@ -34,11 +34,19 @@ namespace StreamCapture
                 return;
 
             //make filelist
-            string concatList=files.fileCaptureList[0].GetFullFile();
-            for(int i=1;i<files.fileCaptureList.Count;i++)
+            string concatList="";
+            bool prependPipe=false;
+            for(int i=0;i<files.fileCaptureList.Count;i++)
             {
+                //make sure file exist before putting it into the list
                 if(File.Exists(files.fileCaptureList[i].GetFullFile()))
-                    concatList=concatList+"|"+files.fileCaptureList[i].GetFullFile();
+                {
+                    if(prependPipe)
+                        concatList=concatList+"|"; //prepend if not the first
+
+                    concatList=concatList+files.fileCaptureList[i].GetFullFile();
+                    prependPipe=true;  //now that we've got at least one file, we need to prepent pipe
+                }
             }
 
             //resulting concat file

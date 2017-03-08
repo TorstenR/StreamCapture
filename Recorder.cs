@@ -135,7 +135,7 @@ namespace StreamCapture
                         for(int i=0;i<times.Length;i++)
                         {
                             int recHour=Convert.ToInt16(times[i]);
-                            if(DateTime.Now.AddMinutes(10).Hour < recHour)  //add fudge factor for bad timers
+                            if((DateTime.Now.Hour+1) < recHour)  //Adding 1 hour to current hours to account for bad clocks. Intervals of less than 2 hours will be ignored
                             {
                                 nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
                                 break;
