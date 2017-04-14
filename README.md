@@ -108,7 +108,7 @@ Please note that the order in which you put the groups is important as this is t
 
 Scoring: If you put one or more '+' and '-' signs in any of your preferences, it will affect which channel is chosen. (there are preferences for language, quality, and channel)  For example, if you put '+US' for language, then when caculating the "score" for a channel, US will be worth +1 higher.  Same is true for '-'.  You can put multiple + or -.  Basically, a "score" is determined for each channel.  This score is what is used to determine which order the channels are tried in.  This should allow you to configure things such that your preferences are respected, but the show will get recorded regardless.  In other words, preferences are just that - preferences for what to grab first. 
 
-###Troubleshooting###
+### Troubleshooting
 - First thing is to check your log file/s for what might have gone wrong.  Most often, this will lead you in the right direction.
 - Double check that .Net Core is working right by compiling and running "hello world" or whatever.
 - Make sure ffmpeg is installed and working correctly
