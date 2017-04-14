@@ -119,6 +119,8 @@ Scoring: If you put one or more '+' and '-' signs in any of your preferences, it
 - Go to http://www.dot.net and download the right .NET Core for your platform
 - Make "hello world" to make sure your environment is correct and you understand at least the basics
 - Compile streamCapture by typing 'dotnet restore' and then 'dotnet build'
+- You can type 'dotnet run' to test/run
+- To create a stand-alone (deployable) app, use something like 'dotnet publish -c release -r win10-x64'.  This will create a 'release' directory with main .exe and it's dependencies.  It'll be fully self-contained.
 
 ###How the program works
 This explains how "Mode 2" works.  "Mode 1" is similar, but without the loop.  (go figure)
