@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using System.Threading;
 
 namespace StreamCapture
 {
@@ -12,8 +13,41 @@ namespace StreamCapture
         private Dictionary<string, ScheduleChannels> scheduleChannelDict;
 
         public async Task LoadSchedule(string debugCmdLine)
+        {      
+            string schedString="";    
+            int retries=3;
+            while(true)
+            {
+                try
+                {
+                    //try and deserialize
+                    schedString = await GetSchedule(debugCmdLine);
+                    scheduleChannelDict = JsonConvert.DeserializeObject<Dictionary<string, ScheduleChannels>>(schedString); 
+                    break;  //success
+                }
+                catch
+                {
+                    if(--retries == 0) //are we out of retries?
+                    {
+                        Console.WriteLine("======================");
+                        Console.WriteLine($"{DateTime.Now}: ERROR - Exception deserializing schedule json");
+                        Console.WriteLine("======================");
+                        Console.WriteLine($"JSON: {schedString}");
+
+                        throw;  //throw exception up the stack
+                    }
+                    else 
+                    {
+                        Thread.Sleep(5000);
+                    }
+                }
+            }
+        }
+
+        private async Task<string> GetSchedule(string debugCmdLine)
         {
             string schedString;
+
             using (var client = new HttpClient())
             {
                 if(string.IsNullOrEmpty(debugCmdLine))
@@ -31,10 +65,9 @@ namespace StreamCapture
                         schedString = sr.ReadToEnd();
                     }
                 }
-            }
+            }   
 
-            //create schedule objects
-            scheduleChannelDict = JsonConvert.DeserializeObject<Dictionary<string, ScheduleChannels>>(schedString);
+            return schedString;  
         }
 
         public List<ScheduleShow> GetScheduledShows()
