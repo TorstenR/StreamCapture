@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.Threading;
+using Microsoft.Extensions.Configuration;
 
 namespace StreamCapture
 {
@@ -79,6 +80,37 @@ namespace StreamCapture
             }
 
             return scheduledShowList;
+        }
+
+        //Refreshes channel list for a given recording so we can catch any unexpected last minute changes since it was first queued
+        public void RefreshChannelList(IConfiguration configuration, RecordInfo recordInfo)
+        {
+            //Grab the latest schedule
+            Schedule schedule = new Schedule();
+            schedule.LoadSchedule(configuration["scheduleURL"], configuration["debug"]).Wait();
+            List<ScheduleShow> scheduleShowList = schedule.GetScheduledShows();
+
+            //Create new channels object and fill w/ latest by going through the schedule again
+            Channels refreshedChannels = new Channels();
+            foreach (ScheduleShow scheduleShow in scheduleShowList)
+            {
+                if (recordInfo.description == scheduleShow.name && recordInfo.strStartDT == scheduleShow.time)
+                {
+                    refreshedChannels.AddUpdateChannel(scheduleShow.channel, scheduleShow.quality, scheduleShow.language);
+                }
+            }
+
+            //Update channel list if it was found
+            if (refreshedChannels.GetNumberOfChannels() > 0)
+            {
+                recordInfo.channels = refreshedChannels;
+            }
+            else
+            {
+                string body = recordInfo.description + " is no longer scheduled.  (Was originally scheduled for " + recordInfo.strStartDT + ")";
+                new Mailer().SendErrorMail(configuration, recordInfo.description + " no longer scheduled!", body);
+                throw new Exception("Show no longer on the schedule.  Aborting...");
+            }
         }
     }
 }

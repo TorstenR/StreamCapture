@@ -34,8 +34,6 @@ namespace StreamCapture
 
         public RecordInfo()
         {
-            channels=new Channels();
-
             //Init certain properties 
             id=DateTime.Now.Ticks.ToString();
             queuedFlag=false;
@@ -89,18 +87,6 @@ namespace StreamCapture
             int duration = Convert.ToInt32(strDuration);
             duration = duration + preMinutes + postMinutes;
             return duration;
-        }
-
-        //Returns a human readable string listing the channels associated w/ this recording
-        public string GetChannelString()
-        {
-            string channelStr = "";
-
-            List<ChannelInfo> channelList = channels.GetChannels();
-            foreach (ChannelInfo channelInfo in channelList)
-                channelStr = channelStr + channelInfo.description + " ";
-
-            return channelStr;
         }
     }
 }

@@ -67,7 +67,6 @@ namespace StreamCapture
                     RecordInfo recordInfo=GetRecordInfo(BuildRecordInfoKeyValue(scheduleShow));
 
                     //Fill out the recording info
-                    recordInfo.channels.AddUpdateChannel(scheduleShow.channel, scheduleShow.quality, scheduleShow.language);
                     recordInfo.id = scheduleShow.id;
                     recordInfo.description = scheduleShow.name;
                     recordInfo.strStartDT = scheduleShow.time;

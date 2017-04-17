@@ -31,8 +31,7 @@ namespace StreamCapture
         private void DumpRecordInfo(TextWriter logWriter,RecordInfo recordInfo)
         {
             logWriter.WriteLine($"{DateTime.Now}: Queuing show: {recordInfo.description}");
-            logWriter.WriteLine($"                     Starting on {recordInfo.GetStartDT()} for {recordInfo.GetDuration()} minutes ({recordInfo.GetDuration()/60}hrs ish)");
-            logWriter.WriteLine($"                     Channel list is: {recordInfo.GetChannelString()}");           
+            logWriter.WriteLine($"                     Starting on {recordInfo.GetStartDT()} for {recordInfo.GetDuration()} minutes ({recordInfo.GetDuration()/60}hrs ish)");        
         }
 
         private long TestInternet(TextWriter logWriter)
@@ -217,6 +216,10 @@ namespace StreamCapture
                     Console.WriteLine($"ERROR: Unable to authenticate.  Check username and password?");
                     Environment.Exit(1);               
                 }
+
+                //Get latest channels (Channels may have changed since the show was queued.  Exception is thrown if time has changed, or no longer there)  
+                logWriter.WriteLine($"{DateTime.Now}: Grabbing latest channels");
+                new Schedule().RefreshChannelList(configuration, recordInfo);
 
                 //We need to manage our resulting files
                 VideoFileManager videoFileManager = new VideoFileManager(configuration,logWriter,recordInfo.fileName);            
