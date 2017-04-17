@@ -171,7 +171,8 @@ namespace StreamCapture
             }
 
             //Check concurrent captures
-            ValidateInt("appsettings.json","concurrentCaptures",configuration["concurrentCaptures"],1,25);             
+            ValidateInt("appsettings.json","concurrentCaptures",configuration["concurrentCaptures"],1,25);
+            ValidateInt("appsettings.json", "additionalStarredCaptures", configuration["additionalStarredCaptures"], 0, 25);
 
             //Check auth minutes
             ValidateInt("appsettings.json","authMinutes",configuration["authMinutes"],30,1440); 

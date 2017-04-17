@@ -288,7 +288,8 @@ namespace StreamCapture
             //stack to keep track of end dates
             List<DateTime> endTimeStack = new List<DateTime>();
 
-            int maxConcurrent=Convert.ToInt16(configuration["concurrentCaptures"]);
+            int concurrentBase=Convert.ToInt16(configuration["concurrentCaptures"]);
+            int addtlConcurrent = Convert.ToInt16(configuration["additionalStarredCaptures"]);
             int concurrent=0;
 
             RecordInfo[] recordInfoArray = tempList.ToArray();
@@ -309,6 +310,9 @@ namespace StreamCapture
                 endTimeStack.Add(recordInfoArray[idx].GetEndDT());
 
                 //Let's make sure we're not over max
+                int maxConcurrent = concurrentBase;
+                if (recordingToAdd.starredFlag)
+                    maxConcurrent = maxConcurrent + addtlConcurrent;
                 if(concurrent>maxConcurrent)
                 {
                     okToAddFlag=false;
