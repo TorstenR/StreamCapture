@@ -312,7 +312,7 @@ namespace StreamCapture
                 //Let's make sure we're not over max
                 int maxConcurrent = concurrentBase;
                 if (recordingToAdd.starredFlag)
-                    maxConcurrent = maxConcurrent + addtlConcurrent;
+                    maxConcurrent = concurrentBase + addtlConcurrent;
                 if(concurrent>maxConcurrent)
                 {
                     okToAddFlag=false;
