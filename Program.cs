@@ -131,6 +131,16 @@ namespace StreamCapture
         {
             Console.WriteLine($"{DateTime.Now}: Verifying appsettings....");
 
+
+            //Check that ffmpeg command line entries exist
+            ValidateSettingExist(configuration,"captureCmdLine");
+            ValidateSettingExist(configuration,"concatCmdLine");
+            ValidateSettingExist(configuration,"muxCmdLine");
+            ValidateSettingExist(configuration,"artCmdLine");
+
+            //Make sure schedule URL exist (does not verify it's accurate)
+            ValidateSettingExist(configuration,"scheduleURL");
+
             //Check schedule check schedule
             try
             {
@@ -193,6 +203,15 @@ namespace StreamCapture
 
             //Check if ffmpeg exist
             ValidateFileExist("appsettings.json","ffmpegPath",configuration["ffmpegPath"]);   
+        }
+
+        static private void ValidateSettingExist(IConfiguration configuration,string setting)
+        {
+            if (string.IsNullOrEmpty(configuration[setting]))
+            {
+                Console.WriteLine($"ERROR: '{setting}' in appsettings.json is not set.");
+                Environment.Exit(1);
+            }
         }
 
         static private void ValidateInt(string source,string paramName,string strInt,int lower,int upper)
