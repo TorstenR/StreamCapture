@@ -149,13 +149,6 @@ namespace StreamCapture
                         nextRecord=nextRecord.AddDays(1);
                     }  
 
-                    //Time to mail the daily digest and clean up master list (but only if it's the first hour on the hour list)
-                    if(DateTime.Now.Hour == Convert.ToInt16(times[0]))
-                    {           
-                        new Mailer().SendDailyDigest(configuration,recordings);
-                        recordings.CleanupOldShows();
-                    }
-
                     //Since we're awake, let's see if there are any files needing cleaning up
                     VideoFileManager.CleanOldFiles(configuration);
 
@@ -164,6 +157,13 @@ namespace StreamCapture
                     Console.WriteLine($"{DateTime.Now}: Now sleeping for {timeToWait.Hours+1} hours before checking again at {nextRecord.ToString()}");
                     Thread.Sleep(timeToWait);         
                     Console.WriteLine($"{DateTime.Now}: Woke up, now checking again...");
+
+                    //Time to mail the daily digest and clean up master list (but only if it's the first hour on the hour list)
+                    if (DateTime.Now.Hour == Convert.ToInt16(times[0]))
+                    {
+                        new Mailer().SendDailyDigest(configuration, recordings);
+                        recordings.CleanupOldShows();
+                    }
                 } 
             }
             catch(Exception e)
