@@ -7,7 +7,7 @@ This program is intended to run largely unattended, recording shows based on key
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ### News:
-- Apr 17, 2017: Now creating poster and fan art for plex so that the score is not given away.  Also, moved the schedule URL out to appsettings.
+- Apr 17, 2017: Now creating poster and fan art for plex so that the score is not given away.  Also, moved the schedule URL out to appsettings.  Finally, am updating channel list right before recording start to accomodate for last minute changes.
 - Feb 27, 2017: Program is now feature complete.  I don't plan on doing much more except to fix any bugs that crop up.
 - Feb 22, 2017: Big upgrade to keywords.  Please see below for more info.  (regex, scoring, etc)
 - Feb 15, 2017: Improved scheduling so it works more as expected even when there's a lot of shows
