@@ -6,7 +6,7 @@ This program is intended to run largely unattended, recording shows based on key
 
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
-### News:
+### Updats:
 - Apr 17, 2017: Now creating poster and fan art for plex so that the score is not given away.  More concurrent captures for starred shows.  Also, moved the schedule URL out to appsettings.  Finally, am updating channel list right before recording start to accomodate for last minute changes.
 - Feb 27, 2017: Program is now feature complete.  I don't plan on doing much more except to fix any bugs that crop up.
 - Feb 22, 2017: Big upgrade to keywords.  Please see below for more info.  (regex, scoring, etc)
@@ -68,7 +68,7 @@ Simply run StreamCapture with no parameters.  It will read keywords.json every n
 There are multiple config values in appsettings.json.  By looking at these you'll get a better idea what's happening.
 - "user" - Yes, username and password for smooth streams
 - "pass"
-- "scheduleCheck" - Comma separated hours (24 hour format) for when you want the scheduled checked.  NOTE: to accomodate daylight savings time, you'll want to to set the first hour to 3am EST.  
+- "scheduleCheck" - Comma separated hours (24 hour format) for when you want the scheduled checked.  NOTE: to accomodate daylight savings time, you'll want to to set the first hour to 3am EST.  Even then, there could be confusion depending on what timezone you are in.
 - "hoursInFuture" - Don't schedule anything farther out than this number of hours.  Use 'today' for same day only.
 - "numberOfRetries" - Number of time we retry after ffmpeg capture error before giving up inside of a 15 window.  
 - "schedTimeOffset" - Schedule appears to be in EST.  This is the offset for local time.  (e.g. PST is -3)
