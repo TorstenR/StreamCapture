@@ -140,9 +140,9 @@ namespace StreamCapture
                 string[] addresses = configuration["mailAddress"].Split(',');
 
                 var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("StreamCapture", ""));
+                message.From.Add(new MailboxAddress("StreamCapture", configuration["smtpUser"]));
                 foreach(string address in addresses)
-                    message.To.Add(new MailboxAddress("", address));
+                    message.To.Add(new MailboxAddress(address, address));
                 message.Subject = subjectTest;
 
                 var bodyBuilder = new BodyBuilder();
