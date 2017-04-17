@@ -68,7 +68,7 @@ Simply run StreamCapture with no parameters.  It will read keywords.json every n
 There are multiple config values in appsettings.json.  By looking at these you'll get a better idea what's happening.
 - "user" - Yes, username and password for smooth streams
 - "pass"
-- "scheduleCheck" - Comma separated hours (24 hour format) for when you want the scheduled checked.
+- "scheduleCheck" - Comma separated hours (24 hour format) for when you want the scheduled checked.  NOTE: to accomodate daylight savings time, you'll want to to set the first hour to 3am EST.  
 - "hoursInFuture" - Don't schedule anything farther out than this number of hours.  Use 'today' for same day only.
 - "numberOfRetries" - Number of time we retry after ffmpeg capture error before giving up inside of a 15 window.  
 - "schedTimeOffset" - Schedule appears to be in EST.  This is the offset for local time.  (e.g. PST is -3)
