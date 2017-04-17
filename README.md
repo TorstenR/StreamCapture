@@ -1,4 +1,4 @@
-#Program to capture streams from live247 (and other Smoothstream offerings) using .Net Core.
+# Program to capture streams from live247 (and other Smoothstream offerings) using .Net Core.
 
 For the longest time I was frustrated at not being able to reasonably record streams from Live247 to watch my favorite sporting events.  That frustration is what this project was born out of.  
 
@@ -6,7 +6,7 @@ This program is intended to run largely unattended, recording shows based on key
 
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
-###News:
+### News:
 - Feb 27, 2017: Program is now feature complete.  I don't plan on doing much more except to fix any bugs that crop up.
 - Feb 22, 2017: Big upgrade to keywords.  Please see below for more info.  (regex, scoring, etc)
 - Feb 15, 2017: Improved scheduling so it works more as expected even when there's a lot of shows
@@ -18,7 +18,7 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 - Feb 2, 2017: I've just posted a pretty major refactor which should make the code more readable.  In additon, there is now a new .json file which defines the keywords and the like.  Please read the documentation below for more information on this.
 - Feb 2, 2017: I tested on mac and it seemed to work great - after updated appconfig.json with the correct paths of course.
 
-###Features:
+### Features:
 - Polls the schedule on a configurable schedule searching for keywords (and other info) you've provided
 - Allows "pre" and "post" minutes to be specified per show.  (e.g. some events potentially have overtime, some don't...)
 - Spawns a separate thread and captures stream using ffmpeg, comlete with seperate log file
@@ -31,7 +31,7 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 - Cleans files up after a user defined period of time.
 - Should be able to start and "forget about it" and simply watch the results on plex (or whatever you use)
 
-###More about Email:
+### More about Email:
 There are 4 kinds of email: 
 - Daily digests
 - Schedule updates
@@ -46,15 +46,15 @@ There are 4 kinds of email:
 
 **Alerts/Problems**: If there's a problem, you'll always get an email.  The most common one is that a starred ('starredFlag') program will not record because there's already too many going at once ('concurrentCaptures').  Another somewhat common failure is that the program did not complete, usually due to too many retries. (network errors)   However, if there's any kind of failure, an email is send out.  (this includes things like unhandled exceptions, no internet access, etc) 
 
-###Caveats:
+### Caveats:
 - My plex did not recognize the embedded meta-data.  Not sure why....
 
-###Areas to help:
+### Areas to help:
 - Bugs....  (feel free to file them on github and submit a PR of course...)
 - More testing on other platforms.  (I've done some testing on Mac with good results)
 - General improvements (I'm open to whatever)
 
-###How to use:
+### How to use:
 There are 2 "modes" to run.  They are:
 
 **Mode 1: Single execution and exit**
@@ -108,19 +108,21 @@ Please note that the order in which you put the groups is important as this is t
 
 Scoring: If you put one or more '+' and '-' signs in any of your preferences, it will affect which channel is chosen. (there are preferences for language, quality, and channel)  For example, if you put '+US' for language, then when caculating the "score" for a channel, US will be worth +1 higher.  Same is true for '-'.  You can put multiple + or -.  Basically, a "score" is determined for each channel.  This score is what is used to determine which order the channels are tried in.  This should allow you to configure things such that your preferences are respected, but the show will get recorded regardless.  In other words, preferences are just that - preferences for what to grab first. 
 
-###Troubleshooting###
+### Troubleshooting
 - First thing is to check your log file/s for what might have gone wrong.  Most often, this will lead you in the right direction.
 - Double check that .Net Core is working right by compiling and running "hello world" or whatever.
 - Make sure ffmpeg is installed and working correctly
 - Make sure you have disk space and that your internet connection is good.  This is especially true when capturing multiple streams at once.
 - If all else fails, use your debugger (VS Code?) and see what's going on.
 
-###Compiling:
+### Compiling:
 - Go to http://www.dot.net and download the right .NET Core for your platform
 - Make "hello world" to make sure your environment is correct and you understand at least the basics
 - Compile streamCapture by typing 'dotnet restore' and then 'dotnet build'
+- You can type 'dotnet run' to test/run
+- To create a stand-alone (deployable) app, use something like 'dotnet publish -c release -r win10-x64'.  This will create a 'release' directory with main .exe and it's dependencies.  It'll be fully self-contained.
 
-###How the program works
+### How the program works
 This explains how "Mode 2" works.  "Mode 1" is similar, but without the loop.  (go figure)
 
 **Main thread goes into an infinite loop and does the following:**
