@@ -12,7 +12,7 @@ namespace StreamCapture
     {
         private Dictionary<string, ScheduleChannels> scheduleChannelDict;
 
-        public async Task LoadSchedule(string debugCmdLine)
+        public async Task LoadSchedule(string scheduleURL, string debugCmdLine)
         {      
             string schedString="";    
             int retries=3;
@@ -21,7 +21,7 @@ namespace StreamCapture
                 try
                 {
                     //try and deserialize
-                    schedString = await GetSchedule(debugCmdLine);
+                    schedString = await GetSchedule(scheduleURL, debugCmdLine);
                     scheduleChannelDict = JsonConvert.DeserializeObject<Dictionary<string, ScheduleChannels>>(schedString); 
                     break;  //success
                 }
@@ -44,7 +44,7 @@ namespace StreamCapture
             }
         }
 
-        private async Task<string> GetSchedule(string debugCmdLine)
+        private async Task<string> GetSchedule(string scheduleURL, string debugCmdLine)
         {
             string schedString;
 
@@ -52,8 +52,7 @@ namespace StreamCapture
             {
                 if(string.IsNullOrEmpty(debugCmdLine))
                 {
-                    //Uri uri = new Uri("https://iptvguide.netlify.com/iptv.json");
-                    Uri uri = new Uri("http://guide.smoothstreams.tv/feed.json");
+                    Uri uri = new Uri(scheduleURL);
                     var response = await client.GetAsync(uri);
                     response.EnsureSuccessStatusCode(); // Throw in not success
                     schedString = await response.Content.ReadAsStringAsync();

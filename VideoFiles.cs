@@ -11,7 +11,9 @@ namespace StreamCapture
         public List<VideoFileInfo> fileCaptureList { set; get; }
         public VideoFileInfo concatFile { set; get; }
         public VideoFileInfo muxedFile { set; get; }
-        public VideoFileInfo publishedfile { set; get; }
+        public VideoFileInfo publishedFile { set; get; }
+        public VideoFileInfo posterFile { set; get; }
+        public VideoFileInfo fanartFile { set; get; }
 
         public int numberOfFiles { set; get; }
 
@@ -46,10 +48,10 @@ namespace StreamCapture
         public void DeleteNonPublishedFiles(TextWriter logWriter,IConfiguration configuration)
         {
             //Make sure we have a published file
-            if(!File.Exists(publishedfile.GetFullFile()))
+            if(!File.Exists(publishedFile.GetFullFile()))
             {
-                logWriter.WriteLine($"{DateTime.Now}: ERROR: Not published {publishedfile.GetFullFile()}");
-                new Mailer().SendErrorMail(configuration,"Not Published!",string.Format($"{publishedfile.GetFullFile()} was not published on {DateTime.Now}"));
+                logWriter.WriteLine($"{DateTime.Now}: ERROR: Not published {publishedFile.GetFullFile()}");
+                new Mailer().SendErrorMail(configuration,"Not Published!",string.Format($"{publishedFile.GetFullFile()} was not published on {DateTime.Now}"));
                 return;
             }
 
@@ -108,26 +110,40 @@ namespace StreamCapture
 
         public void SetMuxedFile(string _baseFilePath)
         {
+            //Take care of video file
             muxedFile=new VideoFileInfo
             {
                 baseFileName=fileName,
                 exten=".mp4",
                 baseFilePath=_baseFilePath     
             };
-
             CheckForDup(muxedFile);
         }
 
         public void SetPublishedFile(string _baseFilePath)
         {
-            publishedfile=new VideoFileInfo
+            publishedFile=new VideoFileInfo
             {
                 baseFileName=fileName,
                 exten=".mp4",
                 baseFilePath=_baseFilePath     
             };
+            CheckForDup(publishedFile);
 
-            CheckForDup(publishedfile);
+            //Now create poster and fanart stills
+            posterFile = new VideoFileInfo
+            {
+                baseFileName = fileName,
+                exten = ".jpg",
+                baseFilePath = _baseFilePath
+            };
+
+            fanartFile = new VideoFileInfo
+            {
+                baseFileName = fileName + "-fanart",
+                exten = ".jpg",
+                baseFilePath = _baseFilePath
+            };
         }
     }
 }

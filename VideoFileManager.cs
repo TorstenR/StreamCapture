@@ -86,12 +86,12 @@ namespace StreamCapture
             cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",files.muxedFile.GetFullFile());
             cmdLineArgs=cmdLineArgs.Replace("[DESCRIPTION]",metadata);            
 
-            //Run command
+            //Run mux command
             logWriter.WriteLine($"{DateTime.Now}: Starting Mux: {configuration["ffmpegPath"]} {cmdLineArgs}");
             new ProcessManager(configuration).ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
         }
 
-        public void PublishAndCleanUpAfterCapture(string category)
+        public void PublishAndCleanUpAfterCapture(string category, int preMinutes)
         {
             //If NAS path exists, move file mp4 file there
             if(!string.IsNullOrEmpty(configuration["nasPath"]))
@@ -113,8 +113,24 @@ namespace StreamCapture
 
                 //Ok, ready to publish
                 files.SetPublishedFile(publishedPath);
-                logWriter.WriteLine($"{DateTime.Now}: Moving {files.muxedFile.GetFullFile()} to {files.publishedfile.GetFullFile()}");
-                VideoFileManager.MoveFile(files.muxedFile.GetFullFile(),files.publishedfile.GetFullFile());
+                logWriter.WriteLine($"{DateTime.Now}: Moving {files.muxedFile.GetFullFile()} to {files.publishedFile.GetFullFile()}");
+                VideoFileManager.MoveFile(files.muxedFile.GetFullFile(),files.publishedFile.GetFullFile());
+
+                //Create poster
+                string cmdLineArgs = configuration["artCmdLine"];
+                cmdLineArgs = cmdLineArgs.Replace("[SECONDS]", ((preMinutes + 1) * 60).ToString());
+                cmdLineArgs = cmdLineArgs.Replace("[VIDEOFILE]", files.publishedFile.GetFullFile());
+                cmdLineArgs = cmdLineArgs.Replace("[FULLOUTPUTPATH]", files.posterFile.GetFullFile());
+                logWriter.WriteLine($"{DateTime.Now}: Creating poster: {configuration["ffmpegPath"]} {cmdLineArgs}");
+                new ProcessManager(configuration).ExecProcess(logWriter, configuration["ffmpegPath"], cmdLineArgs);
+
+                //Create fan art
+                cmdLineArgs = configuration["artCmdLine"];
+                cmdLineArgs = cmdLineArgs.Replace("[SECONDS]", (((preMinutes) * 60)+15).ToString());
+                cmdLineArgs = cmdLineArgs.Replace("[VIDEOFILE]", files.publishedFile.GetFullFile());
+                cmdLineArgs = cmdLineArgs.Replace("[FULLOUTPUTPATH]", files.fanartFile.GetFullFile());
+                logWriter.WriteLine($"{DateTime.Now}: Creating fan art: {configuration["ffmpegPath"]} {cmdLineArgs}");
+                new ProcessManager(configuration).ExecProcess(logWriter, configuration["ffmpegPath"], cmdLineArgs);
             }
 
             //If final file exist, delete old .ts file/s
@@ -146,16 +162,19 @@ namespace StreamCapture
                 Console.WriteLine($"{DateTime.Now}:          {outputPath}");
                 RemoveOldFiles(outputPath,"*.ts",cutDate);
                 RemoveOldFiles(outputPath,"*.mp4",cutDate);
+                RemoveOldFiles(outputPath,"*.jpg",cutDate);
                 if(!string.IsNullOrEmpty(nasPath))
                 {
                     Console.WriteLine($"{DateTime.Now}:          {nasPath}");
                     //Go throw sub directories too
                     RemoveOldFiles(nasPath,"*.mp4",cutDate);
+                    RemoveOldFiles(nasPath,"*.jpg",cutDate);
                     string[] subDirs=Directory.GetDirectories(nasPath);
                     foreach(string subDir in subDirs)
                     {
                         Console.WriteLine($"{DateTime.Now}:          {subDir}");
                         RemoveOldFiles(subDir,"*.mp4",cutDate);
+                        RemoveOldFiles(subDir,"*.jpg",cutDate);
                     }
                 }
             }

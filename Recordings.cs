@@ -47,7 +47,7 @@ namespace StreamCapture
             //
             // This goes and grabs the online .json file which is the current schedule from Live247
             // This list is *all* the shows currently posted.  Usually, live247 only posts a day or two at a time.
-            schedule.LoadSchedule(configuration["debug"]).Wait();
+            schedule.LoadSchedule(configuration["scheduleURL"],configuration["debug"]).Wait();
             List<ScheduleShow> scheduleShowList = schedule.GetScheduledShows();
 
             //Go through the shows and load up recordings if there's a match

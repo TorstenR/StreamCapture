@@ -227,7 +227,7 @@ namespace StreamCapture
                 //Let's take care of processing and publishing the video files
                 videoFileManager.ConcatFiles();
                 videoFileManager.MuxFile(recordInfo.description);
-                videoFileManager.PublishAndCleanUpAfterCapture(recordInfo.category);
+                videoFileManager.PublishAndCleanUpAfterCapture(recordInfo.category,recordInfo.preMinutes);
 
                 //Cleanup
                 logWriter.WriteLine($"{DateTime.Now}: Done Capturing");
