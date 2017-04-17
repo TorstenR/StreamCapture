@@ -7,6 +7,7 @@ This program is intended to run largely unattended, recording shows based on key
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ### News:
+- Apr 17, 2017: Now creating poster and fan art for plex so that the score is not given away.  Also, moved the schedule URL out to appsettings.
 - Feb 27, 2017: Program is now feature complete.  I don't plan on doing much more except to fix any bugs that crop up.
 - Feb 22, 2017: Big upgrade to keywords.  Please see below for more info.  (regex, scoring, etc)
 - Feb 15, 2017: Improved scheduling so it works more as expected even when there's a lot of shows
@@ -77,12 +78,14 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 - "logPath" - Puts the capture thread logs here
 - "outputPath" - Puts the capture video file here (I capture locally, and then move to my NAS - see next param)
 - "nasPath" - Optional parameter will will copy the final .mp4 file to this location (in my case, my NAS)
+- "scheduleURL" - URL to get the schedule JSON feed
 - "ffmpegPath" - location of ffmpeg.exe
 - "authURL" - URL to get authentication token for stream
 - "authMinutes" - For long captures, the auth might have to be refreshed is retrying.  This is the number of minutes for that.  I use 220.
 - "captureCmdLine" - Cmd line for ffmpeg capture. Items in brackets should be self explanatory
 - "concatCmdLine" - Cmd line for ffmpeg concat. Items in brackets should be self explanatory
 - "muxCmdLine" - Cmd line for ffmpeg MUX. Items in brackets should be self explanatory
+- "artCmdLine" - ffmpeg cmd line used to create a poster and fan art jpg (used by plex)
 - "serverList" - Servers which are available.  I use "dNAw2,dNAw1,dEU.UK2,dEU.NL2"
 - "mailAddress" - Mail address that alerts are sent to
 - "smtpServer" - smtp server used to send alert emails
