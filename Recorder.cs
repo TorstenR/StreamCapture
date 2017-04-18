@@ -108,7 +108,15 @@ namespace StreamCapture
                 {
                     //Grabs schedule and builds a recording list based on keywords
                     List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
-            
+
+                    //Time to mail the daily digest and clean up master list (but only if it's the first hour on the hour list)
+                    string[] times = configuration["scheduleCheck"].Split(',');
+                    if (DateTime.Now.Hour == Convert.ToInt16(times[0]))
+                    {
+                        new Mailer().SendDailyDigest(configuration, recordings);
+                        recordings.CleanupOldShows();
+                    }
+
                     //Go through record list, spawn a new process for each show found
                     foreach (RecordInfo recordInfo in recordInfoList)
                     {
@@ -125,7 +133,6 @@ namespace StreamCapture
                     }  
 
                     //Determine how long to sleep before next check
-                    string[] times=configuration["scheduleCheck"].Split(',');
                     DateTime nextRecord=DateTime.Now;
                     
                     //find out if schedule time is still today
@@ -157,13 +164,6 @@ namespace StreamCapture
                     Console.WriteLine($"{DateTime.Now}: Now sleeping for {timeToWait.Hours+1} hours before checking again at {nextRecord.ToString()}");
                     Thread.Sleep(timeToWait);         
                     Console.WriteLine($"{DateTime.Now}: Woke up, now checking again...");
-
-                    //Time to mail the daily digest and clean up master list (but only if it's the first hour on the hour list)
-                    if (DateTime.Now.Hour == Convert.ToInt16(times[0]))
-                    {
-                        new Mailer().SendDailyDigest(configuration, recordings);
-                        recordings.CleanupOldShows();
-                    }
                 } 
             }
             catch(Exception e)
