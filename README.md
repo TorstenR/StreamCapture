@@ -6,7 +6,7 @@ This program is intended to run largely unattended, recording shows based on key
 
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
-### Updats:
+### Updates:
 - Apr 17, 2017: Now creating poster and fan art for plex so that the score is not given away.  More concurrent captures for starred shows.  Also, moved the schedule URL out to appsettings.  Finally, am updating channel list right before recording start to accomodate for last minute changes.
 - Feb 27, 2017: Program is now feature complete.  I don't plan on doing much more except to fix any bugs that crop up.
 - Feb 22, 2017: Big upgrade to keywords.  Please see below for more info.  (regex, scoring, etc)
@@ -43,17 +43,17 @@ There are 4 kinds of email:
 
 **Schedule Updates**: Everytime the schedule is checked ('scheduleCheck'), any schedule changes are sent out in an update email.  I usually only get one of these a day (1am) since I've got my 'hoursInFuture' set to 'today'.  If you have the window set to say 12 hours, then everytime something new shows up inside 12 hours, you'll get an email.  The idea is that you're alerted of changes - and setting the window to 'today' means I pretty much don't get them.
 
-**Program Updates**: If the 'starredFlag' is set to 'true' the the keyword block that matched the program you're capturing, you'll get an email saying when that specific program has started recording, and when it's published.  In practice, I set this flag for keyword blocks that I really care about so I'm alerted as soon as it's ready.
+**Program Updates**: If the 'starredFlag' is set to 'true' the the keyword block that matched the program you're capturing, you'll get an email saying when that specific program has started recording, and when it's published.  In practice, I set this flag for keyword blocks that I really care about so I'm alerted as soon as it's ready. (note that 'starred' entries also can take advantage of extra concurrent slots if you have that setup)
 
 **Alerts/Problems**: If there's a problem, you'll always get an email.  The most common one is that a starred ('starredFlag') program will not record because there's already too many going at once ('concurrentCaptures').  Another somewhat common failure is that the program did not complete, usually due to too many retries. (network errors)   However, if there's any kind of failure, an email is send out.  (this includes things like unhandled exceptions, no internet access, etc) 
 
 ### Caveats:
-- My plex did not recognize the embedded meta-data.  Not sure why....
+- My plex does not recognize the embedded meta-data.  Not sure why....
 
 ### Areas to help:
 - Bugs....  (feel free to file them on github and submit a PR of course...)
 - More testing on other platforms.  (I've done some testing on Mac with good results)
-- General improvements (I'm open to whatever)
+- General improvements (I'm open to whatever - just add a new issue to GitHub)
 
 ### How to use:
 There are 2 "modes" to run.  They are:
@@ -73,16 +73,16 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 - "numberOfRetries" - Number of time we retry after ffmpeg capture error before giving up inside of a 15 window.  
 - "schedTimeOffset" - Schedule appears to be in EST.  This is the offset for local time.  (e.g. PST is -3)
 - "acceptableRate" - KB/s, below which it will error out and retry.  Meant to catch "dead" or "hung" streams.  I use 50...
-- "concurrentCaptures" - Max captures that can be happening at one time.  I use 2 (plus 1 in additional)
-- "additionalStarredCaptures" - Additional concurrent slots available IF starred.  In other words, if events aren't starred, "concurrentCaptures" is it.  However, we'll use more bandwidth if I care more (starred)
+- "concurrentCaptures" - Max captures that can be happening at one time.  I use 2 (plus 1 in additional...see next property)
+- "additionalStarredCaptures" - Additional concurrent slots available IF starred.  In other words, if events aren't starred, "concurrentCaptures" is it.  However, it'll use more bandwidth if something is starred.
 - "retentionDays" - Beyond this, log and video files are removed
-- "logPath" - Puts the capture thread logs here
+- "logPath" - Puts the capture thread logs here  (one log per capture)
 - "outputPath" - Puts the capture video file here (I capture locally, and then move to my NAS - see next param)
 - "nasPath" - Optional parameter will will copy the final .mp4 file to this location (in my case, my NAS)
 - "scheduleURL" - URL to get the schedule JSON feed
 - "ffmpegPath" - location of ffmpeg.exe
 - "authURL" - URL to get authentication token for stream
-- "authMinutes" - For long captures, the auth might have to be refreshed is retrying.  This is the number of minutes for that.  I use 220.
+- "authMinutes" - For long captures, the auth might have to be refreshed if retrying.  This is the number of minutes for that.  I use 220.
 - "captureCmdLine" - Cmd line for ffmpeg capture. Items in brackets should be self explanatory
 - "concatCmdLine" - Cmd line for ffmpeg concat. Items in brackets should be self explanatory
 - "muxCmdLine" - Cmd line for ffmpeg MUX. Items in brackets should be self explanatory
@@ -97,15 +97,15 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 **keywords.json**
 If running in Mode 2, keywords.json is how it's decided which shows to record based on the schedule.  More specifically:
 - Top level node: name of whatever you want to name the "grouping".  This is arbitrary and doesn't affect anything programatically.
-- "starredFlag": when 'true', this will annotate the file so you can see it better
+- "starredFlag": when 'true', this will annotate the file so you can see it better as well as use additional concurrent slots if desired.
 - "emailFlag": when 'true', an email is sent when capture is started and published for this keyword group
-- "keywords": array of keywords.  Each string in the array is comma delimmted and is ANDed together, and each seperate string in the array is OR'd together.  In addition, Regular expressions are supported.
+- "keywords": array of keywords.  Each string in the array is comma delimmted and is ANDed together, and each seperate string in the array is OR'd together.  In addition, Regular expressions are supported.  For example, {"a,b","c","d"} == '(a AND B) || c || d'
 - "exclude": same as with keywords, but are exclusions.
-- "categories": same as with keywords, but matching against the smoothstream categories.  These are AND'd with keywords. Use double quotes or empty to include "everything".  
+- "categories": same as with keywords, but matching against the smoothstream categories.  These are AND'd with keywords. Use double quotes to include "everything".  
 - "preMinutes": number of minutes to start early by
-- "postMinutes": number of minutes to record late by
-- "langPref": used to order the channels by. (which one to try first, and then 2nd of there's a problem etc)  For example, I use "US" to get the english channels ahead of "DE". 
-- "qualityPref": also used to order channels.  I use "720p" so it tries to get HD first.
+- "postMinutes": number of minutes to record past the end time by  (useful for potential overtime games)
+- "langPref": used to order the channels by. (which one to try first, and then 2nd of there's a problem etc)  For example, I use "US" to get the english channels ahead of "DE". Note that the channel priority list in found in the log if you're curious.
+- "qualityPref": also used to order channels.  I use "720p" so it tries to get HD first. (actually, I use 1080i now...)
 - "channelPref": support channel number preference
 
 Please note that the order in which you put the groups is important as this is the order in which the shows will be scheduled.  This means that you want to put the stuff you care about the most first for when there are too many concurrent shows For example, I put keywords for my favorite EPL teams first, and then put a general "EPL" towards the bottom.  That way, it'll make sure my favorite teams get priority, but if there is "room", it'll fit other EPL games in opportunistically.
