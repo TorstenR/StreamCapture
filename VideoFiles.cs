@@ -60,8 +60,30 @@ namespace StreamCapture
             {
                 if(File.Exists(fileInfo.GetFullFile()))
                 {
+                    int tryNumber = 0;
+
                     logWriter.WriteLine($"{DateTime.Now}: Deleting file {fileInfo.GetFullFile()}");
-                    File.Delete(fileInfo.GetFullFile());
+                    while (true)
+                    {
+                        try
+                        {
+                            File.Delete(fileInfo.GetFullFile());
+                            break;
+                        }
+                        catch (System.IO.IOException ex)
+                        {
+                            if (ex.HResult == -2147024864 && tryNumber<4)  //file in use...
+                            {
+                                logWriter.WriteLine($"{DateTime.Now}: File {fileInfo.GetFullFile()} is in use.  Waiting 15 minutes before trying again...  (Try {tryNumber+1} of 4)");
+                                System.Threading.Thread.Sleep(15000);
+                                tryNumber++;
+                            }
+                            else
+                            {
+                                throw ex;
+                            }
+                        }
+                    }
                 }
             }
 
