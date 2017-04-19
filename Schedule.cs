@@ -85,6 +85,10 @@ namespace StreamCapture
         //Refreshes channel list for a given recording so we can catch any unexpected last minute changes since it was first queued
         public void RefreshChannelList(IConfiguration configuration, RecordInfo recordInfo)
         {
+            //See if it's a single record request (meaning, no schedule's involved)
+            if (string.IsNullOrEmpty(recordInfo.description))
+                return;
+
             //Grab the latest schedule
             Schedule schedule = new Schedule();
             schedule.LoadSchedule(configuration["scheduleURL"], configuration["debug"]).Wait();

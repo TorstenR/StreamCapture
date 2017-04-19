@@ -19,7 +19,7 @@ namespace StreamCapture
             commandLineApplication.Execute(args);  
             
             //Welcome message
-            Console.WriteLine($"{DateTime.Now}: StreamCapture Version 1.12  4/18/2017");
+            Console.WriteLine($"{DateTime.Now}: StreamCapture Version 1.13  4/19/2017");
 
             //Read and build config
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
@@ -44,6 +44,7 @@ namespace StreamCapture
             {
                 //Create new RecordInfo
                 RecordInfo recordInfo = new RecordInfo();
+                recordInfo.channels = new Channels();
                 recordInfo.channels.LoadChannels(channels.Value());
                 recordInfo.strDuration=duration.Value();
                 recordInfo.strStartDT=datetime.Value();
