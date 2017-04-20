@@ -16,7 +16,7 @@ namespace StreamCapture
         public async Task LoadSchedule(string scheduleURL, string debugCmdLine)
         {      
             string schedString="";    
-            int retries=3;
+            int retries=5;
             while(true)
             {
                 try
@@ -39,7 +39,7 @@ namespace StreamCapture
                     }
                     else 
                     {
-                        Thread.Sleep(5000);
+                        Thread.Sleep(15000);
                     }
                 }
             }
