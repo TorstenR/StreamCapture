@@ -75,7 +75,7 @@ namespace StreamCapture
                             if (tryNumber<13)  //file in use...  (ex.HResult == -2147024864 && )
                             {
                                 logWriter.WriteLine($"{DateTime.Now}: File {fileInfo.GetFullFile()} is in use.  Waiting 15 minutes before trying again...  (Try {tryNumber+1} of 13)");
-                                System.Threading.Thread.Sleep(15000);
+                                System.Threading.Thread.Sleep(15*(60*1000));
                                 tryNumber++;
                             }
                             else
