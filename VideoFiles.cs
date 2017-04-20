@@ -159,6 +159,7 @@ namespace StreamCapture
                 exten = ".jpg",
                 baseFilePath = _baseFilePath
             };
+            CheckForDup(posterFile);
 
             fanartFile = new VideoFileInfo
             {
@@ -166,6 +167,7 @@ namespace StreamCapture
                 exten = ".jpg",
                 baseFilePath = _baseFilePath
             };
+            CheckForDup(fanartFile);
         }
     }
 }
