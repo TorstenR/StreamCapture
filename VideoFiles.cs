@@ -72,9 +72,9 @@ namespace StreamCapture
                         }
                         catch (System.IO.IOException ex)
                         {
-                            if (ex.HResult == -2147024864 && tryNumber<4)  //file in use...
+                            if (tryNumber<13)  //file in use...  (ex.HResult == -2147024864 && )
                             {
-                                logWriter.WriteLine($"{DateTime.Now}: File {fileInfo.GetFullFile()} is in use.  Waiting 15 minutes before trying again...  (Try {tryNumber+1} of 4)");
+                                logWriter.WriteLine($"{DateTime.Now}: File {fileInfo.GetFullFile()} is in use.  Waiting 15 minutes before trying again...  (Try {tryNumber+1} of 13)");
                                 System.Threading.Thread.Sleep(15000);
                                 tryNumber++;
                             }

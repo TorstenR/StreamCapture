@@ -238,8 +238,10 @@ namespace StreamCapture
             }
             Console.WriteLine($"{DateTime.Now}: ===================================");
 
-            //Send mail if we have something
-            mailer.SendUpdateEmail(configuration,currentScheduleText,concurrentShowText);                
+            //Send mail if we have something AND a digest email has not already been sent
+            string[] times = configuration["scheduleCheck"].Split(',');
+            if (DateTime.Now.Hour != Convert.ToInt16(times[0]))
+                mailer.SendUpdateEmail(configuration,currentScheduleText,concurrentShowText);                
 
             //Ok, we can now return the list
             return queuedRecordings;
