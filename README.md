@@ -141,6 +141,7 @@ This explains how "Mode 2" works.  "Mode 1" is similar, but without the loop.  (
 - Puts the output in the log file in the log directory specified
 - Sleeps until it's time to record
 - Grabs an authentication token
+- Refreshes channel list so we have the latest
 - Wakes up and spawns ffmpeg to capture the stream in a separate process
 - Timer is set for capture stop time 
 - Monitors file size every 10 seconds and kills capture process if the rate falls below a user defined threshold.
@@ -149,4 +150,5 @@ This explains how "Mode 2" works.  "Mode 1" is similar, but without the loop.  (
 - If we've reached intended duration (or we've retried too many times), kill ffmpeg capture
 - If we've captured to multiple files,  (this would happen if there were problem w/ the stream) using ffmpeg to concat them
 - Use ffmpeg to MUX the .ts file to mp4 as well as add embedded metadata
+- Create two .jpgs used by Plex for fan art
 - Copy mp4 file to NAS if defined
