@@ -90,9 +90,8 @@ namespace StreamCapture
                 return;
 
             //Grab the latest schedule
-            Schedule schedule = new Schedule();
-            schedule.LoadSchedule(configuration["scheduleURL"], configuration["debug"]).Wait();
-            List<ScheduleShow> scheduleShowList = schedule.GetScheduledShows();
+            LoadSchedule(configuration["scheduleURL"], configuration["debug"]).Wait();
+            List<ScheduleShow> scheduleShowList = GetScheduledShows();
 
             //Create new channels object and fill w/ latest by going through the schedule again
             Channels refreshedChannels = new Channels();
