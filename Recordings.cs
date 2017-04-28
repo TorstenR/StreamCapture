@@ -120,6 +120,11 @@ namespace StreamCapture
             return sortedRecordInfoList;
         }
 
+        public List<RecordInfo> GetRecordInfoList()
+        {
+            return recordDict.Values.ToList();
+        }
+
         public RecordInfo GetRecordInfo(string recordInfoKey)
         {
             RecordInfo recordInfo=null;

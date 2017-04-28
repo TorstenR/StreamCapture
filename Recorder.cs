@@ -7,6 +7,8 @@ using System.IO;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 
 
 namespace StreamCapture
@@ -93,10 +95,28 @@ namespace StreamCapture
             }      
             Thread.Sleep(3000);
         }
+
+        private void StartWebServer(Recordings recordings)
+        {
+            Startup instanceOfStartup = new Startup();
+            instanceOfStartup.recordings = recordings;
+
+            Console.WriteLine($"{DateTime.Now}: Starting Kestrel...");
+            var webHostBuilder = new WebHostBuilder()
+                .UseKestrel()
+                .UseStartup<Startup>()
+                .ConfigureServices(services => services.AddSingleton<Startup>(instanceOfStartup))
+                .UseUrls("http://localhost:5000");
+            var host = webHostBuilder.Build();
+            host.Start();
+        }
         public void MonitorMode()
         {
             //Create new recordings object to manage our recordings
             Recordings recordings = new Recordings(configuration);
+
+            //Start web server
+            StartWebServer(recordings);
 
             //Create channel history object
             ChannelHistory channelHistory = new ChannelHistory();
