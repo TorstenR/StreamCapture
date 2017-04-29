@@ -88,7 +88,7 @@ namespace StreamCapture
 
                     //Clean up description, and then use as filename
                     recordInfo.fileName = scheduleShow.name.Replace(' ','_');
-                    string myChars = @"|'/\ ,<>#@!+&^*()~`;";
+                    string myChars = @"|'/\ ,<>#@!+&^*()~`;:";
                     string invalidChars = myChars + new string(Path.GetInvalidFileNameChars());
                     foreach (char c in invalidChars)
                     {
@@ -97,7 +97,7 @@ namespace StreamCapture
 
                     //If starred, add designator to filename
                     if(recordInfo.starredFlag)
-                        recordInfo.fileName = "+_" + recordInfo.fileName;
+                        recordInfo.fileName = "_" + recordInfo.fileName;
 
                     //Update or add  (assuming the show has not already ended)
                     if(recordInfo.GetEndDT()>DateTime.Now)
