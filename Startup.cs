@@ -1,39 +1,51 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using StreamCapture;
 
-namespace StreamCapture
+namespace StreamCaptureWeb
 {
     class Startup
     {
-        //Holds context
-        public Recordings recordings;
-
-        public void Configure(IApplicationBuilder app)
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
         {
+            // Add framework services.
+            services.AddMvc();
+        }
+
+        //public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        {
+            //loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+            //loggerFactory.AddDebug();
+
+            app.UseDeveloperExceptionPage();
+
+            app.UseStaticFiles();
+
+            app.UseMvc();
+
+
+            //if all else fails
             app.Run(async context => 
             {
                 context.Response.ContentType = "text/html";
                 await context.Response.WriteAsync("Hello world<p>");
 
                 //grab my object
-                foreach(RecordInfo recordInfo in recordings.GetRecordInfoList())
-                {
-                    await context.Response.WriteAsync($"{recordInfo.description}<br>");
-                }
+                //foreach(RecordInfo recordInfo in recordings.GetRecordInfoList())
+                //{
+                //    await context.Response.WriteAsync($"{recordInfo.description}<br>");
+                //}
                 return;
             });
         }
     }
 }
-
-
-/*
- * setting up kestrel: https://docs.microsoft.com/en-us/aspnet/core/getting-started
- * DI: https://msdn.microsoft.com/en-us/magazine/mt707534.aspx
- * 
- * 
- * /

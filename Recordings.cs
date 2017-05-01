@@ -125,6 +125,11 @@ namespace StreamCapture
             return recordDict.Values.ToList();
         }
 
+        public Dictionary<string, RecordInfo> GetRecordInfoDictionary()
+        {
+            return recordDict;
+        }
+
         public RecordInfo GetRecordInfo(string recordInfoKey)
         {
             RecordInfo recordInfo=null;

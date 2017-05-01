@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using StreamCaptureWeb;
 
 
 namespace StreamCapture
@@ -98,18 +99,17 @@ namespace StreamCapture
 
         private void StartWebServer(Recordings recordings)
         {
-            Startup instanceOfStartup = new Startup();
-            instanceOfStartup.recordings = recordings;
-
             Console.WriteLine($"{DateTime.Now}: Starting Kestrel...");
             var webHostBuilder = new WebHostBuilder()
+                .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseKestrel()
                 .UseStartup<Startup>()
-                .ConfigureServices(services => services.AddSingleton<Startup>(instanceOfStartup))
+                .ConfigureServices(services => services.AddSingleton<Recordings>(recordings))
                 .UseUrls("http://localhost:5000");
             var host = webHostBuilder.Build();
             host.Start();
         }
+
         public void MonitorMode()
         {
             //Create new recordings object to manage our recordings
