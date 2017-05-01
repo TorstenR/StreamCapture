@@ -20,7 +20,10 @@ namespace StreamCaptureWeb
         [HttpGet("/api/schedule")]
         public IActionResult GetSchedule()
         {
-            return Json(recordings.GetRecordInfoList());
+            Console.WriteLine("API called!");
+            List<RecordInfo> recordingsList = recordings.GetRecordInfoList();
+            return Json(recordingsList);
+            //return Json(new { Result = "OK", Records = recordingsList });
         }
 
         [HttpGet("home")]
