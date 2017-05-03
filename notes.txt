@@ -1,3 +1,5 @@
 http://www.guriddo.net/demo/guriddojs/
+https://free-jqgrid.github.io/getting-started/index.html#type_of_data_code
 https://jspreadsheets.com/
+http://www.trirand.com/jqgridwiki/doku.php?id=wiki:colmodel_options
 

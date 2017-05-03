@@ -30,8 +30,48 @@ namespace StreamCaptureWeb
         public IActionResult EditSchedule()
         {
             Console.WriteLine("EDIT API called!");
-            //List<RecordInfo> recordingsList = recordings.GetRecordInfoList();
-            //return Json(recordingsList);
+            foreach (string key in this.Request.Form.Keys)
+            {
+                Console.WriteLine($"{key} : {this.Request.Form[key]}");
+            }
+
+            //If Delete  (really means set ignore flag)
+            if(this.Request.Form["oper"]=="del")
+            {
+               Console.WriteLine("Deleting!"); 
+               foreach(RecordInfo recordInfo in recordings.GetRecordInfoList())
+               {
+                   if(recordInfo.id == this.Request.Form["id"])
+                   {
+                        Console.WriteLine("Found {recordInfo.description}");
+                        //
+                        // put this into a member function
+                        //
+                        // If not queued, then just set ignore flag
+                        // If queued, then take it out
+                        // If process started, then kill it and update ignore flag (clean up files)
+                   }
+               }
+            }
+
+            //If Edit 
+            if(this.Request.Form["oper"]=="edit")
+            {
+               Console.WriteLine("Editing!"); 
+               foreach(RecordInfo recordInfo in recordings.GetRecordInfoList())
+               {
+                   if(recordInfo.id == this.Request.Form["id"])
+                   {
+                       Console.WriteLine("Found {recordInfo.description}");
+                        //
+                        // If ignore flag is set (and it's different than the object), call delete member function
+                        // If time has changed, but it's queued - make sure we're doing the right thing
+                        // If duration changed, and the process started, make sure the right things happen 
+                   }
+               }
+            }            
+
+
             return Json(new { Result = "OK"});
         }
 

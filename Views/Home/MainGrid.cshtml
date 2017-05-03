@@ -19,15 +19,17 @@
         editurl: "/api/edit",
         datatype: "JSON",
         mtype: "GET",
-        colModel: [            
+        colModel: [   
+            { name: "id", hidden: true },         
             { label: "Description", name: "description", width: 600, editable: true },
-            { label: "Start Date/Time", name: "strStartDT", width: 150, editable: true, sorttype:'number' },
-            { label: "Duration", name: "strDuration", width: 50, editable: true },
-            { label: "Queued", name: "queuedFlag", width: 50 },
-            { label: "Process", name: "processSpawnedFlag  ", width: 50 },
-            { label: "Over", name: "tooManyFlag ", width: 50 },
-            { label: "Partial", name: "partialFlag ", width: 50 },
-            { label: "Done", name: "completedFlag  ", width: 50 },
+            { label: "Start Date/Time", name: "strStartDT", width: 150, editable: true },
+            { label: "Duration", name: "strDuration", width: 70, editable: true },
+            { label: "Too Many", name: "tooManyFlag ", width: 70, template: "booleanCheckbox" },
+            { label: "Queued", name: "queuedFlag", width: 60, template: "booleanCheckbox" },
+            { label: "Started", name: "processSpawnedFlag  ", width: 60, template: "booleanCheckbox" },
+            { label: "Partial", name: "partialFlag ", width: 60, template: "booleanCheckbox" },
+            { label: "Done", name: "completedFlag  ", width: 60, template: "booleanCheckbox" },
+            { label: "Ignore", name: "ignoreFlag  ", width: 60, template: "booleanCheckbox", editable: true },
             {
                 label: "Edit",
                 name: "actions",
@@ -43,10 +45,12 @@
         ],
         pager: "#pager",
         rowNum: 20,
+        sortname: "strStartDT",
         onSelectRow: editRow,
         loadonce : true,
         viewrecords: true,
-        gridview: true,     
+        gridview: true,   
+        forceClientSorting: true,  
         caption: "StreamCapture Schedule"
     }); 
 

@@ -12,7 +12,6 @@ namespace StreamCapture
 
         public string id { get; set; }
         public string fileName { get; set; }
-        //public DateTime startDT { get; set; }
         public string description { get; set; }
         public int preMinutes { get; set; }
         public int postMinutes { get; set; }
@@ -29,6 +28,7 @@ namespace StreamCapture
         public bool tooManyFlag { get; set; }
         public bool partialFlag { get; set; }
         public bool completedFlag { get; set; }
+        public bool ignoreFlag { get; set;}
 
         public Channels channels;
 
