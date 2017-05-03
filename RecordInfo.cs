@@ -12,7 +12,7 @@ namespace StreamCapture
 
         public string id { get; set; }
         public string fileName { get; set; }
-        public DateTime startDT { get; set; }
+        //public DateTime startDT { get; set; }
         public string description { get; set; }
         public int preMinutes { get; set; }
         public int postMinutes { get; set; }

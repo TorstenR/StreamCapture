@@ -19,23 +19,36 @@
         editurl: "/api/edit",
         datatype: "JSON",
         mtype: "GET",
-        colModel: [     
-            { label: "ID", name: "id", width: 55 },
-            { label: "Descritpion", name: "description", width: 700, editable: true },
-            { label: "Start Date", name: "strStartDT", width: 150, editable: true }
+        colModel: [            
+            { label: "Description", name: "description", width: 600, editable: true },
+            { label: "Start Date/Time", name: "strStartDT", width: 150, editable: true, sorttype:'number' },
+            { label: "Duration", name: "strDuration", width: 50, editable: true },
+            { label: "Queued", name: "queuedFlag", width: 50 },
+            { label: "Process", name: "processSpawnedFlag  ", width: 50 },
+            { label: "Over", name: "tooManyFlag ", width: 50 },
+            { label: "Partial", name: "partialFlag ", width: 50 },
+            { label: "Done", name: "completedFlag  ", width: 50 },
+            {
+                label: "Edit",
+                name: "actions",
+                width: 60,
+                formatter: "actions",
+                formatoptions: {
+                    keys: true,
+                    editOptions: {},
+                    addOptions: {},
+                    delOptions: {}
+                }       
+            }            
         ],
         pager: "#pager",
         rowNum: 20,
         onSelectRow: editRow,
         loadonce : true,
-        sortname: "id",
-        sortorder: "description",
         viewrecords: true,
-        gridview: true,
-        autoencode: true,        
-        caption: "My first grid"
+        gridview: true,     
+        caption: "StreamCapture Schedule"
     }); 
-
 
     var lastSelection;
 

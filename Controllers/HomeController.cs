@@ -26,6 +26,15 @@ namespace StreamCaptureWeb
             //return Json(new { Result = "OK", Records = recordingsList });
         }
 
+        [HttpPost("/api/edit")]
+        public IActionResult EditSchedule()
+        {
+            Console.WriteLine("EDIT API called!");
+            //List<RecordInfo> recordingsList = recordings.GetRecordInfoList();
+            //return Json(recordingsList);
+            return Json(new { Result = "OK"});
+        }
+
         [HttpGet("home")]
         public IActionResult MainGrid()
         {
