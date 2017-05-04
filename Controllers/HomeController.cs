@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using StreamCapture;
 
 namespace StreamCaptureWeb
@@ -24,7 +25,7 @@ namespace StreamCaptureWeb
         }
 
         [HttpGet("/api/schedule")]
-        public IActionResult GetSchedule()
+        public string GetSchedule()
         {
             Console.WriteLine("API called!");
             
@@ -45,8 +46,9 @@ namespace StreamCaptureWeb
                 }
             }
 
-            //return json
-            return Json(recordingsList);
+            //Console.WriteLine(JsonConvert.SerializeObject(recordingsList));
+
+            return JsonConvert.SerializeObject(recordingsList);
         }
 
         [HttpPost("/api/edit")]

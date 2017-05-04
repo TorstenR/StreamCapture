@@ -1,8 +1,11 @@
 using System;
+using System.ComponentModel;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace StreamCapture
 {
+    [JsonConverter(typeof(RecordInfoSerializer))]
     public class RecordInfo
     {
         public string strDuration { get; set; }
@@ -89,4 +92,65 @@ namespace StreamCapture
             return duration;
         }
     }
+
+    public class RecordInfoSerializer : JsonConverter
+    {
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            RecordInfo recordInfo = value as RecordInfo;
+
+            //ID
+            writer.WriteStartObject();
+            writer.WritePropertyName("ID");
+            serializer.Serialize(writer, recordInfo.id);
+
+            //description
+            writer.WritePropertyName("Description");
+            serializer.Serialize(writer, recordInfo.description);
+
+            //start date
+            writer.WritePropertyName("StartDT");
+            serializer.Serialize(writer, recordInfo.GetStartDT());
+
+            //Duration
+            writer.WritePropertyName("Duration");
+            serializer.Serialize(writer, recordInfo.GetDuration());
+
+            //too many flag
+            writer.WritePropertyName("TooManyFlag");
+            serializer.Serialize(writer, recordInfo.tooManyFlag);
+            
+            //Queued flag
+            writer.WritePropertyName("QueuedFlag");
+            serializer.Serialize(writer, recordInfo.queuedFlag);
+            
+            //started flag
+            writer.WritePropertyName("StartedFlag");
+            serializer.Serialize(writer, recordInfo.processSpawnedFlag);
+            
+            //Partial flag
+            writer.WritePropertyName("PartialFlag");
+            serializer.Serialize(writer, recordInfo.partialFlag);
+
+            //Completed flag
+            writer.WritePropertyName("CompletedFlag");
+            serializer.Serialize(writer, recordInfo.completedFlag);
+            
+            //Ignored Flag
+            writer.WritePropertyName("IgnoredFlag");
+            serializer.Serialize(writer, recordInfo.ignoreFlag);
+            writer.WriteEndObject();                       
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool CanConvert(Type objectType)
+        {
+            //Console.WriteLine("CanConvert!!!!!!!");
+            return TypeDescriptor.GetConverter(objectType).CanConvertTo(typeof(RecordInfo));
+        }
+    }    
 }
