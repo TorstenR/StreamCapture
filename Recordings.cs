@@ -61,43 +61,15 @@ namespace StreamCapture
                 Tuple<KeywordInfo,int> tuple = keywords.FindMatch(scheduleShow);   
                 if (tuple != null)
                 {
-                    KeywordInfo keywordInfo = tuple.Item1; 
 
                     //Build record info if already exists, otherwise, create new                 
                     RecordInfo recordInfo=GetRecordInfo(BuildRecordInfoKeyValue(scheduleShow));
 
-                    //Fill out the recording info
-                    recordInfo.id = scheduleShow.id;
-                    recordInfo.description = scheduleShow.name;
-                    recordInfo.strStartDT = scheduleShow.time;
-                    //recordInfo.strStartDT = DateTime.Now.AddHours(4).ToString();
-                    recordInfo.strEndDT = scheduleShow.end_time;
-                    recordInfo.strDuration = scheduleShow.runtime;
-                    //recordInfo.strDuration = "1";
-                    recordInfo.strDTOffset = configuration["schedTimeOffset"];
-                    recordInfo.preMinutes = keywordInfo.preMinutes;
-                    recordInfo.postMinutes = keywordInfo.postMinutes;
-                    recordInfo.starredFlag = keywordInfo.starredFlag;
-                    recordInfo.emailFlag = keywordInfo.emailFlag;
-                    recordInfo.qualityPref = keywordInfo.qualityPref;
-                    recordInfo.langPref = keywordInfo.langPref;
-                    recordInfo.channelPref = keywordInfo.channelPref;
-                    recordInfo.category = scheduleShow.category;
+                    //Load the recordInfo object w/ the specific schedule
+                    recordInfo = BuildRecordInfoFromShedule (recordInfo,scheduleShow);
 
-                    recordInfo.keywordPos = tuple.Item2;  //used for sorting the most important shows 
-
-                    //Clean up description, and then use as filename
-                    recordInfo.fileName = scheduleShow.name.Replace(' ','_');
-                    string myChars = @"|'/\ ,<>#@!+&^*()~`;";
-                    string invalidChars = myChars + new string(Path.GetInvalidFileNameChars());
-                    foreach (char c in invalidChars)
-                    {
-                        recordInfo.fileName = recordInfo.fileName.Replace(c.ToString(), "");
-                    }
-
-                    //If starred, add designator to filename
-                    if(recordInfo.starredFlag)
-                        recordInfo.fileName = "+_" + recordInfo.fileName;
+                     //Load the recordInfo object w/ the specifics from keywords.json file
+                    recordInfo = BuildRecordInfoFromKeywords(recordInfo,tuple);                   
 
                     //Update or add  (assuming the show has not already ended)
                     if(recordInfo.GetEndDT()>DateTime.Now)
@@ -110,6 +82,51 @@ namespace StreamCapture
             //This is an important call.  Please see remarks in this member function for more info.
             return GetShowsToQueue();
         }
+
+        //Let's load the record info object from the show found in the schedule
+        public RecordInfo BuildRecordInfoFromShedule(RecordInfo recordInfo,ScheduleShow scheduleShow)
+        {
+                //Fill out the recording info
+                recordInfo.id = scheduleShow.id;
+                recordInfo.description = scheduleShow.name;
+                recordInfo.strStartDT = scheduleShow.time;
+                //recordInfo.strStartDT = DateTime.Now.AddHours(4).ToString();
+                recordInfo.strEndDT = scheduleShow.end_time;
+                recordInfo.strDuration = scheduleShow.runtime;
+                recordInfo.category = scheduleShow.category;
+                //recordInfo.strDuration = "1";
+                recordInfo.strDTOffset = configuration["schedTimeOffset"];
+
+                //Clean up description, and then use as filename
+                recordInfo.fileName = scheduleShow.name.Replace(' ','_');
+                string myChars = @"|'/\ ,<>#@!+&^*()~`;";
+                string invalidChars = myChars + new string(Path.GetInvalidFileNameChars());
+                foreach (char c in invalidChars)
+                {
+                    recordInfo.fileName = recordInfo.fileName.Replace(c.ToString(), "");
+                }
+
+                //If starred, add designator to filename
+                if(recordInfo.starredFlag)
+                    recordInfo.fileName = "+_" + recordInfo.fileName;
+
+                return recordInfo;
+        }
+
+        private RecordInfo BuildRecordInfoFromKeywords(RecordInfo recordInfo,Tuple<KeywordInfo,int> tuple)
+        {
+                KeywordInfo keywordInfo = tuple.Item1; 
+
+                recordInfo.preMinutes = keywordInfo.preMinutes;
+                recordInfo.postMinutes = keywordInfo.postMinutes;
+                recordInfo.starredFlag = keywordInfo.starredFlag;
+                recordInfo.emailFlag = keywordInfo.emailFlag;
+                recordInfo.qualityPref = keywordInfo.qualityPref;
+                recordInfo.langPref = keywordInfo.langPref;
+                recordInfo.channelPref = keywordInfo.channelPref;
+
+                return recordInfo;
+        }        
 
         public List<RecordInfo> GetSortedMasterRecordList()
         {

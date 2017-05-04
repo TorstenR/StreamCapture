@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using StreamCapture;
 
 namespace StreamCaptureWeb
@@ -10,20 +11,42 @@ namespace StreamCaptureWeb
     public class HomeController : Controller
     {
         //Holds context
-        public Recordings recordings;
+        private IConfiguration configuration;
+        private Recordings recordings;
 
         public HomeController(Recordings _recordings)
         {
             recordings = _recordings;
+
+            //Read and build config
+            var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
+            configuration = builder.Build();
         }
 
         [HttpGet("/api/schedule")]
         public IActionResult GetSchedule()
         {
             Console.WriteLine("API called!");
+            
+            //Load selected recordings            
             List<RecordInfo> recordingsList = recordings.GetRecordInfoList();
+
+            //Load schedule
+            Schedule schedule = new Schedule();
+            schedule.LoadSchedule(configuration["scheduleURL"],configuration["debug"]).Wait();
+            List<ScheduleShow> scheduleShowList = schedule.GetScheduledShows();
+            foreach(ScheduleShow scheduleShow in scheduleShowList)
+            {
+                //Let's see if it's already on the list - if not, we'll add it
+                if(!recordingsList.Any(item => item.description == scheduleShow.name))
+                {
+                    RecordInfo recordInfo = recordings.BuildRecordInfoFromShedule (new RecordInfo(),scheduleShow);
+                    recordingsList.Add(recordInfo);
+                }
+            }
+
+            //return json
             return Json(recordingsList);
-            //return Json(new { Result = "OK", Records = recordingsList });
         }
 
         [HttpPost("/api/edit")]
