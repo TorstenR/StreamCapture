@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -24,13 +23,22 @@ namespace StreamCaptureWeb
             configuration = builder.Build();
         }
 
+        [HttpGet("/api/reload")]
+        public IActionResult ReloadSchedule()
+        {
+            //Wake up sleeping thread to reload the schedule and re-apply heuristics
+            recordings.mre.Set();
+
+            return Json(new { Result = "OK"});
+        }
+
         [HttpGet("/api/schedule")]
         public string GetSchedule()
         {
             Console.WriteLine("API called!");
             
             //Load selected recordings            
-            List<RecordInfo> recordingsList = recordings.GetRecordInfoList();
+            Dictionary<string,RecordInfo> recordDict = recordings.GetRecordInfoDictionary();
 
             //Load schedule
             Schedule schedule = new Schedule();
@@ -39,16 +47,15 @@ namespace StreamCaptureWeb
             foreach(ScheduleShow scheduleShow in scheduleShowList)
             {
                 //Let's see if it's already on the list - if not, we'll add it
-                if(!recordingsList.Any(item => item.description == scheduleShow.name))
+                string key=recordings.BuildRecordInfoKeyValue(scheduleShow);
+                if(!recordDict.ContainsKey(key))
                 {
-                    RecordInfo recordInfo = recordings.BuildRecordInfoFromShedule (new RecordInfo(),scheduleShow);
-                    recordingsList.Add(recordInfo);
+                    RecordInfo recordInfo = recordings.BuildRecordInfoFromShedule(new RecordInfo(),scheduleShow);
+                    recordDict.Add(key,recordInfo);
                 }
             }
 
-            //Console.WriteLine(JsonConvert.SerializeObject(recordingsList));
-
-            return JsonConvert.SerializeObject(recordingsList);
+            return JsonConvert.SerializeObject(recordDict.Values.ToList());
         }
 
         [HttpPost("/api/edit")]
@@ -63,18 +70,18 @@ namespace StreamCaptureWeb
             //If Delete  (really means set ignore flag)
             if(this.Request.Form["oper"]=="del")
             {
-               Console.WriteLine("Deleting!"); 
                foreach(RecordInfo recordInfo in recordings.GetRecordInfoList())
                {
                    if(recordInfo.id == this.Request.Form["id"])
                    {
-                        Console.WriteLine("Found {recordInfo.description}");
-                        //
-                        // put this into a member function
-                        //
-                        // If not queued, then just set ignore flag
-                        // If queued, then take it out
-                        // If process started, then kill it and update ignore flag (clean up files)
+                        Console.WriteLine($"Cancelling {recordInfo.description}");
+                        recordInfo.cancelledFlag=true;
+
+                        //Do the right thing to cancel depending on state
+                        if(recordInfo.captureStartedFlag) //If we've started capturing, kill entire process
+                            recordInfo.cancellationTokenSource.Cancel();      
+                        else if(recordInfo.processSpawnedFlag) //If thread spawned, but not started, then wake it up to kill it
+                            recordInfo.mre.Set();
                    }
                }
             }
@@ -82,7 +89,6 @@ namespace StreamCaptureWeb
             //If Edit 
             if(this.Request.Form["oper"]=="edit")
             {
-               Console.WriteLine("Editing!"); 
                foreach(RecordInfo recordInfo in recordings.GetRecordInfoList())
                {
                    if(recordInfo.id == this.Request.Form["id"])
@@ -103,12 +109,6 @@ namespace StreamCaptureWeb
         [HttpGet("home")]
         public IActionResult MainGrid()
         {
-            //ViewBag.Message = "Hello world!";
-            //ViewBag.Time = DateTime.Now;
-
-            RecordInfo recordInfo = recordings.GetRecordInfoList()[0];
-            ViewData["Message"] = recordInfo.description;            
-
             return View();
         }
     }

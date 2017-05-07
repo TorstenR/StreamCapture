@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.ComponentModel;
 using System.Collections.Generic;
 using Newtonsoft.Json;
@@ -26,14 +27,20 @@ namespace StreamCapture
         public string category { get; set; }
         public int keywordPos { get; set;}
 
+        public bool selectedFlag { get; set; }
         public bool queuedFlag { get; set; }
         public bool processSpawnedFlag  { get; set; }
+        public bool captureStartedFlag  { get; set; }
         public bool tooManyFlag { get; set; }
         public bool partialFlag { get; set; }
         public bool completedFlag { get; set; }
-        public bool ignoreFlag { get; set;}
+        public bool cancelledFlag { get; set; } 
 
-        public Channels channels;
+        public ManualResetEvent mre { get; set; }
+        public CancellationTokenSource cancellationTokenSource { get; set; } 
+        public CancellationToken cancellationToken { get; set; } 
+
+        public Channels channels { get; set; }
 
         public RecordInfo()
         {
@@ -101,7 +108,7 @@ namespace StreamCapture
 
             //ID
             writer.WriteStartObject();
-            writer.WritePropertyName("ID");
+            writer.WritePropertyName("id");
             serializer.Serialize(writer, recordInfo.id);
 
             //description
@@ -110,7 +117,11 @@ namespace StreamCapture
 
             //start date
             writer.WritePropertyName("StartDT");
-            serializer.Serialize(writer, recordInfo.GetStartDT());
+            serializer.Serialize(writer, recordInfo.GetStartDT().ToString("yy-MM-dd  HH:mm"));
+
+            //start day of the week
+            writer.WritePropertyName("StartDTDay");
+            serializer.Serialize(writer, recordInfo.GetStartDT().ToString("dddd"));
 
             //Duration
             writer.WritePropertyName("Duration");
@@ -119,6 +130,10 @@ namespace StreamCapture
             //too many flag
             writer.WritePropertyName("TooManyFlag");
             serializer.Serialize(writer, recordInfo.tooManyFlag);
+
+            //Selected flag
+            writer.WritePropertyName("SelectedFlag");
+            serializer.Serialize(writer, recordInfo.selectedFlag);            
             
             //Queued flag
             writer.WritePropertyName("QueuedFlag");
@@ -126,7 +141,7 @@ namespace StreamCapture
             
             //started flag
             writer.WritePropertyName("StartedFlag");
-            serializer.Serialize(writer, recordInfo.processSpawnedFlag);
+            serializer.Serialize(writer, recordInfo.captureStartedFlag);
             
             //Partial flag
             writer.WritePropertyName("PartialFlag");
@@ -137,8 +152,8 @@ namespace StreamCapture
             serializer.Serialize(writer, recordInfo.completedFlag);
             
             //Ignored Flag
-            writer.WritePropertyName("IgnoredFlag");
-            serializer.Serialize(writer, recordInfo.ignoreFlag);
+            writer.WritePropertyName("CancelledFlag");
+            serializer.Serialize(writer, recordInfo.cancelledFlag);
             writer.WriteEndObject();                       
         }
 

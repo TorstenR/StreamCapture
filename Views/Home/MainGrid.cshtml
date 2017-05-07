@@ -3,9 +3,6 @@
 }
 
 <h2>@ViewData["Title"].</h2>
-<h3>@ViewData["Message"]</h3>
-
-<p>Use this area to provide additional information (datatable)</p>
 
 <table id="list"><tr><td></td></tr></table> 
 <div id="pager"></div>  
@@ -20,16 +17,18 @@
         datatype: "JSON",
         mtype: "GET",
         colModel: [   
-            { name: "ID", hidden: true },         
+            { name: "id", key:true, editable: true, hidden: true },         
             { label: "Description", name: "Description", width: 600, editable: true },
-            { label: "Start Date/Time", name: "StartDT", width: 150, editable: true },
+            { label: "Start Date/Time", name: "StartDT", width: 100, editable: true },
+            { label: "Start Day", name: "StartDTDay", width: 75, editable: true },
             { label: "Duration", name: "Duration", width: 70, editable: true },
-            { label: "Too Many", name: "TooManyFlag ", width: 70, template: "booleanCheckbox" },
+            { label: "Selected", name: "SelectedFlag", width: 70, template: "booleanCheckbox" },
+            { label: "Too Many", name: "TooManyFlag", width: 70, template: "booleanCheckbox" },
             { label: "Queued", name: "QueuedFlag", width: 60, template: "booleanCheckbox" },
-            { label: "Started", name: "StartedFlag  ", width: 60, template: "booleanCheckbox" },
-            { label: "Partial", name: "PartialFlag ", width: 60, template: "booleanCheckbox" },
-            { label: "Done", name: "CompletedFlag  ", width: 60, template: "booleanCheckbox" },
-            { label: "Ignore", name: "IgnoredFlag  ", width: 60, template: "booleanCheckbox", editable: true },
+            { label: "Started", name: "StartedFlag", width: 60, template: "booleanCheckbox" },
+            { label: "Partial", name: "PartialFlag", width: 60, template: "booleanCheckbox" },
+            { label: "Done", name: "CompletedFlag", width: 60, template: "booleanCheckbox" },
+            { label: "Cancelled", name: "CancelledFlag", width: 70, template: "booleanCheckbox", editable: true },
             {
                 label: "Edit",
                 name: "actions",
@@ -52,7 +51,7 @@
         gridview: true,   
         forceClientSorting: true,  
         caption: "StreamCapture Schedule"
-    }); 
+    }).jqGrid("filterToolbar"); 
 
     var lastSelection;
 

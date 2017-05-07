@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
 using Microsoft.Extensions.Configuration;
 using System.IO;
 
@@ -8,6 +9,8 @@ namespace StreamCapture
 {
     public class Recordings
     {
+        public ManualResetEvent mre; //used to release the sleeping main thread if we want a reload from the web server
+
         private IConfiguration configuration;
         //Master dictionary of all shows we're interested in recording.  This is *not* the shows we necessarily will queue.
         //For example, this master list will have entires too far in the future, too many concurrent, etc.
@@ -23,8 +26,9 @@ namespace StreamCapture
         private Schedule schedule;
 
 
-        public Recordings(IConfiguration _configuration)
+        public Recordings(IConfiguration _configuration,ManualResetEvent _mre)
         {
+            mre=_mre;
             recordDict = new Dictionary<string, RecordInfo>();
             configuration = _configuration;
             schedule = new Schedule();
@@ -69,7 +73,10 @@ namespace StreamCapture
                     recordInfo = BuildRecordInfoFromShedule (recordInfo,scheduleShow);
 
                      //Load the recordInfo object w/ the specifics from keywords.json file
-                    recordInfo = BuildRecordInfoFromKeywords(recordInfo,tuple);                   
+                    recordInfo = BuildRecordInfoFromKeywords(recordInfo,tuple);      
+
+                    //set flag
+                    recordInfo.selectedFlag=true;          
 
                     //Update or add  (assuming the show has not already ended)
                     if(recordInfo.GetEndDT()>DateTime.Now)
@@ -163,7 +170,7 @@ namespace StreamCapture
             return recordInfo.strStartDT + recordInfo.description;
         }
 
-        private string BuildRecordInfoKeyValue(ScheduleShow scheduleShow)        
+        public string BuildRecordInfoKeyValue(ScheduleShow scheduleShow)        
         {
             return scheduleShow.time + scheduleShow.name;
         }
@@ -212,10 +219,15 @@ namespace StreamCapture
                 bool showAlreadyDone=recordInfo.GetEndDT()<DateTime.Now;
                 bool showTooFarAway=recordInfo.GetStartDT()>futureCutoff;
                 bool tooManyConcurrent=!IsConcurrencyOk(recordInfo,queuedRecordings);
+                bool showCancelled=recordInfo.cancelledFlag;
 
                 if(showAlreadyDone)
                 {
                     Console.WriteLine($"{DateTime.Now}: Show already finished: {recordInfo.description} at {recordInfo.GetStartDT()}");
+                }
+                else if(showCancelled)
+                {
+                    Console.WriteLine($"{DateTime.Now}: Show cancelled by user: {recordInfo.description} at {recordInfo.GetStartDT()}");
                 }
                 else if(showTooFarAway)
                 {

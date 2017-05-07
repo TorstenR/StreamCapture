@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Diagnostics;
 using System.IO;
 
@@ -15,7 +16,9 @@ namespace StreamCapture
         public int interval { get; set;}
         public TextWriter logWriter { get; set; }
 
-        public CaptureProcessInfo(Process _p,long _ar,int _i,DateTime _td,string _o,TextWriter _l)
+        public CancellationToken cancellationToken { get; set; }           
+
+        public CaptureProcessInfo(Process _p,long _ar,int _i,DateTime _td,string _o,TextWriter _l,CancellationToken _ct)
         {
             process=_p;
             acceptableRate=_ar;
@@ -25,6 +28,7 @@ namespace StreamCapture
             fileSize=0;
             avgKBytesSec=0;
             logWriter=_l;
+            cancellationToken=_ct;
         }
     }
 }

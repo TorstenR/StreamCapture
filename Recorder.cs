@@ -17,10 +17,12 @@ namespace StreamCapture
     public class Recorder
     {
         IConfiguration configuration;
+        public ManualResetEvent mre;
 
         public Recorder(IConfiguration _configuration)
         {
             configuration=_configuration;
+            mre = new ManualResetEvent(false);
 
             //Test Authentication
             Task<string> authTask = Authenticate();
@@ -71,7 +73,7 @@ namespace StreamCapture
         public void DryRun()
         {
             //Create new recordings object to manage our recordings
-            Recordings recordings = new Recordings(configuration);
+            Recordings recordings = new Recordings(configuration,mre);
 
             //Create channel history object
             ChannelHistory channelHistory = new ChannelHistory();
@@ -113,7 +115,7 @@ namespace StreamCapture
         public void MonitorMode()
         {
             //Create new recordings object to manage our recordings
-            Recordings recordings = new Recordings(configuration);
+            Recordings recordings = new Recordings(configuration,mre);
 
             //Start web server
             StartWebServer(recordings);
@@ -140,15 +142,18 @@ namespace StreamCapture
                     //Go through record list, spawn a new process for each show found
                     foreach (RecordInfo recordInfo in recordInfoList)
                     {
-                        //If show is not already queued, let's go!
-                        bool showQueued=recordInfo.processSpawnedFlag;
-                        if(!showQueued)
+                        //If show is not already spawend and cancelled, let's go!
+                        if(!recordInfo.processSpawnedFlag && !recordInfo.cancelledFlag)
                         {
                             recordInfo.processSpawnedFlag=true;
-                            DumpRecordInfo(Console.Out,recordInfo); 
+                            DumpRecordInfo(Console.Out,recordInfo);    
+                            
+                            recordInfo.mre = new ManualResetEvent(false);
+                            recordInfo.cancellationTokenSource=new CancellationTokenSource();
+                            recordInfo.cancellationToken=recordInfo.cancellationTokenSource.Token;
 
                             // Queue show to be recorded now
-                            Task.Factory.StartNew(() => QueueRecording(channelHistory,recordInfo,configuration,true)); 
+                            Task.Factory.StartNew(() => QueueRecording(channelHistory,recordInfo,configuration,true),recordInfo.cancellationToken); 
                         }
                     }  
 
@@ -161,7 +166,7 @@ namespace StreamCapture
                         for(int i=0;i<times.Length;i++)
                         {
                             int recHour=Convert.ToInt16(times[i]);
-                            if((DateTime.Now.Hour+1) < recHour)  //Adding 1 hour to current hours to account for bad clocks. Intervals of less than 2 hours will be ignored
+                            if(DateTime.Now.Hour < recHour) 
                             {
                                 nextRecord=new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,recHour,0,0,0,DateTime.Now.Kind);
                                 break;
@@ -180,9 +185,11 @@ namespace StreamCapture
                     VideoFileManager.CleanOldFiles(configuration);
 
                     //Wait
-                    TimeSpan timeToWait = nextRecord - DateTime.Now;
+                    TimeSpan timeToWait = new TimeSpan(0,1,0);
+                    if(nextRecord>DateTime.Now)
+                        timeToWait = nextRecord - DateTime.Now;
                     Console.WriteLine($"{DateTime.Now}: Now sleeping for {timeToWait.Hours+1} hours before checking again at {nextRecord.ToString()}");
-                    Thread.Sleep(timeToWait);         
+                    var signalled=mre.WaitOne(timeToWait);      
                     Console.WriteLine($"{DateTime.Now}: Woke up, now checking again...");
                 } 
             }
@@ -225,7 +232,13 @@ namespace StreamCapture
                     TimeSpan timeToWait = recStart - DateTime.Now;
                     logWriter.WriteLine($"{DateTime.Now}: Starting recording at {recStart} - Waiting for {timeToWait.Days} Days, {timeToWait.Hours} Hours, and {timeToWait.Minutes} minutes.");
                     if(timeToWait.Seconds>=0)
-                        Thread.Sleep(timeToWait);
+                        recordInfo.mre.WaitOne(timeToWait); 
+
+                    if(recordInfo.cancelledFlag)
+                    {
+                        logWriter.WriteLine($"{DateTime.Now}: Cancelling due to request");
+                        return;
+                    }
                 }       
 
                 //Authenticate
@@ -242,7 +255,10 @@ namespace StreamCapture
                 new Schedule().RefreshChannelList(configuration, recordInfo);
 
                 //We need to manage our resulting files
-                VideoFileManager videoFileManager = new VideoFileManager(configuration,logWriter,recordInfo.fileName);            
+                VideoFileManager videoFileManager = new VideoFileManager(configuration,logWriter,recordInfo.fileName);
+
+                //Set capture started flag
+                recordInfo.captureStartedFlag=true;            
 
                 //Capture stream
                 CaptureStream(logWriter,hashValue,channelHistory,recordInfo,videoFileManager);
@@ -376,7 +392,7 @@ namespace StreamCapture
             logWriter.WriteLine($"=========================================");
             logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} on server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}.  Expect to be done by {captureTargetEnd}.");
             logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
-            CaptureProcessInfo captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)duration.TotalMinutes,videoFileInfo.GetFullFile());  
+            CaptureProcessInfo captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)duration.TotalMinutes,videoFileInfo.GetFullFile(),recordInfo.cancellationToken);  
             logWriter.WriteLine($"{DateTime.Now}: Exited Capture.  Exit Code: {captureProcessInfo.process.ExitCode}");
 
             //Main loop to capture
@@ -386,7 +402,7 @@ namespace StreamCapture
             //as well as making sure that we don't just try forever.
             int numRetries=Convert.ToInt32(configuration["numberOfRetries"]);
             int retryNum=0;
-            for(retryNum=0;DateTime.Now<=captureTargetEnd && retryNum<numRetries;retryNum++)
+            for(retryNum=0;DateTime.Now<=captureTargetEnd && retryNum<numRetries && !recordInfo.cancelledFlag;retryNum++)
             {           
                 logWriter.WriteLine($"{DateTime.Now}: Capture Failed for server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}. Retry {retryNum+1} of {configuration["numberOfRetries"]}");
 
@@ -457,7 +473,7 @@ namespace StreamCapture
                 cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,videoFileInfo.GetFullFile());
                 logWriter.WriteLine($"{DateTime.Now}: Starting Capture (again) on server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}");
                 logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
-                captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,videoFileInfo.GetFullFile());
+                captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,videoFileInfo.GetFullFile(),recordInfo.cancellationToken);
             }
             recordInfo.completedFlag=true;
             logWriter.WriteLine($"{DateTime.Now}: Done Capturing Stream.");         
@@ -473,15 +489,17 @@ namespace StreamCapture
             //We assume too many retries as that's really the only way out of the loop (outside of an exception which is caught elsewhere)
             if(DateTime.Now<captureTargetEnd)
             {
-                logWriter.WriteLine($"{DateTime.Now}: ERROR!  Too many retries - {recordInfo.description}"); 
+                if(recordInfo.cancelledFlag)
+                    logWriter.WriteLine($"{DateTime.Now}: Cancelled {recordInfo.description}"); 
+                else
+                    logWriter.WriteLine($"{DateTime.Now}: ERROR!  Too many retries - {recordInfo.description}"); 
 
                 //set partial flag
                 recordInfo.partialFlag=true;
 
                 //Send alert mail
-                string body=recordInfo.description+" partially recorded due to too many retries.  Time actually recorded is "+finalTimeJustRecorded.TotalHours;
+                string body=recordInfo.description+" partially recorded due to too many retries or cancellation.  Time actually recorded is "+finalTimeJustRecorded.TotalHours;
                 new Mailer().SendErrorMail(configuration,"Partial: "+recordInfo.description,body);
-                //throw new Exception("Too many retries for "+recordInfo.description);
             }
         }
 
