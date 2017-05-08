@@ -73,10 +73,7 @@ namespace StreamCapture
                     recordInfo = BuildRecordInfoFromShedule (recordInfo,scheduleShow);
 
                      //Load the recordInfo object w/ the specifics from keywords.json file
-                    recordInfo = BuildRecordInfoFromKeywords(recordInfo,tuple);      
-
-                    //set flag
-                    recordInfo.selectedFlag=true;          
+                    recordInfo = BuildRecordInfoFromKeywords(recordInfo,tuple);              
 
                     //Update or add  (assuming the show has not already ended)
                     if(recordInfo.GetEndDT()>DateTime.Now)
@@ -165,7 +162,7 @@ namespace StreamCapture
 
             return recordInfo;
         }
-        private string BuildRecordInfoKeyValue(RecordInfo recordInfo)        
+        public string BuildRecordInfoKeyValue(RecordInfo recordInfo)        
         {
             return recordInfo.strStartDT + recordInfo.description;
         }
@@ -175,8 +172,11 @@ namespace StreamCapture
             return scheduleShow.time + scheduleShow.name;
         }
 
-        private void AddUpdateRecordInfo(string recordInfoKey,RecordInfo recordInfo)
+        public void AddUpdateRecordInfo(string recordInfoKey,RecordInfo recordInfo)
         {
+            //set flag
+            recordInfo.selectedFlag=true;  
+
             if(recordDict.ContainsKey(recordInfoKey))
                 recordDict[recordInfoKey]=recordInfo;
             else

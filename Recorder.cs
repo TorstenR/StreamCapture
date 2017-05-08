@@ -189,7 +189,8 @@ namespace StreamCapture
                     if(nextRecord>DateTime.Now)
                         timeToWait = nextRecord - DateTime.Now;
                     Console.WriteLine($"{DateTime.Now}: Now sleeping for {timeToWait.Hours+1} hours before checking again at {nextRecord.ToString()}");
-                    var signalled=mre.WaitOne(timeToWait);      
+                    mre.WaitOne(timeToWait);
+                    mre.Reset();      
                     Console.WriteLine($"{DateTime.Now}: Woke up, now checking again...");
                 } 
             }
@@ -232,7 +233,10 @@ namespace StreamCapture
                     TimeSpan timeToWait = recStart - DateTime.Now;
                     logWriter.WriteLine($"{DateTime.Now}: Starting recording at {recStart} - Waiting for {timeToWait.Days} Days, {timeToWait.Hours} Hours, and {timeToWait.Minutes} minutes.");
                     if(timeToWait.Seconds>=0)
+                    {
                         recordInfo.mre.WaitOne(timeToWait); 
+                        mre.Reset();
+                    }
 
                     if(recordInfo.cancelledFlag)
                     {

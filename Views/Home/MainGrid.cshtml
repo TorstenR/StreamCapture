@@ -17,6 +17,7 @@
         datatype: "JSON",
         mtype: "GET",
         colModel: [   
+            { name: "act", template: "actions", align: "left", width: 58 },
             { name: "id", key:true, editable: true, hidden: true },         
             { label: "Description", name: "Description", width: 600, editable: true },
             { label: "Start Date/Time", name: "StartDT", width: 100, editable: true },
@@ -28,19 +29,7 @@
             { label: "Started", name: "StartedFlag", width: 60, template: "booleanCheckbox" },
             { label: "Partial", name: "PartialFlag", width: 60, template: "booleanCheckbox" },
             { label: "Done", name: "CompletedFlag", width: 60, template: "booleanCheckbox" },
-            { label: "Cancelled", name: "CancelledFlag", width: 70, template: "booleanCheckbox", editable: true },
-            {
-                label: "Edit",
-                name: "actions",
-                width: 60,
-                formatter: "actions",
-                formatoptions: {
-                    keys: true,
-                    editOptions: {},
-                    addOptions: {},
-                    delOptions: {}
-                }       
-            }            
+            { label: "Cancelled", name: "CancelledFlag", width: 70, template: "booleanCheckbox", editable: true },        
         ],
         pager: "#pager",
         rowNum: 20,
@@ -50,7 +39,24 @@
         viewrecords: true,
         gridview: true,   
         forceClientSorting: true,  
-        caption: "StreamCapture Schedule"
+        caption: "StreamCapture Schedule",
+        actionsNavOptions: {
+            editbutton: false,
+            custom: [
+                { action: "post", position: "first",
+                    onClick: function (options) {
+                        queueEntry(options.rowid);
+                        //alert("Post, rowid=" + options.rowid);
+                    } }
+            ],
+            posticon: "ui-icon-arrowreturnthick-1-e",
+            posttitle: "Queue Entry",
+            isDisplayButtons: function (options, rowData) {
+                if (options.rowData.closed) { // or rowData.closed
+                    return { post: { hidden: true }, del: { display: false } };
+                }
+            }
+}        
     }).jqGrid("filterToolbar"); 
 
     var lastSelection;
@@ -63,6 +69,22 @@
             lastSelection = myid;
         }
     }
+
+    function queueEntry(rowId) {
+        jQuery.support.cors = true;
+        $.ajax({
+            url: '/api/edit',
+            type: 'POST',
+            data:"id="+rowId+"&oper=queue", 
+            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+            success: function(data) {
+                alert ("Show Queued")
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) { 
+                alert("Status: " + textStatus); alert("Error: " + errorThrown); 
+            } 
+        });      
+    }    
 
     </script>
 }

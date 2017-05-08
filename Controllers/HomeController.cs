@@ -86,20 +86,21 @@ namespace StreamCaptureWeb
                }
             }
 
-            //If Edit 
-            if(this.Request.Form["oper"]=="edit")
+            //If Queue new show 
+            if(this.Request.Form["oper"]=="queue")
             {
                foreach(RecordInfo recordInfo in recordings.GetRecordInfoList())
                {
                    if(recordInfo.id == this.Request.Form["id"])
                    {
-                       Console.WriteLine("Found {recordInfo.description}");
-                        //
-                        // If ignore flag is set (and it's different than the object), call delete member function
-                        // If time has changed, but it's queued - make sure we're doing the right thing
-                        // If duration changed, and the process started, make sure the right things happen 
+                       Console.WriteLine($"Found {recordInfo.description}");
+                       string recordInfoKey=recordings.BuildRecordInfoKeyValue(recordInfo);
+                       recordings.AddUpdateRecordInfo(recordInfoKey,recordInfo);
                    }
                }
+
+                //Wake up sleeping thread to reload the schedule and re-apply heuristics
+                recordings.mre.Set();
             }            
 
 
