@@ -10,31 +10,28 @@
 @section Scripts
 {        
     <script>
-
     $("#list").jqGrid({
         url: "/api/schedule",
-        editurl: "/api/edit",
         datatype: "JSON",
         mtype: "GET",
         colModel: [   
-            { name: "act", template: "actions", align: "left", width: 58 },
-            { name: "id", key:true, editable: true, hidden: true },         
-            { label: "Description", name: "Description", width: 600, editable: true },
-            { label: "Start Date/Time", name: "StartDT", width: 100, editable: true },
-            { label: "Start Day", name: "StartDTDay", width: 75, editable: true },
-            { label: "Duration", name: "Duration", width: 70, editable: true },
+            { name: "act", template: "actions", align: "left", width: 50 },
+            { name: "id", key:true, hidden: true },         
+            { label: "Description", name: "Description", width: 500 },
+            { label: "Start Date/Time", name: "StartDT", width: 100 },
+            { label: "Start Day", name: "StartDTDay", width: 75 },
+            { label: "Duration", name: "Duration", width: 70 },
             { label: "Selected", name: "SelectedFlag", width: 70, template: "booleanCheckbox" },
             { label: "Too Many", name: "TooManyFlag", width: 70, template: "booleanCheckbox" },
             { label: "Queued", name: "QueuedFlag", width: 60, template: "booleanCheckbox" },
             { label: "Started", name: "StartedFlag", width: 60, template: "booleanCheckbox" },
             { label: "Partial", name: "PartialFlag", width: 60, template: "booleanCheckbox" },
             { label: "Done", name: "CompletedFlag", width: 60, template: "booleanCheckbox" },
-            { label: "Cancelled", name: "CancelledFlag", width: 70, template: "booleanCheckbox", editable: true },        
+            { label: "Cancelled", name: "CancelledFlag", width: 70, template: "booleanCheckbox" },        
         ],
         pager: "#pager",
-        rowNum: 20,
+        rowNum: 25,
         sortname: "StartDT",
-        onSelectRow: editRow,
         loadonce : true,
         viewrecords: true,
         gridview: true,   
@@ -42,33 +39,59 @@
         caption: "StreamCapture Schedule",
         actionsNavOptions: {
             editbutton: false,
+            delbutton: false,
             custom: [
                 { action: "post", position: "first",
                     onClick: function (options) {
                         queueEntry(options.rowid);
                         //alert("Post, rowid=" + options.rowid);
-                    } }
+                    } },
+                { action: "cancelshow", 
+                    onClick: function (options) {
+                        cancelEntry(options.rowid);
+                        //alert("Cancel, rowid=" + options.rowid);
+                } }
             ],
-            posticon: "ui-icon-arrowreturnthick-1-e",
+            posticon: "ui-icon-plus",
             posttitle: "Queue Entry",
-            isDisplayButtons: function (options, rowData) {
-                if (options.rowData.closed) { // or rowData.closed
-                    return { post: { hidden: true }, del: { display: false } };
-                }
-            }
+            cancelshowtitle: "Cancel Entry", 
+            cancelshowicon: "ui-icon-cancel"      
+            //isDisplayButtons: function (options, rowData) {
+            //    if (options.rowData.closed) { // or rowData.closed
+            //        return { post: { hidden: true }, del: { display: false } };
+            //    }
+            //}
 }        
-    }).jqGrid("filterToolbar"); 
+    }).navGrid("#pager", {edit: false, add: false, del: false, search: false, refresh: true, refreshstate: "current",
+            //beforeRefresh: function(){console.log("beforeRefresh");},
+            afterRefresh: function(){refreshEntries()}},
+        {}, // settings for edit
+        {}, // settings for add
+        {}, // settings for delete
+        {} // search options
+    ).jqGrid("filterToolbar"); 
 
-    var lastSelection;
-
-    function editRow(myid) {
-        if (myid && myid !== lastSelection) {
-            var grid = $("#jqGrid");
-            grid.jqGrid('restoreRow',lastSelection);
-            grid.jqGrid('editRow',myid, {keys: true} );
-            lastSelection = myid;
-        }
+    function refreshEntries() {      
+        $("#list").trigger("reloadGrid", { fromServer: true, current:true });
     }
+
+    function cancelEntry(rowId) {
+        jQuery.support.cors = true;
+        $.ajax({
+            url: '/api/edit',
+            type: 'POST',
+            data:"id="+rowId+"&oper=cancel", 
+            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+            success: function(data) {
+                //alert ("Show Cancelled")
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) { 
+                alert("Status: " + textStatus); alert("Error: " + errorThrown); 
+            } 
+        });     
+   
+        $("#list").trigger("reloadGrid", { fromServer: true, current:true });
+    }  
 
     function queueEntry(rowId) {
         jQuery.support.cors = true;
@@ -78,12 +101,14 @@
             data:"id="+rowId+"&oper=queue", 
             contentType: "application/x-www-form-urlencoded; charset=UTF-8",
             success: function(data) {
-                alert ("Show Queued")
+                //alert ("Show Queued")
             },
             error: function(XMLHttpRequest, textStatus, errorThrown) { 
                 alert("Status: " + textStatus); alert("Error: " + errorThrown); 
             } 
-        });      
+        }); 
+   
+        $("#list").trigger("reloadGrid", { fromServer: true, current:true });
     }    
 
     </script>

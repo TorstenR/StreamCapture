@@ -26,6 +26,8 @@ namespace StreamCaptureWeb
         [HttpGet("/api/reload")]
         public IActionResult ReloadSchedule()
         {
+            Console.WriteLine("API: reload");
+
             //Wake up sleeping thread to reload the schedule and re-apply heuristics
             recordings.mre.Set();
 
@@ -35,7 +37,7 @@ namespace StreamCaptureWeb
         [HttpGet("/api/schedule")]
         public string GetSchedule()
         {
-            Console.WriteLine("API called!");
+            Console.WriteLine("API: get schedule");
             
             //Load selected recordings            
             Dictionary<string,RecordInfo> recordDict = recordings.GetRecordInfoDictionary();
@@ -61,14 +63,14 @@ namespace StreamCaptureWeb
         [HttpPost("/api/edit")]
         public IActionResult EditSchedule()
         {
-            Console.WriteLine("EDIT API called!");
+            Console.WriteLine("API: post call");
             foreach (string key in this.Request.Form.Keys)
             {
                 Console.WriteLine($"{key} : {this.Request.Form[key]}");
             }
 
             //If Delete  (really means set ignore flag)
-            if(this.Request.Form["oper"]=="del")
+            if(this.Request.Form["oper"]=="cancel")
             {
                foreach(RecordInfo recordInfo in recordings.GetRecordInfoList())
                {
@@ -94,6 +96,10 @@ namespace StreamCaptureWeb
                    if(recordInfo.id == this.Request.Form["id"])
                    {
                        Console.WriteLine($"Found {recordInfo.description}");
+                       recordInfo.cancelledFlag=false;
+                       recordInfo.partialFlag=false;
+                       recordInfo.completedFlag=false;
+                       recordInfo.tooManyFlag=false;
                        string recordInfoKey=recordings.BuildRecordInfoKeyValue(recordInfo);
                        recordings.AddUpdateRecordInfo(recordInfoKey,recordInfo);
                    }
