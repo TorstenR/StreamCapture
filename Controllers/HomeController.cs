@@ -26,7 +26,7 @@ namespace StreamCaptureWeb
         [HttpGet("/api/reload")]
         public IActionResult ReloadSchedule()
         {
-            Console.WriteLine("API: reload");
+            Console.WriteLine($"{DateTime.Now}: WebAPI: Reloading schedule");
 
             //Wake up sleeping thread to reload the schedule and re-apply heuristics
             recordings.mre.Set();
@@ -37,11 +37,12 @@ namespace StreamCaptureWeb
         [HttpGet("/api/schedule")]
         public string GetSchedule()
         {
-            Console.WriteLine("API: get schedule");
+            Console.WriteLine($"{DateTime.Now}: WebAPI: Get schedule");
             
             //Load selected recordings            
             Dictionary<string,RecordInfo> recordDict = recordings.GetRecordInfoDictionary();
 
+/* 
             //Load schedule
             Schedule schedule = new Schedule();
             schedule.LoadSchedule(configuration["scheduleURL"],configuration["debug"]).Wait();
@@ -56,6 +57,7 @@ namespace StreamCaptureWeb
                     recordDict.Add(key,recordInfo);
                 }
             }
+            */
 
             return JsonConvert.SerializeObject(recordDict.Values.ToList());
         }
@@ -63,11 +65,13 @@ namespace StreamCaptureWeb
         [HttpPost("/api/edit")]
         public IActionResult EditSchedule()
         {
+            /* 
             Console.WriteLine("API: post call");
             foreach (string key in this.Request.Form.Keys)
             {
                 Console.WriteLine($"{key} : {this.Request.Form[key]}");
             }
+            */
 
             //If Delete  (really means set ignore flag)
             if(this.Request.Form["oper"]=="cancel")
@@ -76,7 +80,7 @@ namespace StreamCaptureWeb
                {
                    if(recordInfo.id == this.Request.Form["id"])
                    {
-                        Console.WriteLine($"Cancelling {recordInfo.description}");
+                        Console.WriteLine($"{DateTime.Now}: WebAPI: Cancelling {recordInfo.description}");
                         recordInfo.cancelledFlag=true;
 
                         //Do the right thing to cancel depending on state
@@ -95,7 +99,7 @@ namespace StreamCaptureWeb
                {
                    if(recordInfo.id == this.Request.Form["id"])
                    {
-                       Console.WriteLine($"Found {recordInfo.description}");
+                       Console.WriteLine($"{DateTime.Now}: WebAPI: Queuing {recordInfo.description}");
                        recordInfo.cancelledFlag=false;
                        recordInfo.partialFlag=false;
                        recordInfo.completedFlag=false;
