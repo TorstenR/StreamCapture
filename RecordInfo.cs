@@ -107,13 +107,25 @@ namespace StreamCapture
             writer.WritePropertyName("Description");
             serializer.Serialize(writer, recordInfo.description);
 
+            //category
+            writer.WritePropertyName("Category");
+            serializer.Serialize(writer, recordInfo.category);
+
             //start date
             writer.WritePropertyName("StartDT");
             serializer.Serialize(writer, recordInfo.GetStartDT().ToString("yy-MM-dd  HH:mm"));
 
+            //start time
+            writer.WritePropertyName("StartTime");
+            serializer.Serialize(writer, recordInfo.GetStartDT().ToString("HH:mm"));
+
             //start day of the week
-            writer.WritePropertyName("StartDTDay");
+            writer.WritePropertyName("StartDay");
             serializer.Serialize(writer, recordInfo.GetStartDT().ToString("dddd"));
+
+            //end time
+            writer.WritePropertyName("EndTime");
+            serializer.Serialize(writer, recordInfo.GetEndDT().ToString("HH:mm"));
 
             //Duration
             writer.WritePropertyName("Duration");
@@ -150,7 +162,11 @@ namespace StreamCapture
             //Ignored Flag
             writer.WritePropertyName("CancelledFlag");
             serializer.Serialize(writer, recordInfo.cancelledFlag);
-            writer.WriteEndObject();                       
+
+            //Keyword position
+            writer.WritePropertyName("KeyWordPos");
+            serializer.Serialize(writer, recordInfo.keywordPos);
+            writer.WriteEndObject();
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)

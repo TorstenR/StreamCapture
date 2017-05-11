@@ -139,10 +139,15 @@ the entire schedule from smoothstreams.
 - Done: Nothing more is happening - it's done
 - Cancelled: Means the entry was cancelled via the UI
 
+**Other interesting fields**
+- Category: this is the type of sport
+- Pos: In cases where the show is 'selected' (as in found using keywords.json), this field shows the block number in keywords.json.  In short, it shows the priority.
+
 **Tricks and Tips**
 - To see only the 'selected' shows, click the the box right under the 'selected' column header.  This will filter the rows.
 - To see only shows in a given day, type the date you want in yy-mm-dd format under the 'start time' column header to filter.
 - To get the latest, click the 'refresh' icon on the bottom left of the grid.  (this includes results from applying the latest heuristics etc)
+- To find all world football games, type 'world' in the text box under category and hit enter
 
 ### Troubleshooting
 - First thing is to check your log file/s for what might have gone wrong.  Most often, this will lead you in the right direction.

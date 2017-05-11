@@ -37,13 +37,7 @@ namespace StreamCaptureWeb
             app.Run(async context => 
             {
                 context.Response.ContentType = "text/html";
-                await context.Response.WriteAsync("Hello world<p>");
-
-                //grab my object
-                //foreach(RecordInfo recordInfo in recordings.GetRecordInfoList())
-                //{
-                //    await context.Response.WriteAsync($"{recordInfo.description}<br>");
-                //}
+                await context.Response.WriteAsync("Probably not what you wanted....<p>");
                 return;
             });
         }

@@ -48,9 +48,9 @@ namespace StreamCaptureWeb
             {
                 //Let's see if it's already on the list - if not, we'll add it
                 string key = recorder.recordings.BuildRecordInfoKeyValue(scheduleShow);
-                if (!newRecordDict.ContainsKey(key))
+                RecordInfo recordInfo = recorder.recordings.BuildRecordInfoFromShedule(new RecordInfo(), scheduleShow);
+                if (!newRecordDict.ContainsKey(key) && recordInfo.GetEndDT() >= DateTime.Now)
                 {
-                    RecordInfo recordInfo = recorder.recordings.BuildRecordInfoFromShedule(new RecordInfo(), scheduleShow);
                     newRecordDict.Add(key, recordInfo);
                 }
             }
@@ -120,6 +120,7 @@ namespace StreamCaptureWeb
         }
 
         [HttpGet("home")]
+        [HttpGet("")]
         public IActionResult MainGrid()
         {
             return View();
