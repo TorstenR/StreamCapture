@@ -130,10 +130,10 @@ the entire schedule from smoothstreams.
 - You can click the refresh icon on the lower left to see the status
 
 **What each check box means**
-- Selected: Means the entry has been "selected" to record either by the program automatically, or you manually.
+- Selected: Means the entry has been "selected" to record either by the program automatically using keywords.json, or you manually.
 - Manual: Checked when you've "manually" added a show
 - Too Many: Means the program has determined there's too many concurrent (appsettings) and won't record this show
-- Queued: Signifies the show has it's own thread (and log file) and is "waiting" until it's time to start.  Shows are 'queued' according to 'hoursInFuture' in appsettings
+- Queued: Signifies the show has it's own thread (and log file) and is "waiting" until it's time to start.  Shows are 'queued' according to 'hoursInFuture' in appsettings.
 - Started: The show is actively being recording/captured by ffmpeg
 - Partial: Was interrupted either by too many retries or manually cancelled
 - Done: Nothing more is happening - it's done
