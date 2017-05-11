@@ -17,12 +17,17 @@ namespace StreamCapture
     public class Recorder
     {
         IConfiguration configuration;
-        public ManualResetEvent mre;
+        public Recordings recordings { get; set; }
+        public ManualResetEvent mre { get; set; }
+        public List<ScheduleShow> scheduleShowList { get; set; }
 
         public Recorder(IConfiguration _configuration)
         {
             configuration=_configuration;
             mre = new ManualResetEvent(false);
+
+            //Instanciate recordings
+            recordings = new Recordings(configuration,mre);
 
             //Test Authentication
             Task<string> authTask = Authenticate();
@@ -32,11 +37,6 @@ namespace StreamCapture
                 Console.WriteLine($"ERROR: Unable to authenticate.  Check username and password?  Bad auth URL?");
                 Environment.Exit(1);                
             }
-        }
-        private void DumpRecordInfo(TextWriter logWriter,RecordInfo recordInfo)
-        {
-            logWriter.WriteLine($"{DateTime.Now}: Queuing show: {recordInfo.description}");
-            logWriter.WriteLine($"                     Starting on {recordInfo.GetStartDT()} for {recordInfo.GetDuration()} minutes ({recordInfo.GetDuration()/60}hrs ish)");        
         }
 
         private long TestInternet(TextWriter logWriter)
@@ -72,14 +72,16 @@ namespace StreamCapture
         //Does a dryrun using keywords.json - showing what it *would* do, but not actually doing it
         public void DryRun()
         {
-            //Create new recordings object to manage our recordings
-            Recordings recordings = new Recordings(configuration,mre);
-
             //Create channel history object
             ChannelHistory channelHistory = new ChannelHistory();
 
+            //Grab schedule
+            Schedule schedule = new Schedule();
+            schedule.LoadSchedule(configuration["scheduleURL"], configuration["debug"]).Wait();
+            scheduleShowList = schedule.GetScheduledShows();
+
             //Grabs schedule and builds a recording list based on keywords
-            List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
+            List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule(scheduleShowList);
 
             //Send digest
             new Mailer().SendDailyDigest(configuration,recordings);      
@@ -87,9 +89,6 @@ namespace StreamCapture
             //Go through record list and display
             foreach (RecordInfo recordInfo in recordInfoList)
             {
-                //Dump record info
-                DumpRecordInfo(Console.Out,recordInfo); 
-
                 //Create servers object
                 Servers servers=new Servers(configuration["ServerList"]);
 
@@ -99,14 +98,14 @@ namespace StreamCapture
             Thread.Sleep(3000);
         }
 
-        private void StartWebServer(Recordings recordings)
+        private void StartWebServer()
         {
             Console.WriteLine($"{DateTime.Now}: Starting Kestrel...");
             var webHostBuilder = new WebHostBuilder()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseKestrel()
                 .UseStartup<Startup>()
-                .ConfigureServices(services => services.AddSingleton<Recordings>(recordings))
+                .ConfigureServices(services => services.AddSingleton<Recorder>(this))
                 .UseUrls("http://localhost:5000");
             var host = webHostBuilder.Build();
             host.Start();
@@ -115,10 +114,10 @@ namespace StreamCapture
         public void MonitorMode()
         {
             //Create new recordings object to manage our recordings
-            Recordings recordings = new Recordings(configuration,mre);
+            //Recordings recordings = new Recordings(configuration,mre);
 
             //Start web server
-            StartWebServer(recordings);
+            StartWebServer();
 
             //Create channel history object
             ChannelHistory channelHistory = new ChannelHistory();
@@ -128,8 +127,16 @@ namespace StreamCapture
                 //Grab schedule from interwebs and loop forever, checking every n hours for new shows to record
                 while(true)
                 {
+                    //Refresh schedule from website
+                    //
+                    // This goes and grabs the online .json file which is the current schedule from Live247
+                    // This list is *all* the shows currently posted.  Usually, live247 only posts a day or two at a time.
+                    Schedule schedule = new Schedule();
+                    schedule.LoadSchedule(configuration["scheduleURL"], configuration["debug"]).Wait();
+                    scheduleShowList = schedule.GetScheduledShows();
+
                     //Grabs schedule and builds a recording list based on keywords
-                    List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule();
+                    List<RecordInfo> recordInfoList = recordings.BuildRecordSchedule(scheduleShowList);
 
                     //Time to mail the daily digest and clean up master list (but only if it's the first hour on the hour list)
                     string[] times = configuration["scheduleCheck"].Split(',');
@@ -145,8 +152,7 @@ namespace StreamCapture
                         //If show is not already spawend and cancelled, let's go!
                         if(!recordInfo.processSpawnedFlag && !recordInfo.cancelledFlag)
                         {
-                            recordInfo.processSpawnedFlag=true;
-                            DumpRecordInfo(Console.Out,recordInfo);    
+                            recordInfo.processSpawnedFlag=true;   
                             
                             recordInfo.mre = new ManualResetEvent(false);
                             recordInfo.cancellationTokenSource=new CancellationTokenSource();
@@ -224,7 +230,7 @@ namespace StreamCapture
             try
             {
                 //Dump
-                DumpRecordInfo(logWriter,recordInfo);
+                logWriter.WriteLine($"{DateTime.Now}: Queuing show: {recordInfo.description} Starting on {recordInfo.GetStartDT()} for {recordInfo.GetDuration()} minutes ({recordInfo.GetDuration() / 60}hrs ish)");
                 
                 //Wait here until we're ready to start recording
                 if(recordInfo.strStartDT != null)

@@ -12,54 +12,50 @@ namespace StreamCaptureWeb
     {
         //Holds context
         private IConfiguration configuration;
-        private Recordings recordings;
+        private Recorder recorder;
 
-        public HomeController(Recordings _recordings)
+        public HomeController(Recorder _recorder)
         {
-            recordings = _recordings;
+            recorder = _recorder;
 
             //Read and build config
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
             configuration = builder.Build();
         }
 
-        [HttpGet("/api/reload")]
-        public IActionResult ReloadSchedule()
-        {
-            Console.WriteLine($"{DateTime.Now}: WebAPI: Reloading schedule");
-
-            //Wake up sleeping thread to reload the schedule and re-apply heuristics
-            recordings.mre.Set();
-
-            return Json(new { Result = "OK"});
-        }
-
         [HttpGet("/api/schedule")]
         public string GetSchedule()
         {
             Console.WriteLine($"{DateTime.Now}: WebAPI: Get schedule");
-            
-            //Load selected recordings            
-            Dictionary<string,RecordInfo> recordDict = recordings.GetRecordInfoDictionary();
 
-/* 
-            //Load schedule
-            Schedule schedule = new Schedule();
-            schedule.LoadSchedule(configuration["scheduleURL"],configuration["debug"]).Wait();
-            List<ScheduleShow> scheduleShowList = schedule.GetScheduledShows();
-            foreach(ScheduleShow scheduleShow in scheduleShowList)
+            //Build schedule from recorder info (cached since last reload)
+            Dictionary<string, RecordInfo> newRecordDict = BuildSchedule();
+
+            //Wake up sleeping thread to reload the schedule and re-apply heuristics
+            recorder.recordings.mre.Set();
+
+            //Return schedule json
+            return JsonConvert.SerializeObject(newRecordDict.Values.ToList());
+        }
+
+        private Dictionary<string, RecordInfo> BuildSchedule()
+        {
+            //Clone existing queued (selected) dictionary
+            Dictionary<string, RecordInfo> newRecordDict = new Dictionary<string, RecordInfo>(recorder.recordings.GetRecordInfoDictionary());
+
+            //Add to cloned dictionary from full schedule
+            foreach (ScheduleShow scheduleShow in recorder.scheduleShowList)
             {
                 //Let's see if it's already on the list - if not, we'll add it
-                string key=recordings.BuildRecordInfoKeyValue(scheduleShow);
-                if(!recordDict.ContainsKey(key))
+                string key = recorder.recordings.BuildRecordInfoKeyValue(scheduleShow);
+                if (!newRecordDict.ContainsKey(key))
                 {
-                    RecordInfo recordInfo = recordings.BuildRecordInfoFromShedule(new RecordInfo(),scheduleShow);
-                    recordDict.Add(key,recordInfo);
+                    RecordInfo recordInfo = recorder.recordings.BuildRecordInfoFromShedule(new RecordInfo(), scheduleShow);
+                    newRecordDict.Add(key, recordInfo);
                 }
             }
-            */
 
-            return JsonConvert.SerializeObject(recordDict.Values.ToList());
+            return newRecordDict;
         }
 
         [HttpPost("/api/edit")]
@@ -76,7 +72,7 @@ namespace StreamCaptureWeb
             //If Delete  (really means set ignore flag)
             if(this.Request.Form["oper"]=="cancel")
             {
-               foreach(RecordInfo recordInfo in recordings.GetRecordInfoList())
+               foreach(RecordInfo recordInfo in recorder.recordings.GetRecordInfoList())
                {
                    if(recordInfo.id == this.Request.Form["id"])
                    {
@@ -95,7 +91,10 @@ namespace StreamCaptureWeb
             //If Queue new show 
             if(this.Request.Form["oper"]=="queue")
             {
-               foreach(RecordInfo recordInfo in recordings.GetRecordInfoList())
+                //Build schedule from recorder info (cached since last reload)
+                Dictionary<string, RecordInfo> newRecordDict = BuildSchedule();
+
+                foreach (RecordInfo recordInfo in newRecordDict.Values.ToList())
                {
                    if(recordInfo.id == this.Request.Form["id"])
                    {
@@ -104,13 +103,16 @@ namespace StreamCaptureWeb
                        recordInfo.partialFlag=false;
                        recordInfo.completedFlag=false;
                        recordInfo.tooManyFlag=false;
-                       string recordInfoKey=recordings.BuildRecordInfoKeyValue(recordInfo);
-                       recordings.AddUpdateRecordInfo(recordInfoKey,recordInfo);
+                       recordInfo.manualFlag=true;
+                       string recordInfoKey= recorder.recordings.BuildRecordInfoKeyValue(recordInfo);
+
+                        //Adds to the recordings list from main process
+                        recorder.recordings.AddUpdateRecordInfo(recordInfoKey,recordInfo);
                    }
                }
 
                 //Wake up sleeping thread to reload the schedule and re-apply heuristics
-                recordings.mre.Set();
+                recorder.recordings.mre.Set();
             }            
 
 

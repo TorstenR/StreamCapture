@@ -22,6 +22,7 @@
             { label: "Start Day", name: "StartDTDay", width: 75 },
             { label: "Duration", name: "Duration", width: 70 },
             { label: "Selected", name: "SelectedFlag", width: 70, template: "booleanCheckbox" },
+            { label: "Manual", name: "ManualFlag", width: 70, template: "booleanCheckbox" },            
             { label: "Too Many", name: "TooManyFlag", width: 70, template: "booleanCheckbox" },
             { label: "Queued", name: "QueuedFlag", width: 60, template: "booleanCheckbox" },
             { label: "Started", name: "StartedFlag", width: 60, template: "booleanCheckbox" },
@@ -31,7 +32,8 @@
         ],
         pager: "#pager",
         rowNum: 25,
-        sortname: "StartDT",
+        multiSort: true,
+        sortname: "Description,StartDT",
         loadonce : true,
         viewrecords: true,
         gridview: true,   
@@ -56,11 +58,6 @@
             posttitle: "Queue Entry",
             cancelshowtitle: "Cancel Entry", 
             cancelshowicon: "ui-icon-cancel"      
-            //isDisplayButtons: function (options, rowData) {
-            //    if (options.rowData.closed) { // or rowData.closed
-            //        return { post: { hidden: true }, del: { display: false } };
-            //    }
-            //}
 }        
     }).navGrid("#pager", {edit: false, add: false, del: false, search: false, refresh: true, refreshstate: "current",
             //beforeRefresh: function(){console.log("beforeRefresh");},
@@ -82,15 +79,14 @@
             type: 'POST',
             data:"id="+rowId+"&oper=cancel", 
             contentType: "application/x-www-form-urlencoded; charset=UTF-8",
-            success: function(data) {
+            success: function (data) {
+                $("#list").trigger("reloadGrid", { fromServer: true, current: true });
                 //alert ("Show Cancelled")
             },
             error: function(XMLHttpRequest, textStatus, errorThrown) { 
                 alert("Status: " + textStatus); alert("Error: " + errorThrown); 
             } 
         });     
-   
-        $("#list").trigger("reloadGrid", { fromServer: true, current:true });
     }  
 
     function queueEntry(rowId) {
@@ -101,14 +97,13 @@
             data:"id="+rowId+"&oper=queue", 
             contentType: "application/x-www-form-urlencoded; charset=UTF-8",
             success: function(data) {
-                //alert ("Show Queued")
+                $("#list").trigger("reloadGrid", { fromServer: true, current: true });
             },
             error: function(XMLHttpRequest, textStatus, errorThrown) { 
                 alert("Status: " + textStatus); alert("Error: " + errorThrown); 
             } 
         }); 
-   
-        $("#list").trigger("reloadGrid", { fromServer: true, current:true });
+        
     }    
 
     </script>

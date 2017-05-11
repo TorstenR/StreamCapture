@@ -35,6 +35,7 @@ namespace StreamCapture
         public bool partialFlag { get; set; }
         public bool completedFlag { get; set; }
         public bool cancelledFlag { get; set; } 
+        public bool manualFlag { get; set; }
 
         public ManualResetEvent mre { get; set; }
         public CancellationTokenSource cancellationTokenSource { get; set; } 
@@ -46,15 +47,6 @@ namespace StreamCapture
         {
             //Init certain properties 
             id=DateTime.Now.Ticks.ToString();
-            queuedFlag=false;
-            processSpawnedFlag=false;
-            completedFlag=false;
-            partialFlag=false;
-            tooManyFlag=false;
-            strDTOffset="0";
-            qualityPref="";
-            langPref="";
-            category="";
         }
 
         public DateTime GetStartDT()
@@ -134,6 +126,10 @@ namespace StreamCapture
             //Selected flag
             writer.WritePropertyName("SelectedFlag");
             serializer.Serialize(writer, recordInfo.selectedFlag);            
+
+            //Manual flag
+            writer.WritePropertyName("ManualFlag");
+            serializer.Serialize(writer, recordInfo.manualFlag);             
             
             //Queued flag
             writer.WritePropertyName("QueuedFlag");

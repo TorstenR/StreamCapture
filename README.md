@@ -7,6 +7,7 @@ This program is intended to run largely unattended, recording shows based on key
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ### Updates:
+- May 11, 2017: Web UI for adjusting what's recorded when just added.
 - Apr 17, 2017: Now creating poster and fan art for plex so that the score is not given away.  More concurrent captures for starred shows.  Also, moved the schedule URL out to appsettings.  Finally, am updating channel list right before recording start to accomodate for last minute changes.
 - Feb 27, 2017: Program is now feature complete.  I don't plan on doing much more except to fix any bugs that crop up.
 - Feb 22, 2017: Big upgrade to keywords.  Please see below for more info.  (regex, scoring, etc)
@@ -21,6 +22,7 @@ Note: please don't attempt to use unless you're fairly technically minded.  To s
 
 ### Features:
 - Polls the schedule on a configurable schedule searching for keywords (and other info) you've provided
+- Web UI provided to adjust (cancel or add) shows as well as see current status
 - Allows "pre" and "post" minutes to be specified per show.  (e.g. some events potentially have overtime, some don't...)
 - Spawns a separate thread and captures stream using ffmpeg, comlete with seperate log file
 - Works cross platform.  (confirmed on Windows and Mac.  If you're using on nix...let me know please)
@@ -49,6 +51,7 @@ There are 4 kinds of email:
 
 ### Caveats:
 - My plex does not recognize the embedded meta-data.  Not sure why....
+- The web UI should NOT be accessible from the public as it's not secure
 
 ### Areas to help:
 - Bugs....  (feel free to file them on github and submit a PR of course...)
@@ -111,6 +114,35 @@ If running in Mode 2, keywords.json is how it's decided which shows to record ba
 Please note that the order in which you put the groups is important as this is the order in which the shows will be scheduled.  This means that you want to put the stuff you care about the most first for when there are too many concurrent shows For example, I put keywords for my favorite EPL teams first, and then put a general "EPL" towards the bottom.  That way, it'll make sure my favorite teams get priority, but if there is "room", it'll fit other EPL games in opportunistically.
 
 Scoring: If you put one or more '+' and '-' signs in any of your preferences, it will affect which channel is chosen. (there are preferences for language, quality, and channel)  For example, if you put '+US' for language, then when caculating the "score" for a channel, US will be worth +1 higher.  Same is true for '-'.  You can put multiple + or -.  Basically, a "score" is determined for each channel.  This score is what is used to determine which order the channels are tried in.  This should allow you to configure things such that your preferences are respected, but the show will get recorded regardless.  In other words, preferences are just that - preferences for what to grab first. 
+
+### Using the UI
+There's a web UI which can be accessed on http://localhost:5000/home.  The resulting grid shows what's selected (more on what this means below) by my program as well as 
+the entire schedule from smoothstreams.
+
+**Adding a new recording from the main schedule**
+- Find the show you want to record
+- Click on the 'plus' icon on the left
+- You can click the refresh icon on the lower left to see the status
+
+**Cancelling a recording**
+- Find the show you want to cancel
+- Click on the 'cancel' icon on the left
+- You can click the refresh icon on the lower left to see the status
+
+**What each check box means**
+- Selected: Means the entry has been "selected" to record either by the program automatically, or you manually.
+- Manual: Checked when you've "manually" added a show
+- Too Many: Means the program has determined there's too many concurrent (appsettings) and won't record this show
+- Queued: Signifies the show has it's own thread (and log file) and is "waiting" until it's time to start.  Shows are 'queued' according to 'hoursInFuture' in appsettings
+- Started: The show is actively being recording/captured by ffmpeg
+- Partial: Was interrupted either by too many retries or manually cancelled
+- Done: Nothing more is happening - it's done
+- Cancelled: Means the entry was cancelled via the UI
+
+**Tricks and Tips**
+- To see only the 'selected' shows, click the the box right under the 'selected' column header.  This will filter the rows.
+- To see only shows in a given day, type the date you want in yy-mm-dd format under the 'start time' column header to filter.
+- To get the latest, click the 'refresh' icon on the bottom left of the grid.  (this includes results from applying the latest heuristics etc)
 
 ### Troubleshooting
 - First thing is to check your log file/s for what might have gone wrong.  Most often, this will lead you in the right direction.
