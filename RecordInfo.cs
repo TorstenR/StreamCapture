@@ -27,15 +27,15 @@ namespace StreamCapture
         public string category { get; set; }
         public int keywordPos { get; set;}
 
-        public bool selectedFlag { get; set; }
-        public bool queuedFlag { get; set; }
-        public bool processSpawnedFlag  { get; set; }
-        public bool captureStartedFlag  { get; set; }
-        public bool tooManyFlag { get; set; }
-        public bool partialFlag { get; set; }
-        public bool completedFlag { get; set; }
-        public bool cancelledFlag { get; set; } 
-        public bool manualFlag { get; set; }
+        public bool selectedFlag { get; set; }  //selected based on keywords.json  (set for entire schedule)
+        public bool queuedFlag { get; set; }  //will record based on concurrency, time in the future, length, etc.
+        public bool processSpawnedFlag  { get; set; } //separate thread + log file created and sleeping waiting to start capture
+        public bool captureStartedFlag  { get; set; } //capture started
+        public bool tooManyFlag { get; set; } //selected, but won't record because too many at the same time (won't queue)
+        public bool partialFlag { get; set; } //only partially captured
+        public bool completedFlag { get; set; } //capture is done - may be partial still.  Does not denote full complete capture
+        public bool cancelledFlag { get; set; } //cancelled via web UI
+        public bool manualFlag { get; set; } //selected via web UI
 
         public ManualResetEvent mre { get; set; }
         public CancellationTokenSource cancellationTokenSource { get; set; } 

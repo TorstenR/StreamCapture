@@ -203,12 +203,12 @@ namespace StreamCapture
             //Go through potential shows and add the ones we should record
             //Omit those which are already done, too far in the future, or too many concurrent.  (already queued is fine obviously)
             //
-            //recordingList has the shows in order of the keywords which they matched on
-            List<RecordInfo> recordingList = SortBasedOnKeywordPos(recordDict.Values.ToList());
+            //recordingList has the shows in order of the keywords which they matched on, excluding dates beyond cutoff
+            List<RecordInfo> recordingList = SortBasedOnKeywordPos(recordDict.Values.ToList(),futureCutoff);
             foreach(RecordInfo recordInfo in recordingList.ToArray())
             {
                 bool showAlreadyDone=recordInfo.GetEndDT()<DateTime.Now;
-                bool showTooFarAway=recordInfo.GetStartDT()>futureCutoff;
+                //bool showTooFarAway=recordInfo.GetStartDT()>futureCutoff;
                 bool tooManyConcurrent=!IsConcurrencyOk(recordInfo,queuedRecordings);
                 bool showCancelled=recordInfo.cancelledFlag;
 
@@ -220,10 +220,10 @@ namespace StreamCapture
                 {
                     Console.WriteLine($"{DateTime.Now}: Show cancelled by user: {recordInfo.description} at {recordInfo.GetStartDT()}");
                 }
-                else if(showTooFarAway)
-                {
+                //else if(showTooFarAway)
+                //{
                     //Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
-                }
+                //}
                 else if(tooManyConcurrent)
                 {
                     Console.WriteLine($"{DateTime.Now}: Too many at once: {recordInfo.description} at {recordInfo.GetStartDT()} - {recordInfo.GetEndDT()}"); 
@@ -354,10 +354,10 @@ namespace StreamCapture
                 int maxConcurrent = concurrentBase;
                 if (recordingToAdd.starredFlag)
                     maxConcurrent = concurrentBase + addtlConcurrent;
-                if(concurrent>maxConcurrent)
-                {
-                    okToAddFlag=false;
-                }
+                if (concurrent > maxConcurrent)
+                    okToAddFlag = false;
+                else
+                    okToAddFlag = true;
             } 
 
             return okToAddFlag;         
@@ -365,28 +365,31 @@ namespace StreamCapture
 
         //Shorts the items based on where they were found in the keyword list
         //This enables us to try and add shows in keyword priority (assuming some won't get a slot)
-        private List<RecordInfo> SortBasedOnKeywordPos(List<RecordInfo> listToBeSorted)
+        private List<RecordInfo> SortBasedOnKeywordPos(List<RecordInfo> listToBeSorted,DateTime futureCutoff)
         {
             List<RecordInfo> sortedList=new List<RecordInfo>();
 
             foreach(RecordInfo recordInfo in listToBeSorted)
             {
-                bool insertedFlag=false;
-                RecordInfo[] sortedArray = sortedList.ToArray();
-                for(int idx=0;idx<sortedArray.Length;idx++)
+                if (recordInfo.GetStartDT() < futureCutoff)  //make sure we're only talking about the current timeframe
                 {
-                    if(recordInfo.keywordPos<=sortedArray[idx].keywordPos)
+                    bool insertedFlag = false;
+                    RecordInfo[] sortedArray = sortedList.ToArray();
+                    for (int idx = 0; idx < sortedArray.Length; idx++)
                     {
-                        sortedList.Insert(idx,recordInfo);
-                        insertedFlag=true;
-                        break;
+                        if (recordInfo.keywordPos <= sortedArray[idx].keywordPos)
+                        {
+                            sortedList.Insert(idx, recordInfo);
+                            insertedFlag = true;
+                            break;
+                        }
                     }
-                }
 
-                //Not found, so add to the end
-                if(!insertedFlag)
-                {
-                    sortedList.Add(recordInfo);
+                    //Not found, so add to the end
+                    if (!insertedFlag)
+                    {
+                        sortedList.Add(recordInfo);
+                    }
                 }
             }
 
