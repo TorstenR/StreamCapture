@@ -517,6 +517,7 @@ namespace StreamCapture
         {
             bool retval = true;
 
+/* 
             try
             {
                 Ping pingSender = new Ping();
@@ -529,6 +530,7 @@ namespace StreamCapture
             {
                 retval = false;
             }
+            */
 
             return retval;
         }
