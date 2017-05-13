@@ -241,6 +241,8 @@ namespace StreamCapture
                 }
                 else //Let's queue this since it looks good
                 {
+                    recordInfo.tooManyFlag=false; //reset flag
+                    
                     //Log if we've already queued
                     //if(recordInfo.queuedFlag)
                     //    Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");
