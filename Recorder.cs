@@ -106,7 +106,7 @@ namespace StreamCapture
                 .UseKestrel()
                 .UseStartup<Startup>()
                 .ConfigureServices(services => services.AddSingleton<Recorder>(this))
-                .UseUrls("http://localhost:5000");
+                .UseUrls("http://*:5000");
             var host = webHostBuilder.Build();
             host.Start();
         }
