@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using MailKit.Net.Smtp;
+using MailKit.Security;
 using MailKit;
 using MimeKit;
 
@@ -151,7 +152,9 @@ namespace StreamCapture
 
                 using (var client = new SmtpClient())
                 {
-                    client.Connect(configuration["smtpServer"], Convert.ToInt16(configuration["smtpPort"]), false);
+                    client.ServerCertificateValidationCallback = (s, c, h, e) => true;                   
+                    //client.Connect(configuration["smtpServer"], Convert.ToInt16(configuration["smtpPort"]), SecureSocketOptions.SslOnConnect);
+                    client.Connect(configuration["smtpServer"], Convert.ToInt16(configuration["smtpPort"]),false);
                     client.AuthenticationMechanisms.Remove("XOAUTH2");  
                     client.Authenticate(configuration["smtpUser"], configuration["smtpPass"]);
                     client.Send(message);

@@ -518,6 +518,7 @@ namespace StreamCapture
             bool retval = true;
 
 /* 
+//Ping does not work on Mac
             try
             {
                 Ping pingSender = new Ping();
