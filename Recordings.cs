@@ -320,8 +320,15 @@ namespace StreamCapture
                 return true;
 
             //Temp list to test with
-            List<RecordInfo> tempList = new List<RecordInfo>(recordingList);
+            List<RecordInfo> tempList = new List<RecordInfo>();
             bool okToAddFlag=true;
+
+            //Only add shows which are before show to add
+            foreach(RecordInfo show in recordingList)
+            {
+                if(show.GetStartDT() < recordingToAdd.GetEndDT())
+                    tempList.Add(show);
+            }
 
             //Add to this temp list and then we'll check for concurrency
             tempList=AddToSortedList(recordingToAdd,tempList);
@@ -356,8 +363,8 @@ namespace StreamCapture
                     maxConcurrent = concurrentBase + addtlConcurrent;
                 if (concurrent > maxConcurrent)
                     okToAddFlag = false;
-                else
-                    okToAddFlag = true;
+                //else
+                //    okToAddFlag = true;
             } 
 
             return okToAddFlag;         
