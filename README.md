@@ -7,6 +7,7 @@ This program is intended to run largely unattended, recording shows based on key
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ### Updates:
+- May 15, 2017: Merge Kestrel branch (with the UI feature) into master
 - May 11, 2017: Web UI for adjusting what's recorded when just added.
 - Apr 17, 2017: Now creating poster and fan art for plex so that the score is not given away.  More concurrent captures for starred shows.  Also, moved the schedule URL out to appsettings.  Finally, am updating channel list right before recording start to accomodate for last minute changes.
 - Feb 27, 2017: Program is now feature complete.  I don't plan on doing much more except to fix any bugs that crop up.
