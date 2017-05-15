@@ -24,6 +24,11 @@ namespace StreamCapture
                     //try and deserialize
                     schedString = await GetSchedule(scheduleURL, debugCmdLine);
                     scheduleChannelDict = JsonConvert.DeserializeObject<Dictionary<string, ScheduleChannels>>(schedString); 
+                    
+                    //make sure there are entries
+                    if(scheduleChannelDict.Count < 5)
+                        throw new Exception();
+
                     break;  //success
                 }
                 catch

@@ -1,0 +1,113 @@
+@{
+    ViewData["Title"] = "StreamCapture Schedule Grid";
+}
+
+<h2>@ViewData["Title"].</h2>
+
+<table id="list"><tr><td></td></tr></table> 
+<div id="pager"></div>  
+
+@section Scripts
+{        
+    <script>
+    $("#list").jqGrid({
+        url: "/api/schedule",
+        datatype: "JSON",
+        mtype: "GET",
+        colModel: [   
+            { name: "act", template: "actions", align: "left", width: 50 },
+            { name: "id", key:true, hidden: true },         
+            { label: "Description", name: "Description", width: 350 },
+            { label: "Category", name: "Category", width: 100 },
+            { label: "Start Date/Time", name: "StartDT", hidden: true, width: 100 },
+            { label: "Start Day", name: "StartDay", width: 75 },
+            { label: "Start", name: "StartTime", width: 50 },
+            { label: "End", name: "EndTime", width: 50 },
+            { label: "Selected", name: "SelectedFlag", width: 70, template: "booleanCheckbox" },
+            { label: "Manual", name: "ManualFlag", width: 70, template: "booleanCheckbox" },            
+            { label: "Too Many", name: "TooManyFlag", width: 70, template: "booleanCheckbox" },
+            { label: "Queued", name: "QueuedFlag", width: 60, template: "booleanCheckbox" },
+            { label: "Started", name: "StartedFlag", width: 60, template: "booleanCheckbox" },
+            { label: "Partial", name: "PartialFlag", width: 60, template: "booleanCheckbox" },
+            { label: "Done", name: "CompletedFlag", width: 60, template: "booleanCheckbox" },
+            { label: "Cancelled", name: "CancelledFlag", width: 70, template: "booleanCheckbox" },        
+            { label: "Pos", name: "KeyWordPos", width: 40 }, 
+        ],
+        pager: "#pager",
+        rowNum: 25,
+        multiSort: true,
+        sortname: "Description,StartDT",
+        loadonce : true,
+        viewrecords: true,
+        gridview: true,   
+        forceClientSorting: true,  
+        caption: "StreamCapture Schedule",
+        actionsNavOptions: {
+            editbutton: false,
+            delbutton: false,
+            custom: [
+                { action: "post", position: "first",
+                    onClick: function (options) {
+                        queueEntry(options.rowid);
+                        //alert("Post, rowid=" + options.rowid);
+                    } },
+                { action: "cancelshow", 
+                    onClick: function (options) {
+                        cancelEntry(options.rowid);
+                        //alert("Cancel, rowid=" + options.rowid);
+                } }
+            ],
+            posticon: "ui-icon-plus",
+            posttitle: "Queue Entry",
+            cancelshowtitle: "Cancel Entry", 
+            cancelshowicon: "ui-icon-cancel"      
+}        
+    }).navGrid("#pager", {edit: false, add: false, del: false, search: false, refresh: true, refreshstate: "current",
+            //beforeRefresh: function(){console.log("beforeRefresh");},
+            afterRefresh: function(){refreshEntries()}},
+        {}, // settings for edit
+        {}, // settings for add
+        {}, // settings for delete
+        {} // search options
+    ).jqGrid("filterToolbar"); 
+
+    function refreshEntries() {      
+        $("#list").trigger("reloadGrid", { fromServer: true, current:true });
+    }
+
+    function cancelEntry(rowId) {
+        jQuery.support.cors = true;
+        $.ajax({
+            url: '/api/edit',
+            type: 'POST',
+            data:"id="+rowId+"&oper=cancel", 
+            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+            success: function (data) {
+                $("#list").trigger("reloadGrid", { fromServer: true, current: true });
+                //alert ("Show Cancelled")
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) { 
+                alert("Status: " + textStatus); alert("Error: " + errorThrown); 
+            } 
+        });     
+    }  
+
+    function queueEntry(rowId) {
+        jQuery.support.cors = true;
+        $.ajax({
+            url: '/api/edit',
+            type: 'POST',
+            data:"id="+rowId+"&oper=queue", 
+            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+            success: function(data) {
+                $("#list").trigger("reloadGrid", { fromServer: true, current: true });
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) { 
+                alert("Status: " + textStatus); alert("Error: " + errorThrown); 
+            } 
+        }); 
+        
+    }    
+
+    </script>
+}

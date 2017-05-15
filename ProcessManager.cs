@@ -9,16 +9,18 @@ namespace StreamCapture
     public class ProcessManager
     {
         IConfiguration configuration;
+
         public ProcessManager(IConfiguration _c)
         {
             configuration=_c;
         }
+
         public CaptureProcessInfo ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs)
         {
-            return ExecProcess(logWriter,exe,cmdLineArgs,0,null);
+            return ExecProcess(logWriter,exe,cmdLineArgs,0,null,new CancellationTokenSource().Token);
         }
 
-        public CaptureProcessInfo ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs,int timeout,string outputPath)
+        public CaptureProcessInfo ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs,int timeout,string outputPath,CancellationToken cancellationToken)
         {
             //Create our process
             var processInfo = new ProcessStartInfo
@@ -31,8 +33,8 @@ namespace StreamCapture
             Process process = Process.Start(processInfo);
 
             //Let's build a timer to kill the process when done
+            CaptureProcessInfo captureProcessInfo=null;
             Timer captureTimer=null;
-            CaptureProcessInfo captureProcessInfo = null;
             if(timeout>0)
             {
                 int interval=10;  //# of seconds between timer/file checks
@@ -40,7 +42,7 @@ namespace StreamCapture
 
                 //create capture process info
                 DateTime timerDone=DateTime.Now.AddMinutes(timeout);
-                captureProcessInfo = new CaptureProcessInfo(process,acceptableRate,interval,timerDone,outputPath,logWriter);
+                captureProcessInfo = new CaptureProcessInfo(process,acceptableRate,interval,timerDone,outputPath,logWriter,cancellationToken);
 
                 //create timer
                 TimeSpan intervalTime = new TimeSpan(0, 0, interval); 
@@ -71,6 +73,13 @@ namespace StreamCapture
             {
                 killProcess=true;
                 captureProcessInfo.logWriter.WriteLine($"{DateTime.Now}: Timer is up.  Killing capture process");
+            }
+
+            //Have we been canclled?
+            if(captureProcessInfo.cancellationToken!=null && captureProcessInfo.cancellationToken.IsCancellationRequested)
+            {
+                killProcess=true;
+                captureProcessInfo.logWriter.WriteLine($"{DateTime.Now}: Task has been cancelled.  Killing capture process");                
             }
 
             //Make sure file is still growing at a reasonable pace.  Otherwise, kill the process

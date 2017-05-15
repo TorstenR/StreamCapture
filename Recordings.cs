@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
 using Microsoft.Extensions.Configuration;
 using System.IO;
 
@@ -8,6 +9,8 @@ namespace StreamCapture
 {
     public class Recordings
     {
+        public ManualResetEvent mre; //used to release the sleeping main thread if we want a reload from the web server
+
         private IConfiguration configuration;
         //Master dictionary of all shows we're interested in recording.  This is *not* the shows we necessarily will queue.
         //For example, this master list will have entires too far in the future, too many concurrent, etc.
@@ -18,16 +21,12 @@ namespace StreamCapture
         //too far in the future, or too many at once are omitted.  In other words, this is the list of shows
         //we'll actually queue to record/capture
         private List<RecordInfo> queuedRecordings;
-        //This object holds the full schedule from live247.  It normally only has a day or two of data in it.
-        //But we'll grab whatever they post.
-        private Schedule schedule;
 
-
-        public Recordings(IConfiguration _configuration)
+        public Recordings(IConfiguration _configuration,ManualResetEvent _mre)
         {
+            mre=_mre;
             recordDict = new Dictionary<string, RecordInfo>();
             configuration = _configuration;
-            schedule = new Schedule();
         }
         
         //
@@ -35,20 +34,13 @@ namespace StreamCapture
         //
         // As such, I'll document this a bit more than usual so when I forget (tomorrow) I can read and remember some...
         //
-        public List<RecordInfo> BuildRecordSchedule()
+        public List<RecordInfo> BuildRecordSchedule(List<ScheduleShow> scheduleShowList)
         {
             //Refresh keywords
             //
             //Reads keywords from the keywords.json file.  This is data used to determine which entries in the schedule
             //we are interested in recording/capturing
             Keywords keywords = new Keywords(configuration);
-
-            //Refresh schedule from website
-            //
-            // This goes and grabs the online .json file which is the current schedule from Live247
-            // This list is *all* the shows currently posted.  Usually, live247 only posts a day or two at a time.
-            schedule.LoadSchedule(configuration["scheduleURL"],configuration["debug"]).Wait();
-            List<ScheduleShow> scheduleShowList = schedule.GetScheduledShows();
 
             //Go through the shows and load up recordings if there's a match
             //
@@ -61,43 +53,15 @@ namespace StreamCapture
                 Tuple<KeywordInfo,int> tuple = keywords.FindMatch(scheduleShow);   
                 if (tuple != null)
                 {
-                    KeywordInfo keywordInfo = tuple.Item1; 
 
                     //Build record info if already exists, otherwise, create new                 
                     RecordInfo recordInfo=GetRecordInfo(BuildRecordInfoKeyValue(scheduleShow));
 
-                    //Fill out the recording info
-                    recordInfo.id = scheduleShow.id;
-                    recordInfo.description = scheduleShow.name;
-                    recordInfo.strStartDT = scheduleShow.time;
-                    //recordInfo.strStartDT = DateTime.Now.AddHours(4).ToString();
-                    recordInfo.strEndDT = scheduleShow.end_time;
-                    recordInfo.strDuration = scheduleShow.runtime;
-                    //recordInfo.strDuration = "1";
-                    recordInfo.strDTOffset = configuration["schedTimeOffset"];
-                    recordInfo.preMinutes = keywordInfo.preMinutes;
-                    recordInfo.postMinutes = keywordInfo.postMinutes;
-                    recordInfo.starredFlag = keywordInfo.starredFlag;
-                    recordInfo.emailFlag = keywordInfo.emailFlag;
-                    recordInfo.qualityPref = keywordInfo.qualityPref;
-                    recordInfo.langPref = keywordInfo.langPref;
-                    recordInfo.channelPref = keywordInfo.channelPref;
-                    recordInfo.category = scheduleShow.category;
+                    //Load the recordInfo object w/ the specific schedule
+                    recordInfo = BuildRecordInfoFromShedule (recordInfo,scheduleShow);
 
-                    recordInfo.keywordPos = tuple.Item2;  //used for sorting the most important shows 
-
-                    //Clean up description, and then use as filename
-                    recordInfo.fileName = scheduleShow.name.Replace(' ','_');
-                    string myChars = @"|'/\ ,<>#@!+&^*()~`;:";
-                    string invalidChars = myChars + new string(Path.GetInvalidFileNameChars());
-                    foreach (char c in invalidChars)
-                    {
-                        recordInfo.fileName = recordInfo.fileName.Replace(c.ToString(), "");
-                    }
-
-                    //If starred, add designator to filename
-                    if(recordInfo.starredFlag)
-                        recordInfo.fileName = "_" + recordInfo.fileName;
+                     //Load the recordInfo object w/ the specifics from keywords.json file
+                    recordInfo = BuildRecordInfoFromKeywords(recordInfo,tuple);              
 
                     //Update or add  (assuming the show has not already ended)
                     if(recordInfo.GetEndDT()>DateTime.Now)
@@ -111,6 +75,52 @@ namespace StreamCapture
             return GetShowsToQueue();
         }
 
+        //Let's load the record info object from the show found in the schedule
+        public RecordInfo BuildRecordInfoFromShedule(RecordInfo recordInfo,ScheduleShow scheduleShow)
+        {
+                //Fill out the recording info
+                recordInfo.id = scheduleShow.id;
+                recordInfo.description = scheduleShow.name;
+                recordInfo.strStartDT = scheduleShow.time;
+                //recordInfo.strStartDT = DateTime.Now.AddHours(4).ToString();
+                recordInfo.strEndDT = scheduleShow.end_time;
+                recordInfo.strDuration = scheduleShow.runtime;
+                recordInfo.category = scheduleShow.category;
+                //recordInfo.strDuration = "1";
+                recordInfo.strDTOffset = configuration["schedTimeOffset"];
+
+                //Clean up description, and then use as filename
+                recordInfo.fileName = scheduleShow.name.Replace(' ','_');
+                string myChars = @"|'/\ ,<>#@!+&^*()~`;:";
+                string invalidChars = myChars + new string(Path.GetInvalidFileNameChars());
+                foreach (char c in invalidChars)
+                {
+                    recordInfo.fileName = recordInfo.fileName.Replace(c.ToString(), "");
+                }
+
+                //If starred, add designator to filename
+                if(recordInfo.starredFlag)
+                    recordInfo.fileName = "_" + recordInfo.fileName;
+
+                return recordInfo;
+        }
+
+        private RecordInfo BuildRecordInfoFromKeywords(RecordInfo recordInfo,Tuple<KeywordInfo,int> tuple)
+        {
+                recordInfo.keywordPos = tuple.Item2;  //used for sorting the most important shows 
+
+                KeywordInfo keywordInfo = tuple.Item1;
+                recordInfo.preMinutes = keywordInfo.preMinutes;
+                recordInfo.postMinutes = keywordInfo.postMinutes;
+                recordInfo.starredFlag = keywordInfo.starredFlag;
+                recordInfo.emailFlag = keywordInfo.emailFlag;
+                recordInfo.qualityPref = keywordInfo.qualityPref;
+                recordInfo.langPref = keywordInfo.langPref;
+                recordInfo.channelPref = keywordInfo.channelPref;
+
+                return recordInfo;
+        }        
+
         public List<RecordInfo> GetSortedMasterRecordList()
         {
             List<RecordInfo> sortedRecordInfoList = new List<RecordInfo>();
@@ -118,6 +128,16 @@ namespace StreamCapture
                 sortedRecordInfoList = AddToSortedList(recordInfo,sortedRecordInfoList);
 
             return sortedRecordInfoList;
+        }
+
+        public List<RecordInfo> GetRecordInfoList()
+        {
+            return recordDict.Values.ToList();
+        }
+
+        public Dictionary<string, RecordInfo> GetRecordInfoDictionary()
+        {
+            return recordDict;
         }
 
         public RecordInfo GetRecordInfo(string recordInfoKey)
@@ -131,18 +151,21 @@ namespace StreamCapture
 
             return recordInfo;
         }
-        private string BuildRecordInfoKeyValue(RecordInfo recordInfo)        
+        public string BuildRecordInfoKeyValue(RecordInfo recordInfo)        
         {
             return recordInfo.strStartDT + recordInfo.description;
         }
 
-        private string BuildRecordInfoKeyValue(ScheduleShow scheduleShow)        
+        public string BuildRecordInfoKeyValue(ScheduleShow scheduleShow)        
         {
             return scheduleShow.time + scheduleShow.name;
         }
 
-        private void AddUpdateRecordInfo(string recordInfoKey,RecordInfo recordInfo)
+        public void AddUpdateRecordInfo(string recordInfoKey,RecordInfo recordInfo)
         {
+            //set flag
+            recordInfo.selectedFlag=true;  
+
             if(recordDict.ContainsKey(recordInfoKey))
                 recordDict[recordInfoKey]=recordInfo;
             else
@@ -175,25 +198,32 @@ namespace StreamCapture
             //Starting new as this is always time dependent
             queuedRecordings=new List<RecordInfo>();
 
+            Console.WriteLine($"{DateTime.Now}: Schedule Notes: ==================");
+
             //Go through potential shows and add the ones we should record
             //Omit those which are already done, too far in the future, or too many concurrent.  (already queued is fine obviously)
             //
-            //recordingList has the shows in order of the keywords which they matched on
-            List<RecordInfo> recordingList = SortBasedOnKeywordPos(recordDict.Values.ToList());
+            //recordingList has the shows in order of the keywords which they matched on, excluding dates beyond cutoff
+            List<RecordInfo> recordingList = SortBasedOnKeywordPos(recordDict.Values.ToList(),futureCutoff);
             foreach(RecordInfo recordInfo in recordingList.ToArray())
             {
                 bool showAlreadyDone=recordInfo.GetEndDT()<DateTime.Now;
-                bool showTooFarAway=recordInfo.GetStartDT()>futureCutoff;
+                //bool showTooFarAway=recordInfo.GetStartDT()>futureCutoff;
                 bool tooManyConcurrent=!IsConcurrencyOk(recordInfo,queuedRecordings);
+                bool showCancelled=recordInfo.cancelledFlag;
 
-                if(showAlreadyDone)
+                if (showAlreadyDone)
                 {
-                    Console.WriteLine($"{DateTime.Now}: Show already finished: {recordInfo.description} at {recordInfo.GetStartDT()}");
+                    //Console.WriteLine($"{DateTime.Now}: Show already finished: {recordInfo.description} at {recordInfo.GetStartDT()}");
                 }
-                else if(showTooFarAway)
+                else if(showCancelled)
                 {
-                    Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
+                    Console.WriteLine($"{DateTime.Now}: Show cancelled by user: {recordInfo.description} at {recordInfo.GetStartDT()}");
                 }
+                //else if(showTooFarAway)
+                //{
+                    //Console.WriteLine($"{DateTime.Now}: Show too far away: {recordInfo.description} at {recordInfo.GetStartDT()}");
+                //}
                 else if(tooManyConcurrent)
                 {
                     Console.WriteLine($"{DateTime.Now}: Too many at once: {recordInfo.description} at {recordInfo.GetStartDT()} - {recordInfo.GetEndDT()}"); 
@@ -211,17 +241,25 @@ namespace StreamCapture
                 }
                 else //Let's queue this since it looks good
                 {
-                    //Log if we've already spawned
-                    if(recordInfo.processSpawnedFlag)
-                        Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");
+                    recordInfo.tooManyFlag=false; //reset flag
+                    
+                    //Log if we've already queued
+                    //if(recordInfo.queuedFlag)
+                    //    Console.WriteLine($"{DateTime.Now}: Show already queued: {recordInfo.description} at {recordInfo.GetStartDT()}");
 
                     //If this is newly queued, then add to email
-                    if(recordInfo.queuedFlag==false)
-                        currentScheduleText=mailer.AddTableRow(currentScheduleText,recordInfo); ;//mail update
+                    if (recordInfo.queuedFlag == false)
+                    {
+                        Console.WriteLine($"{DateTime.Now}: Show newly queued: {recordInfo.description} at {recordInfo.GetStartDT()}");
+                        currentScheduleText = mailer.AddTableRow(currentScheduleText, recordInfo); ;//mail update
+                    }
 
                     //see if the show is super long
-                    if((recordInfo.GetEndDT()-recordInfo.GetStartDT()).Hours>4)
-                        mailer.SendShowAlertMail(configuration,recordInfo,"WARNING - Show really long");
+                    if ((recordInfo.GetEndDT() - recordInfo.GetStartDT()).Hours > 4)
+                    {
+                        Console.WriteLine($"{DateTime.Now}: Show really long: {recordInfo.description} at {recordInfo.GetStartDT()} for {recordInfo.GetDuration()} minutes");
+                        mailer.SendShowAlertMail(configuration, recordInfo, "WARNING - Show really long");
+                    }
 
                     //Add this to the queue so it's up to date
                     recordInfo.queuedFlag=true;
@@ -234,7 +272,6 @@ namespace StreamCapture
             foreach(RecordInfo recordInfo in queuedRecordings)
             {
                 Console.WriteLine($"{DateTime.Now}: {recordInfo.description} at {recordInfo.GetStartDT()} - {recordInfo.GetEndDT()}");
-                //currentScheduleText=mailer.AddCurrentScheduleToString(currentScheduleText,recordInfo);  
             }
             Console.WriteLine($"{DateTime.Now}: ===================================");
 
@@ -280,9 +317,20 @@ namespace StreamCapture
         //This way, shows matched on higher keywords, get higher priority.
         private bool IsConcurrencyOk(RecordInfo recordingToAdd,List<RecordInfo> recordingList)
         {
+            //If a manual entry (by user from web interface), we're good
+            if(recordingToAdd.manualFlag)
+                return true;
+
             //Temp list to test with
-            List<RecordInfo> tempList = new List<RecordInfo>(recordingList);
+            List<RecordInfo> tempList = new List<RecordInfo>();
             bool okToAddFlag=true;
+
+            //Only add shows which are before show to add
+            foreach(RecordInfo show in recordingList)
+            {
+                if(show.GetStartDT() < recordingToAdd.GetEndDT())
+                    tempList.Add(show);
+            }
 
             //Add to this temp list and then we'll check for concurrency
             tempList=AddToSortedList(recordingToAdd,tempList);
@@ -315,10 +363,10 @@ namespace StreamCapture
                 int maxConcurrent = concurrentBase;
                 if (recordingToAdd.starredFlag)
                     maxConcurrent = concurrentBase + addtlConcurrent;
-                if(concurrent>maxConcurrent)
-                {
-                    okToAddFlag=false;
-                }
+                if (concurrent > maxConcurrent)
+                    okToAddFlag = false;
+                //else
+                //    okToAddFlag = true;
             } 
 
             return okToAddFlag;         
@@ -326,28 +374,31 @@ namespace StreamCapture
 
         //Shorts the items based on where they were found in the keyword list
         //This enables us to try and add shows in keyword priority (assuming some won't get a slot)
-        private List<RecordInfo> SortBasedOnKeywordPos(List<RecordInfo> listToBeSorted)
+        private List<RecordInfo> SortBasedOnKeywordPos(List<RecordInfo> listToBeSorted,DateTime futureCutoff)
         {
             List<RecordInfo> sortedList=new List<RecordInfo>();
 
             foreach(RecordInfo recordInfo in listToBeSorted)
             {
-                bool insertedFlag=false;
-                RecordInfo[] sortedArray = sortedList.ToArray();
-                for(int idx=0;idx<sortedArray.Length;idx++)
+                if (recordInfo.GetStartDT() < futureCutoff)  //make sure we're only talking about the current timeframe
                 {
-                    if(recordInfo.keywordPos<=sortedArray[idx].keywordPos)
+                    bool insertedFlag = false;
+                    RecordInfo[] sortedArray = sortedList.ToArray();
+                    for (int idx = 0; idx < sortedArray.Length; idx++)
                     {
-                        sortedList.Insert(idx,recordInfo);
-                        insertedFlag=true;
-                        break;
+                        if (recordInfo.keywordPos <= sortedArray[idx].keywordPos)
+                        {
+                            sortedList.Insert(idx, recordInfo);
+                            insertedFlag = true;
+                            break;
+                        }
                     }
-                }
 
-                //Not found, so add to the end
-                if(!insertedFlag)
-                {
-                    sortedList.Add(recordInfo);
+                    //Not found, so add to the end
+                    if (!insertedFlag)
+                    {
+                        sortedList.Add(recordInfo);
+                    }
                 }
             }
 

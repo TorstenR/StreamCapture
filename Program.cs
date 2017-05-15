@@ -9,6 +9,7 @@ namespace StreamCapture
     {
         public static void Main(string[] args)
         {
+            //Deal with command line
             CommandLineApplication commandLineApplication = new CommandLineApplication(throwOnUnexpectedArg: false);
             CommandOption channels = commandLineApplication.Option("-c | --channels","Channels to record in the format nn+nn+nn (must be 2 digits)",CommandOptionType.SingleValue);
             CommandOption duration = commandLineApplication.Option("-d | --duration","Duration in minutes to record",CommandOptionType.SingleValue);
@@ -19,7 +20,7 @@ namespace StreamCapture
             commandLineApplication.Execute(args);  
             
             //Welcome message
-            Console.WriteLine($"{DateTime.Now}: StreamCapture Version 1.16  4/20/2017");
+            Console.WriteLine($"{DateTime.Now}: StreamCapture Version 2.00 5/9/2017");
 
             //Read and build config
             var builder = new ConfigurationBuilder().AddJsonFile("appsettings.json");
@@ -40,7 +41,7 @@ namespace StreamCapture
             }
 
             //Use optional parameters to record are passed in
-            if(optionalArgsFlag)
+            if (optionalArgsFlag)
             {
                 //Create new RecordInfo
                 RecordInfo recordInfo = new RecordInfo();
@@ -66,6 +67,7 @@ namespace StreamCapture
             else
             {
                 //Monitor schedule and spawn capture sessions as needed
+                Console.WriteLine($"{DateTime.Now}: Starting monitor mode...");
                 Recorder recorder = new Recorder(configuration);
                 recorder.MonitorMode();
             }

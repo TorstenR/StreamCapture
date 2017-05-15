@@ -1,127 +1,142 @@
 {
-  "USA National": {
+  "USA and Tournaments": {
     "starredFlag": true,"emailFlag": true,    
-    "keywords": ["usa"],
-    "exclude": ["tennis"],
-    "categories": [],
+    "keywords": ["usa","medal","world"],
+    "exclude": ["snooker","tennis","rugby","swimming","track and field","ncaab"],
+    "categories": ["Motor Sports"],
     "preMinutes": 0, "postMinutes": 30,
     "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+720p",
+    "qualityPref": "+1080I,720p,-HQLQ",
     "channelPref": ""    
   },
- "World Rally": {
-    "starredFlag": true,"emailFlag": true,   
-    "keywords": ["wrc"],
-    "exclude": [],"categories": [],
-    "preMinutes": 0,"postMinutes": 0,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+720p",
-    "channelPref": ""    
-  },
-  "Soccer": {
+  "Soccer1": {
     "starredFlag": true, "emailFlag": true,    
     "keywords": [
-      "bayern",
+      "Borussia Dortmund",
       "real madrid",
       "barcelona",
       "liverpool",
       "chelsea",
-      "tottenham",
-      "sounders"
+      "sounders",
+      "seattle",
+      "england",
+      "germany",
+      "spain",
+      "brazil",
+      "colombia",
+      "ecuador"
       ],
-    "exclude": [],"categories": [],
+    "exclude": ["colombiano","colombian","Paulista","youth","u23","u22","u21","u20","u19"],
+    "categories": ["world football"],
     "preMinutes": 0,"postMinutes": 15,
     "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+720p",
+    "qualityPref": "+1080I,720p,-HQLQ",
     "channelPref": ""    
   },
+ "High Pri Motorsports": {
+    "starredFlag": true,"emailFlag": true,   
+    "keywords": ["wrc","f1"],
+    "exclude": ["tennis","practice","post","pre","parade"],"categories": [],
+    "preMinutes": 0,"postMinutes": 10,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+1080I,720p,-HQLQ",
+    "channelPref": ""    
+  },
+  "Soccer2": {
+    "starredFlag": true, "emailFlag": true,    
+    "keywords": [
+      "bayern",
+      "manchester united",
+      "tottenham",
+      "Manchester City",
+      "Arsenal"
+    ],
+    "exclude": [],
+    "categories": ["world football"],
+    "preMinutes": 0,"postMinutes": 15,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+1080I,720p,-HQLQ",
+    "channelPref": ""    
+  },
+  "Hockey1": {
+    "starredFlag": true, "emailFlag": true,    
+    "keywords": [
+      "blackhawks",
+      "oilers",
+      "capitals",
+      "iihf"
+      ],
+    "exclude": [], "categories": ["Ice Hockey"],
+    "preMinutes": 0, "postMinutes": 30,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+1080I,720p,-HQLQ",
+    "channelPref": ""  
+  },    
   "Soccer Tournaments": {
     "starredFlag": false, "emailFlag": true,    
     "keywords": [
       "UCL:",
+      "UEFA",
       "FA Cup",
       "CONCACAF",
-      "EFL:",
-      "EL:",
-      "EDL:"
+      "WCQ:",
+      "WC"
       ],
     "exclude": [
       "sky90",
       "Konferenz",
-      "Alle Spiele"
+      "Alle Spiele",
+      "skating"
       ],
-    "categories": [],
+    "categories": ["world football"],
     "preMinutes": 0, "postMinutes": 15,
     "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+720p",
+    "qualityPref": "+1080I,720p,-HQLQ",
     "channelPref": ""    
   },
-  "MotorSports": {
-    "starredFlag": false,
-    "emailFlag": true,    
+  "Hockey2": {
+    "starredFlag": false, "emailFlag": true,    
     "keywords": [""],
-    "exclude": ["nascar"],
+    "exclude": [], "categories": ["Ice Hockey"],
+    "preMinutes": 0, "postMinutes": 30,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+1080I,720p,-HQLQ",
+    "channelPref": ""  
+  },  
+  "NCAA": {
+    "starredFlag": false, "emailFlag": true,    
+    "keywords": [
+      "NCAAH",
+      "ncaa,final"
+      ],
+    "exclude": [], "categories": [],
+    "preMinutes": 0, "postMinutes": 30,
+    "langPref": "+us,ca,uk,-de,-es",
+    "qualityPref": "+1080I,720p,-HQLQ",
+    "channelPref": ""  
+  },
+   "MotorSports": {
+    "starredFlag": false, "emailFlag": true,    
+    "keywords": [""],
+    "exclude": ["nascar","practice","post","pre","parade"],
     "categories": [
        "Motor Sports",
        "formula"
        ],
     "preMinutes": 0, "postMinutes": 5,
     "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+720p",
+    "qualityPref": "+1080I,720p,-HQLQ",
     "channelPref": ""    
   },
-  "NHL": {
-    "starredFlag": true, "emailFlag": true,    
-    "keywords": [
-      "blackhawks",
-      "red wings",
-      "canucks",
-      "Penguins"
-      ],
-    "exclude": [],
-    "categories": [],
-    "preMinutes": 0,
-    "postMinutes": 20,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+720p",
-    "channelPref": ""    
-  },
-  "EPL": {
-    "starredFlag": false, "emailFlag": true,    
+   "EPL": {
+    "starredFlag": false, "emailFlag": false,    
     "keywords": ["epl:"],
     "exclude": [],
     "categories": [],
     "preMinutes": 0,
     "postMinutes": 0,
     "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+720p",
-    "channelPref": ""    
-  },
-  "Rest of Soccer": {
-    "starredFlag": false, "emailFlag": false,    
-    "keywords": ["BL:"],
-    "exclude": [
-      "sky90",
-      "Konferenz",
-      "Alle Spiele"
-      ],
-    "categories": ["world football"],
-    "preMinutes": 0,
-    "postMinutes": 0,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+720p",
-    "channelPref": ""    
-  },
-  "Hockey": {
-    "starredFlag": false, "emailFlag": false,    
-    "keywords": [""],
-    "exclude": [], 
-    "categories": ["ice hockey"],
-    "preMinutes": 0,
-    "postMinutes": 0,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+720p",
+    "qualityPref": "+1080I,720p,-HQLQ",
     "channelPref": ""    
   }
 } 
-
