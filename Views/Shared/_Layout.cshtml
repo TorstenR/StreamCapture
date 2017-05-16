@@ -9,18 +9,27 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/free-jqgrid/4.14.0/css/ui.jqgrid.min.css">     
 </head>
 <body>
-
     <div class="container body-content">
+
         @RenderBody()
         <hr />
-        <footer>
-            <p>&copy; 2017 - testWeb</p>
-        </footer>
+
+        <!--Add buttons to initiate auth sequence and sign out-->
+        <button id="authorize-button" style="display: none;">Authorize</button>
+        <button id="signout-button" style="display: none;">Sign Out</button>
+
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/free-jqgrid/4.14.0/jquery.jqgrid.min.js"></script>
-    
-    @RenderSection("Scripts", required: false)
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/free-jqgrid/4.14.0/jquery.jqgrid.min.js"></script>  
+
+    <script async defer src="https://apis.google.com/js/api.js" 
+    onload="this.onload=function(){};handleClientLoad()" 
+    onreadystatechange="if (this.readyState === 'complete') this.onload()">
+    </script>  
+
+    @RenderSection("LoginScripts", required: false)
+    @RenderSection("GridScripts", required: false)
+
 </body>
 </html>
