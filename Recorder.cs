@@ -235,13 +235,23 @@ namespace StreamCapture
                 //Wait here until we're ready to start recording
                 if(recordInfo.strStartDT != null)
                 {
+                    TimeSpan oneHour = new TimeSpan(1,0,0);
                     DateTime recStart = recordInfo.GetStartDT();
                     TimeSpan timeToWait = recStart - DateTime.Now;
                     logWriter.WriteLine($"{DateTime.Now}: Starting recording at {recStart} - Waiting for {timeToWait.Days} Days, {timeToWait.Hours} Hours, and {timeToWait.Minutes} minutes.");
-                    if(timeToWait.Seconds>=0)
+                    
+                    while(timeToWait.Seconds>=0 && DateTime.Now > recStart)
                     {
-                        recordInfo.mre.WaitOne(timeToWait); 
-                        mre.Reset();
+                        timeToWait = recStart - DateTime.Now;
+                        if(timeToWait > oneHour) 
+                            timeToWait = oneHour;  
+
+                        if(timeToWait.Seconds>=0)
+                        {
+                            recordInfo.mre.WaitOne(timeToWait); 
+                            mre.Reset();     
+                            logWriter.WriteLine($"{DateTime.Now}: Waking up to check..."); 
+                        }                
                     }
 
                     if(recordInfo.cancelledFlag)
