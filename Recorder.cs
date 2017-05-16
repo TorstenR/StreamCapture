@@ -264,6 +264,8 @@ namespace StreamCapture
                     if(recordInfo.cancelledFlag)
                     {
                         logWriter.WriteLine($"{DateTime.Now}: Cancelling due to request");
+                        recordInfo.queuedFlag = false;
+                        recordInfo.processSpawnedFlag = false;
                         return;
                     }
                 }       
