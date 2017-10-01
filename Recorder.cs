@@ -44,26 +44,33 @@ namespace StreamCapture
             long bytesPerSecond=0;
             long fileSize=10000000;
 
-            logWriter.WriteLine($"{DateTime.Now}: Peforming speed test to calibrate your internet connection....please wait");            
+            logWriter.WriteLine($"{DateTime.Now}: Peforming speed test to calibrate your internet connection....please wait");
 
-            using (var client = new HttpClient())
-            {            
-                System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
-                client.GetAsync("http://download.thinkbroadband.com/10MB.zip").ContinueWith((requestTask) =>
+            try
+            {
+                using (var client = new HttpClient())
                 {
-                    HttpResponseMessage response = requestTask.Result;
-                    response.EnsureSuccessStatusCode();
-                    response.Content.LoadIntoBufferAsync();
-                }).Wait();
-                sw.Stop();
+                    System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
+                    client.GetAsync("http://download.thinkbroadband.com/10MB.zip").ContinueWith((requestTask) =>
+                    {
+                        HttpResponseMessage response = requestTask.Result;
+                        response.EnsureSuccessStatusCode();
+                        response.Content.LoadIntoBufferAsync();
+                    }).Wait();
+                    sw.Stop();
 
-                //Calc baseline speed
-                bytesPerSecond = fileSize/sw.Elapsed.Seconds;
-                double MBsec=Math.Round(((double)bytesPerSecond/1000000), 1);
-                logWriter.WriteLine($"{DateTime.Now}: Baseline speed: {MBsec} MBytes per second.  ({fileSize/1000000}MB / {sw.Elapsed.Seconds} seconds)");
+                    //Calc baseline speed
+                    bytesPerSecond = fileSize / sw.Elapsed.Seconds;
+                    double MBsec = Math.Round(((double)bytesPerSecond / 1000000), 1);
+                    logWriter.WriteLine($"{DateTime.Now}: Baseline speed: {MBsec} MBytes per second.  ({fileSize / 1000000}MB / {sw.Elapsed.Seconds} seconds)");
 
-                if(bytesPerSecond < 700000)
-                    logWriter.WriteLine($"{DateTime.Now}: WARNING: Your internet connection speed may be a limiting factor in your ability to capture streams");
+                    if (bytesPerSecond < 700000)
+                        logWriter.WriteLine($"{DateTime.Now}: WARNING: Your internet connection speed may be a limiting factor in your ability to capture streams");
+                }
+            }
+            catch
+            {
+                logWriter.WriteLine($"{DateTime.Now}: WARNING: Unable to calculate internet connection speed.");
             }
 
             return bytesPerSecond;
@@ -240,9 +247,8 @@ namespace StreamCapture
                     TimeSpan timeToWait = recStart - DateTime.Now;
                     logWriter.WriteLine($"{DateTime.Now}: Starting recording at {recStart} - Waiting for {timeToWait.Days} Days, {timeToWait.Hours} Hours, and {timeToWait.Minutes} minutes.");
                     
-                    while(timeToWait.Seconds>=0 && DateTime.Now < recStart)
+                    while(timeToWait.Seconds>=0 && DateTime.Now < recStart && !recordInfo.cancelledFlag)
                     {
-                        timeToWait = recStart - DateTime.Now;
                         if(timeToWait > oneHour) 
                             timeToWait = oneHour;  
 
@@ -252,11 +258,15 @@ namespace StreamCapture
                             mre.Reset();     
                             logWriter.WriteLine($"{DateTime.Now}: Waking up to check..."); 
                         }                
+                        
+                        timeToWait = recStart - DateTime.Now;
                     }
 
                     if(recordInfo.cancelledFlag)
                     {
                         logWriter.WriteLine($"{DateTime.Now}: Cancelling due to request");
+                        recordInfo.queuedFlag = false;
+                        recordInfo.processSpawnedFlag = false;
                         return;
                     }
                 }       
