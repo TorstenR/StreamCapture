@@ -51,7 +51,8 @@ namespace StreamCapture
                 using (var client = new HttpClient())
                 {
                     System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
-                    client.GetAsync("http://download.thinkbroadband.com/10MB.zip").ContinueWith((requestTask) =>
+                    //client.GetAsync("http://download.thinkbroadband.com/10MB.zip").ContinueWith((requestTask) =>
+                    client.GetAsync("http://speedtest.wdc01.softlayer.com/downloads/test10.zip").ContinueWith((requestTask) =>
                     {
                         HttpResponseMessage response = requestTask.Result;
                         response.EnsureSuccessStatusCode();
