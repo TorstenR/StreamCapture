@@ -31,13 +31,16 @@ namespace StreamCapture
 
                     break;  //success
                 }
-                catch
+                catch(Exception e)
                 {
                     if(--retries == 0) //are we out of retries?
                     {
+                        Console.WriteLine($"Exception {e.Message}");
+                        Console.WriteLine($"Stack {e.StackTrace}");
                         Console.WriteLine("======================");
                         Console.WriteLine($"{DateTime.Now}: ERROR - Exception deserializing schedule json");
                         Console.WriteLine("======================");
+                        Console.WriteLine($"URL: {scheduleURL}");
                         Console.WriteLine($"JSON: {schedString}");
 
                         throw;  //throw exception up the stack
@@ -60,8 +63,11 @@ namespace StreamCapture
                 {
                     Uri uri = new Uri(scheduleURL);
                     var response = await client.GetAsync(uri);
+                    //Console.WriteLine("before status check");
                     response.EnsureSuccessStatusCode(); // Throw in not success
+                    //Console.WriteLine("after status check");
                     schedString = await response.Content.ReadAsStringAsync();
+                    //Console.WriteLine($"string {schedString}");
                 }
                 else
                 {
