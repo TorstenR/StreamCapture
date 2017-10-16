@@ -61,6 +61,7 @@ namespace StreamCapture
             {
                 if(string.IsNullOrEmpty(debugCmdLine))
                 {
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("Cache-Control", "no-cache");
                     Uri uri = new Uri(scheduleURL);
                     var response = await client.GetAsync(uri);
                     //Console.WriteLine("before status check");
