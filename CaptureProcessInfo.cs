@@ -15,11 +15,12 @@ namespace StreamCapture
         public long avgKBytesSec { get; set; }
         public int interval { get; set;}
         public int currentKbLogCount { get; set;}
+        public bool bestChannelIsSelected { get; set; }
         public TextWriter logWriter { get; set; }
 
         public CancellationToken cancellationToken { get; set; }           
 
-        public CaptureProcessInfo(Process _p,long _ar,int _i,DateTime _td,string _o,TextWriter _l,CancellationToken _ct)
+        public CaptureProcessInfo(Process _p,long _ar,int _i,DateTime _td,string _o,TextWriter _l,CancellationToken _ct,bool _bc)
         {
             process=_p;
             acceptableRate=_ar;
@@ -30,6 +31,7 @@ namespace StreamCapture
             avgKBytesSec=0;
             logWriter=_l;
             cancellationToken=_ct;
+            bestChannelIsSelected = _bc;
         }
     }
 }

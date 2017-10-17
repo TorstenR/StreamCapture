@@ -17,10 +17,10 @@ namespace StreamCapture
 
         public CaptureProcessInfo ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs)
         {
-            return ExecProcess(logWriter,exe,cmdLineArgs,0,null,new CancellationTokenSource().Token);
+            return ExecProcess(logWriter,exe,cmdLineArgs,0,null,new CancellationTokenSource().Token,false);
         }
 
-        public CaptureProcessInfo ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs,int timeout,string outputPath,CancellationToken cancellationToken)
+        public CaptureProcessInfo ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs,int timeout,string outputPath,CancellationToken cancellationToken,bool bestChannelIsSelected)
         {
             //Create our process
             var processInfo = new ProcessStartInfo
@@ -42,7 +42,7 @@ namespace StreamCapture
 
                 //create capture process info
                 DateTime timerDone=DateTime.Now.AddMinutes(timeout);
-                captureProcessInfo = new CaptureProcessInfo(process,acceptableRate,interval,timerDone,outputPath,logWriter,cancellationToken);
+                captureProcessInfo = new CaptureProcessInfo(process,acceptableRate,interval,timerDone,outputPath,logWriter,cancellationToken,bestChannelIsSelected);
 
                 //create timer
                 TimeSpan intervalTime = new TimeSpan(0, 0, interval); 
@@ -99,12 +99,14 @@ namespace StreamCapture
                     //Make sure file size (rate) is fine
                     long fileSize = fileInfo.Length;
                     long kBytesSec = ((fileSize-captureProcessInfo.fileSize)/captureProcessInfo.interval)/1000;
-                    if(kBytesSec <= captureProcessInfo.acceptableRate)
+                    if((kBytesSec <= captureProcessInfo.acceptableRate && !captureProcessInfo.bestChannelIsSelected) || kBytesSec <5)  //If we haven't cycled through all the channels yet, see if we can do better.
                     {
                         killProcess=true;
-                        captureProcessInfo.logWriter.WriteLine($"{DateTime.Now}: ERROR: File size no longer growing. (Current Rate: ({kBytesSec} KB/s)  Killing capture process.");
+                        captureProcessInfo.logWriter.WriteLine($"{DateTime.Now}: ERROR: File growing too slowly or not at all. (Current Rate: ({kBytesSec} KB/s)  Killing capture process.");
                     }
+
                     captureProcessInfo.fileSize=fileSize;
+
                     if(captureProcessInfo.avgKBytesSec==0)
                         captureProcessInfo.avgKBytesSec=kBytesSec;
                     else

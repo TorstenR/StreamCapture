@@ -423,7 +423,7 @@ namespace StreamCapture
             logWriter.WriteLine($"=========================================");
             logWriter.WriteLine($"{DateTime.Now}: Starting {captureStarted} on server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}.  Expect to be done by {captureTargetEnd}.");
             logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
-            CaptureProcessInfo captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)duration.TotalMinutes,videoFileInfo.GetFullFile(),recordInfo.cancellationToken);  
+            CaptureProcessInfo captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)duration.TotalMinutes,videoFileInfo.GetFullFile(),recordInfo.cancellationToken,scs.IsBestSelected());  
             logWriter.WriteLine($"{DateTime.Now}: Exited Capture.  Exit Code: {captureProcessInfo.process.ExitCode}");
 
             //Main loop to capture
@@ -504,7 +504,7 @@ namespace StreamCapture
                 cmdLineArgs=BuildCaptureCmdLineArgs(scs.GetServerName(),scs.GetChannelNumber(),hashValue,videoFileInfo.GetFullFile());
                 logWriter.WriteLine($"{DateTime.Now}: Starting Capture (again) on server/channel {scs.GetServerName()}/{scs.GetChannelNumber()}");
                 logWriter.WriteLine($"                      {configuration["ffmpegPath"]} {cmdLineArgs}");
-                captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,videoFileInfo.GetFullFile(),recordInfo.cancellationToken);
+                captureProcessInfo = processManager.ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs,(int)timeLeft.TotalMinutes+1,videoFileInfo.GetFullFile(),recordInfo.cancellationToken, scs.IsBestSelected());
             }
             recordInfo.completedFlag=true;
             logWriter.WriteLine($"{DateTime.Now}: Done Capturing Stream.");         
