@@ -14,6 +14,7 @@ namespace StreamCapture
         public long acceptableRate { get; set; }
         public long avgKBytesSec { get; set; }
         public int interval { get; set;}
+        public int currentKbLogCount { get; set;}
         public TextWriter logWriter { get; set; }
 
         public CancellationToken cancellationToken { get; set; }           

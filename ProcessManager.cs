@@ -105,7 +105,18 @@ namespace StreamCapture
                         captureProcessInfo.logWriter.WriteLine($"{DateTime.Now}: ERROR: File size no longer growing. (Current Rate: ({kBytesSec} KB/s)  Killing capture process.");
                     }
                     captureProcessInfo.fileSize=fileSize;
-                    captureProcessInfo.avgKBytesSec=(captureProcessInfo.avgKBytesSec+kBytesSec)/2;
+                    if(captureProcessInfo.avgKBytesSec==0)
+                        captureProcessInfo.avgKBytesSec=kBytesSec;
+                    else
+                        captureProcessInfo.avgKBytesSec=(captureProcessInfo.avgKBytesSec+kBytesSec)/2;
+
+                    //Log current KB rate every 30 minutes  (180 intervals)
+                    if(captureProcessInfo.currentKbLogCount==0 || captureProcessInfo.currentKbLogCount>=180)
+                    {
+                        captureProcessInfo.logWriter.WriteLine($"{DateTime.Now}: Current Rate: {kBytesSec} KB/s  Avg Rate: {captureProcessInfo.avgKBytesSec}  File Size: {fileSize}");
+                        captureProcessInfo.currentKbLogCount=1;
+                    }
+                    captureProcessInfo.currentKbLogCount++;
                 }
             }
 
