@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.1</TargetFramework>  
+    <TargetFramework>netcoreapp2.0</TargetFramework>  
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <DebugType>portable</DebugType>
     <AssemblyName>StreamCapture</AssemblyName>
@@ -29,8 +29,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="1.1.*" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.0" />
     <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
-    <PackageReference Include="MailKit" Version= "1.*"  />  
-    <PackageReference Include="System.Net.Ping" Version= "*"  />      
+    <PackageReference Include="MailKit" Version="1.*" />  
   </ItemGroup>
 
 </Project>
