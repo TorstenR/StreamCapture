@@ -7,6 +7,8 @@ This program is intended to run largely unattended, recording shows based on key
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ### Updates:
+- Oct 18th,2017: Updated project to 2.0 from 1.1  (not sure how I forgot this until now...)
+- Oct 17th,2017: Heuristics update to try and find a better channel when the stream is low bandwidth - also improved logging 
 - May 15, 2017: Merge Kestrel branch (with the UI feature) into master
 - May 11, 2017: Web UI for adjusting what's recorded when just added.
 - Apr 17, 2017: Now creating poster and fan art for plex so that the score is not given away.  More concurrent captures for starred shows.  Also, moved the schedule URL out to appsettings.  Finally, am updating channel list right before recording start to accomodate for last minute changes.
@@ -76,7 +78,7 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 - "hoursInFuture" - Don't schedule anything farther out than this number of hours.  Use 'today' for same day only.
 - "numberOfRetries" - Number of time we retry after ffmpeg capture error before giving up inside of a 15 window.  
 - "schedTimeOffset" - Schedule appears to be in EST.  This is the offset for local time.  (e.g. PST is -3)
-- "acceptableRate" - KB/s, below which it will error out and retry.  Meant to catch "dead" or "hung" streams.  I use 50...
+- "acceptableRate" - KB/s, below which the program will try and find a better channel.  Doesn't "count" against # of retries.  (I use 100)
 - "concurrentCaptures" - Max captures that can be happening at one time.  I use 2 (plus 1 in additional...see next property)
 - "additionalStarredCaptures" - Additional concurrent slots available IF starred.  In other words, if events aren't starred, "concurrentCaptures" is it.  However, it'll use more bandwidth if something is starred.
 - "retentionDays" - Beyond this, log and video files are removed
