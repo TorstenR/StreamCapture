@@ -80,15 +80,23 @@ namespace StreamCapture
             else
                 inputFile=files.fileCaptureList[0];
 
-            // "muxCmdLine": "[FULLFFMPEGPATH] -i [VIDEOFILE] -acodec copy -vcodec copy [FULLOUTPUTPATH]"
-            string cmdLineArgs = configuration["muxCmdLine"];
-            cmdLineArgs=cmdLineArgs.Replace("[VIDEOFILE]",inputFile.GetFullFile());
-            cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",files.muxedFile.GetFullFile());
-            cmdLineArgs=cmdLineArgs.Replace("[DESCRIPTION]",metadata);            
+            //Mux file is cmdline is there, otherwise, just rename it to mp4
+            if(string.IsNullOrEmpty(configuration["nasPath"]))
+            {
+              // "muxCmdLine": "[FULLFFMPEGPATH] -i [VIDEOFILE] -acodec copy -vcodec copy [FULLOUTPUTPATH]"
+              string cmdLineArgs = configuration["muxCmdLine"];
+              cmdLineArgs=cmdLineArgs.Replace("[VIDEOFILE]",inputFile.GetFullFile());
+              cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",files.muxedFile.GetFullFile());
+              cmdLineArgs=cmdLineArgs.Replace("[DESCRIPTION]",metadata);            
 
-            //Run mux command
-            logWriter.WriteLine($"{DateTime.Now}: Starting Mux: {configuration["ffmpegPath"]} {cmdLineArgs}");
-            new ProcessManager(configuration).ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
+              //Run mux command
+              logWriter.WriteLine($"{DateTime.Now}: Starting Mux: {configuration["ffmpegPath"]} {cmdLineArgs}");
+              new ProcessManager(configuration).ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
+            }
+            else
+            {
+              VideoFileManager.MoveFile(inputFile.GetFullFile(),files.muxedFile.GetFullFile());
+            }
         }
 
         public void PublishAndCleanUpAfterCapture(string category, int preMinutes)
@@ -135,6 +143,53 @@ namespace StreamCapture
 
             //If final file exist, delete old .ts file/s
             files.DeleteNonPublishedFiles(logWriter,configuration);
+        }
+
+        //Move published files to storage end point in the cloud if available
+        public void MoveToEndPoint(string category)
+        {
+            //If could end point path exists, move file mp4 file there          
+            if(string.IsNullOrEmpty(configuration["storageEndPoint"]) || string.IsNullOrEmpty(configuration["netCopyCmdLine"]))
+                return;
+
+            logWriter.WriteLine($"{DateTime.Now}: Copying files to the storage end point now");
+
+            //Grab storage end point info
+            string endPoint = configuration["storageEndPoint"];
+            string destPath = $"{endPoint}/{category}";
+
+            //Move poster file 
+            string cmdLineArgs = configuration["netCopyCmdLine"];
+            cmdLineArgs = cmdLineArgs.Replace("[SOURCEPATH]", files.posterFile.baseFilePath );
+            cmdLineArgs = cmdLineArgs.Replace("[DESTPATH]", destPath);
+            cmdLineArgs = cmdLineArgs.Replace("[FILENAME]", $"{files.posterFile.baseFileName+files.posterFile.exten}");
+            logWriter.WriteLine($"{DateTime.Now}: Moving Poster to Storage Endpoint: {cmdLineArgs}");
+            int exitCode = new ProcessManager(configuration).ExecProcess(logWriter, configuration["azCopy"], cmdLineArgs);  
+            if(exitCode != 0)              
+                throw new Exception($"Unable to copy {files.posterFile.baseFileName+files.posterFile.exten} to the web end point");
+
+            //Move art file 
+            cmdLineArgs = configuration["netCopyCmdLine"];
+            cmdLineArgs = cmdLineArgs.Replace("[SOURCEPATH]", files.fanartFile.baseFilePath );
+            cmdLineArgs = cmdLineArgs.Replace("[DESTPATH]", destPath);
+            cmdLineArgs = cmdLineArgs.Replace("[FILENAME]", $"{files.fanartFile.baseFileName+files.fanartFile.exten}");
+            logWriter.WriteLine($"{DateTime.Now}: Moving Art to Storage Endpoint: {cmdLineArgs}");
+            exitCode = new ProcessManager(configuration).ExecProcess(logWriter, configuration["azCopy"], cmdLineArgs);  
+            if(exitCode != 0)              
+                throw new Exception($"Unable to copy {files.fanartFile.baseFileName+files.fanartFile.exten} to the web end point");
+
+            //Move movie file 
+            cmdLineArgs = configuration["netCopyCmdLine"];
+            cmdLineArgs = cmdLineArgs.Replace("[SOURCEPATH]", files.publishedFile.baseFilePath );
+            cmdLineArgs = cmdLineArgs.Replace("[DESTPATH]", destPath);
+            cmdLineArgs = cmdLineArgs.Replace("[FILENAME]", $"{files.publishedFile.baseFileName+files.publishedFile.exten}");
+            logWriter.WriteLine($"{DateTime.Now}: Moving Video to Storage Endpoint: {cmdLineArgs}");
+            exitCode = new ProcessManager(configuration).ExecProcess(logWriter, configuration["azCopy"], cmdLineArgs);  
+            if(exitCode != 0)              
+                throw new Exception($"Unable to copy {files.publishedFile.baseFileName+files.publishedFile.exten} to the web end point");     
+
+            //Remove published files since we've moved them to the cloud
+            files.DeletePublishedFiles(logWriter,configuration);
         }
 
         static public void MoveFile(string sourcePath,string targetPath)

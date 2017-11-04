@@ -9,15 +9,17 @@ namespace StreamCapture
     public class ProcessManager
     {
         IConfiguration configuration;
+        int ExitCode=0;
 
         public ProcessManager(IConfiguration _c)
         {
             configuration=_c;
         }
 
-        public CaptureProcessInfo ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs)
+        public int ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs)
         {
-            return ExecProcess(logWriter,exe,cmdLineArgs,0,null,new CancellationTokenSource().Token,false);
+            ExecProcess(logWriter,exe,cmdLineArgs,0,null,new CancellationTokenSource().Token,false);
+            return ExitCode;
         }
 
         public CaptureProcessInfo ExecProcess(TextWriter logWriter,string exe,string cmdLineArgs,int timeout,string outputPath,CancellationToken cancellationToken,bool bestChannelIsSelected)
@@ -54,6 +56,7 @@ namespace StreamCapture
             logWriter.WriteLine(process.StandardError.ReadToEnd());
             logWriter.WriteLine(process.StandardOutput.ReadToEnd());
             process.WaitForExit();
+            ExitCode=process.ExitCode;
 
             //Clean up timer
             if(timeout>0 && captureTimer != null)

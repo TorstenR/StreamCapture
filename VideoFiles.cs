@@ -95,6 +95,18 @@ namespace StreamCapture
             }
         }
 
+        public void DeletePublishedFiles(TextWriter logWriter,IConfiguration configuration)
+        {
+            logWriter.WriteLine($"{DateTime.Now}: Deleting poster art file {posterFile.GetFullFile()}");
+            File.Delete(posterFile.GetFullFile());
+
+            logWriter.WriteLine($"{DateTime.Now}: Deleting fan art file {fanartFile.GetFullFile()}");
+            File.Delete(fanartFile.GetFullFile());
+
+            logWriter.WriteLine($"{DateTime.Now}: Deleting published video file {publishedFile.GetFullFile()}");
+            File.Delete(publishedFile.GetFullFile());
+        }
+
         private void CheckForDup(VideoFileInfo fileInfo)
         {
             //Make sure file doesn't already exist

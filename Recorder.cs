@@ -299,6 +299,9 @@ namespace StreamCapture
                 videoFileManager.MuxFile(recordInfo.description);
                 videoFileManager.PublishAndCleanUpAfterCapture(recordInfo.category,recordInfo.preMinutes);
 
+                //Let's move files to a storage end point if available
+                videoFileManager.MoveToEndPoint(recordInfo.category);
+
                 //Cleanup
                 logWriter.WriteLine($"{DateTime.Now}: Done Capturing");
                 logWriter.Dispose();

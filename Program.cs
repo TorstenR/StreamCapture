@@ -138,7 +138,7 @@ namespace StreamCapture
             //Check that ffmpeg command line entries exist
             ValidateSettingExist(configuration,"captureCmdLine");
             ValidateSettingExist(configuration,"concatCmdLine");
-            ValidateSettingExist(configuration,"muxCmdLine");
+            //ValidateSettingExist(configuration,"muxCmdLine");
             ValidateSettingExist(configuration,"artCmdLine");
 
             //Make sure schedule URL exist (does not verify it's accurate)
