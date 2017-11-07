@@ -60,30 +60,7 @@ namespace StreamCapture
             {
                 if(File.Exists(fileInfo.GetFullFile()))
                 {
-                    int tryNumber = 0;
-
-                    logWriter.WriteLine($"{DateTime.Now}: Deleting file {fileInfo.GetFullFile()}");
-                    while (true)
-                    {
-                        try
-                        {
-                            File.Delete(fileInfo.GetFullFile());
-                            break;
-                        }
-                        catch (System.IO.IOException ex)
-                        {
-                            if (tryNumber<13)  //file in use...  (ex.HResult == -2147024864 && )
-                            {
-                                logWriter.WriteLine($"{DateTime.Now}: File {fileInfo.GetFullFile()} is in use.  Waiting 15 minutes before trying again...  (Try {tryNumber+1} of 13)");
-                                System.Threading.Thread.Sleep(15*(60*1000));
-                                tryNumber++;
-                            }
-                            else
-                            {
-                                throw ex;
-                            }
-                        }
-                    }
+                    DeleteFile(logWriter,fileInfo);
                 }
             }
 
@@ -97,14 +74,37 @@ namespace StreamCapture
 
         public void DeletePublishedFiles(TextWriter logWriter,IConfiguration configuration)
         {
-            logWriter.WriteLine($"{DateTime.Now}: Deleting poster art file {posterFile.GetFullFile()}");
-            File.Delete(posterFile.GetFullFile());
+            DeleteFile(logWriter,posterFile);
+            DeleteFile(logWriter,fanartFile);
+            DeleteFile(logWriter,publishedFile);
+        }
 
-            logWriter.WriteLine($"{DateTime.Now}: Deleting fan art file {fanartFile.GetFullFile()}");
-            File.Delete(fanartFile.GetFullFile());
+        private void DeleteFile(TextWriter logWriter,VideoFileInfo fileInfo)
+        {
+            int tryNumber = 0;
 
-            logWriter.WriteLine($"{DateTime.Now}: Deleting published video file {publishedFile.GetFullFile()}");
-            File.Delete(publishedFile.GetFullFile());
+            logWriter.WriteLine($"{DateTime.Now}: Deleting file {fileInfo.GetFullFile()}");
+            while (true)
+            {
+                try
+                {
+                    File.Delete(fileInfo.GetFullFile());
+                    break;
+                }
+                catch (System.IO.IOException ex)
+                {
+                    if (tryNumber<13)  //file in use...  (ex.HResult == -2147024864 && )
+                    {
+                        logWriter.WriteLine($"{DateTime.Now}: File {fileInfo.GetFullFile()} is in use.  Waiting 15 minutes before trying again...  (Try {tryNumber+1} of 13)");
+                        System.Threading.Thread.Sleep(15*(60*1000));
+                        tryNumber++;
+                    }
+                    else
+                    {
+                        throw ex;
+                    }
+                }
+            }
         }
 
         private void CheckForDup(VideoFileInfo fileInfo)

@@ -158,38 +158,45 @@ namespace StreamCapture
             string endPoint = configuration["storageEndPoint"];
             string destPath = $"{endPoint}/{category}";
 
-            //Move poster file 
-            string cmdLineArgs = configuration["netCopyCmdLine"];
-            cmdLineArgs = cmdLineArgs.Replace("[SOURCEPATH]", files.posterFile.baseFilePath );
-            cmdLineArgs = cmdLineArgs.Replace("[DESTPATH]", destPath);
-            cmdLineArgs = cmdLineArgs.Replace("[FILENAME]", $"{files.posterFile.baseFileName+files.posterFile.exten}");
-            logWriter.WriteLine($"{DateTime.Now}: Moving Poster to Storage Endpoint: {cmdLineArgs}");
-            int exitCode = new ProcessManager(configuration).ExecProcess(logWriter, configuration["azCopy"], cmdLineArgs);  
-            if(exitCode != 0)              
-                throw new Exception($"Unable to copy {files.posterFile.baseFileName+files.posterFile.exten} to the web end point");
-
-            //Move art file 
-            cmdLineArgs = configuration["netCopyCmdLine"];
-            cmdLineArgs = cmdLineArgs.Replace("[SOURCEPATH]", files.fanartFile.baseFilePath );
-            cmdLineArgs = cmdLineArgs.Replace("[DESTPATH]", destPath);
-            cmdLineArgs = cmdLineArgs.Replace("[FILENAME]", $"{files.fanartFile.baseFileName+files.fanartFile.exten}");
-            logWriter.WriteLine($"{DateTime.Now}: Moving Art to Storage Endpoint: {cmdLineArgs}");
-            exitCode = new ProcessManager(configuration).ExecProcess(logWriter, configuration["azCopy"], cmdLineArgs);  
-            if(exitCode != 0)              
-                throw new Exception($"Unable to copy {files.fanartFile.baseFileName+files.fanartFile.exten} to the web end point");
-
-            //Move movie file 
-            cmdLineArgs = configuration["netCopyCmdLine"];
-            cmdLineArgs = cmdLineArgs.Replace("[SOURCEPATH]", files.publishedFile.baseFilePath );
-            cmdLineArgs = cmdLineArgs.Replace("[DESTPATH]", destPath);
-            cmdLineArgs = cmdLineArgs.Replace("[FILENAME]", $"{files.publishedFile.baseFileName+files.publishedFile.exten}");
-            logWriter.WriteLine($"{DateTime.Now}: Moving Video to Storage Endpoint: {cmdLineArgs}");
-            exitCode = new ProcessManager(configuration).ExecProcess(logWriter, configuration["azCopy"], cmdLineArgs);  
-            if(exitCode != 0)              
-                throw new Exception($"Unable to copy {files.publishedFile.baseFileName+files.publishedFile.exten} to the web end point");     
+            //Move files 
+            MoveToEndPoint(files.posterFile,destPath);
+            MoveToEndPoint(files.fanartFile,destPath);
+            MoveToEndPoint(files.publishedFile,destPath);
 
             //Remove published files since we've moved them to the cloud
             files.DeletePublishedFiles(logWriter,configuration);
+        }
+
+        private void MoveToEndPoint(VideoFileInfo fileInfo,string destPath)
+        {
+            int tryNumber =0;
+
+            while (true)
+            {
+                string cmdLineArgs = configuration["netCopyCmdLine"];
+                cmdLineArgs = cmdLineArgs.Replace("[SOURCEPATH]", fileInfo.baseFilePath );
+                cmdLineArgs = cmdLineArgs.Replace("[DESTPATH]", destPath);
+                cmdLineArgs = cmdLineArgs.Replace("[FILENAME]", $"{fileInfo.baseFileName+fileInfo.exten}");
+                logWriter.WriteLine($"{DateTime.Now}: Moving {fileInfo.baseFileName} to Storage Endpoint: {cmdLineArgs}");
+                int exitCode = new ProcessManager(configuration).ExecProcess(logWriter, configuration["azCopy"], cmdLineArgs);  
+                if(exitCode != 0)              
+                { 
+                    if (tryNumber<5) 
+                    {
+                        logWriter.WriteLine($"{DateTime.Now}: Unable to copy {fileInfo.baseFileName+fileInfo.exten} to the web end point.  Waiting 5 seconds before trying again...  (Try {tryNumber+1} of 5)");
+                        System.Threading.Thread.Sleep(5*1000);
+                        tryNumber++;
+                    }
+                    else
+                    {
+                        throw new Exception($"Unable to copy {fileInfo.baseFileName+fileInfo.exten} to the web end point");
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }    
         }
 
         static public void MoveFile(string sourcePath,string targetPath)
