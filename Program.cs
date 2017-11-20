@@ -194,7 +194,7 @@ namespace StreamCapture
             ValidateInt("appsettings.json","acceptableRate",configuration["acceptableRate"],1,6000000);                     
 
             //Check offset
-            ValidateInt("appsettings.json","schedTimeOffset",configuration["schedTimeOffset"],-12,12);       
+            ValidateInt("appsettings.json","schedTimeOffset",configuration["schedTimeOffset"],-12,24);       
 
             //Check log directory
             ValidateDirExist("appsettings.json","logPath",configuration["logPath"]);
