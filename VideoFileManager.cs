@@ -80,15 +80,23 @@ namespace StreamCapture
             else
                 inputFile=files.fileCaptureList[0];
 
-            // "muxCmdLine": "[FULLFFMPEGPATH] -i [VIDEOFILE] -acodec copy -vcodec copy [FULLOUTPUTPATH]"
-            string cmdLineArgs = configuration["muxCmdLine"];
-            cmdLineArgs=cmdLineArgs.Replace("[VIDEOFILE]",inputFile.GetFullFile());
-            cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",files.muxedFile.GetFullFile());
-            cmdLineArgs=cmdLineArgs.Replace("[DESCRIPTION]",metadata);            
+            //Mux file is cmdline is there, otherwise, just rename it to mp4
+            if(!string.IsNullOrEmpty(configuration["muxCmdLine"]))
+            {
+              // "muxCmdLine": "[FULLFFMPEGPATH] -i [VIDEOFILE] -acodec copy -vcodec copy [FULLOUTPUTPATH]"
+              string cmdLineArgs = configuration["muxCmdLine"];
+              cmdLineArgs=cmdLineArgs.Replace("[VIDEOFILE]",inputFile.GetFullFile());
+              cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",files.muxedFile.GetFullFile());
+              cmdLineArgs=cmdLineArgs.Replace("[DESCRIPTION]",metadata);            
 
-            //Run mux command
-            logWriter.WriteLine($"{DateTime.Now}: Starting Mux: {configuration["ffmpegPath"]} {cmdLineArgs}");
-            new ProcessManager(configuration).ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
+              //Run mux command
+              logWriter.WriteLine($"{DateTime.Now}: Starting Mux: {configuration["ffmpegPath"]} {cmdLineArgs}");
+              new ProcessManager(configuration).ExecProcess(logWriter,configuration["ffmpegPath"],cmdLineArgs);
+            }
+            else
+            {
+              VideoFileManager.MoveFile(inputFile.GetFullFile(),files.muxedFile.GetFullFile());
+            }
         }
 
         public void PublishAndCleanUpAfterCapture(string category, int preMinutes)
