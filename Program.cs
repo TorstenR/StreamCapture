@@ -167,6 +167,11 @@ namespace StreamCapture
                 Console.WriteLine($"ERROR: 'serverList' is empty in appsettings, but 'captureCmdLine' is expecting '[SERVER]'");
                 Environment.Exit(1);
             }
+            if (captureCmdLine.Contains("[LIST]"))
+            {
+                Console.WriteLine($"ERROR: 'list' is empty in appsettings");
+                Environment.Exit(1);
+            }
             if(!string.IsNullOrEmpty(serverList) && !captureCmdLine.Contains("[SERVER]"))
             {
                 Console.WriteLine($"ERROR: 'serverList' has servers in appsettings, but 'captureCmdLine' does not have '[SERVER]'");

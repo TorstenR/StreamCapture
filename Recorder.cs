@@ -334,6 +334,7 @@ namespace StreamCapture
                     string strURL=configuration["authURL"];
                     strURL=strURL.Replace("[USERNAME]",configuration["user"]);
                     strURL=strURL.Replace("[PASSWORD]",configuration["pass"]);
+                    strURL=strURL.Replace("[SITE]",configuration["site"]);
 
                     var response = await client.GetAsync(strURL);
                     response.EnsureSuccessStatusCode(); // Throw in not success
@@ -564,6 +565,7 @@ namespace StreamCapture
             string cmdLineArgs = configuration["captureCmdLine"];
             cmdLineArgs=cmdLineArgs.Replace("[FULLOUTPUTPATH]",outputPath);
             cmdLineArgs=cmdLineArgs.Replace("[SERVER]",server);
+            cmdLineArgs=cmdLineArgs.Replace("[SITE]",configuration["site"]);
             cmdLineArgs=cmdLineArgs.Replace("[CHANNEL]",channel);
             cmdLineArgs=cmdLineArgs.Replace("[AUTHTOKEN]",hashValue);
 
