@@ -7,6 +7,7 @@ This program is intended to run largely unattended, recording shows based on key
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ### Updates:
+- Nov 22nd,2017: 2.0 has a bug, so reverted to 1.1.  The Mux cmd line is now optional.  Also, took a couple of PR's to clean things up. (see commit history)
 - Oct 18th,2017: Updated project to 2.0 from 1.1  (not sure how I forgot this until now...)
 - Oct 17th,2017: Heuristics update to try and find a better channel when the stream is low bandwidth - also improved logging 
 - May 15, 2017: Merge Kestrel branch (with the UI feature) into master
@@ -74,6 +75,7 @@ Simply run StreamCapture with no parameters.  It will read keywords.json every n
 There are multiple config values in appsettings.json.  By looking at these you'll get a better idea what's happening.
 - "user" - Yes, username and password for smooth streams
 - "pass"
+- "site" - Which "site" you're using.  I use live247 which is "view247".  Yours might be different...
 - "scheduleCheck" - Comma separated hours (24 hour format) for when you want the scheduled checked.  NOTE: to accomodate daylight savings time, you'll want to to set the first hour to 3am EST.  Even then, there could be confusion depending on what timezone you are in.
 - "hoursInFuture" - Don't schedule anything farther out than this number of hours.  Use 'today' for same day only.
 - "numberOfRetries" - Number of time we retry after ffmpeg capture error before giving up inside of a 15 window.  
