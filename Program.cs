@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.CommandLineUtils;
 
@@ -50,6 +51,10 @@ namespace StreamCapture
                 recordInfo.strDuration=duration.Value();
                 recordInfo.strStartDT=datetime.Value();
                 recordInfo.fileName=filename.Value();
+                recordInfo.processSpawnedFlag=true;                             
+                recordInfo.mre = new ManualResetEvent(false);
+                recordInfo.cancellationTokenSource=new CancellationTokenSource();
+                recordInfo.cancellationToken=recordInfo.cancellationTokenSource.Token;                
 
                 //Record a single show and then quit
                 ChannelHistory channelHistory = new ChannelHistory();
@@ -134,6 +139,10 @@ namespace StreamCapture
         {
             Console.WriteLine($"{DateTime.Now}: Verifying appsettings....");
 
+            //check credentials and site
+            ValidateSettingExist(configuration,"user");
+            ValidateSettingExist(configuration,"pass");
+            ValidateSettingExist(configuration,"site");
 
             //Check that ffmpeg command line entries exist
             ValidateSettingExist(configuration,"captureCmdLine");
