@@ -76,13 +76,16 @@ namespace StreamCapture
             //Create base date time
             DateTime endDT=DateTime.Parse(strEndDT);
 
+            //Make sure post minutes are added in there
+            endDT = GetStartDT().AddMinutes(GetDuration());
+
             //Add offset 
             int timeOffset=Convert.ToInt32(strDTOffset);
             endDT=endDT.AddHours(timeOffset);
 
             return endDT;
         }
-
+        
         //Return duration in minutes
         public int GetDuration()
         {
