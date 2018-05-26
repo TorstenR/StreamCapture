@@ -167,9 +167,16 @@ namespace StreamCapture
             recordInfo.selectedFlag=true;  
 
             if(recordDict.ContainsKey(recordInfoKey))
-                recordDict[recordInfoKey]=recordInfo;
+            {
+                //Update existing record only if higher in the pri list
+                RecordInfo existingRecordInfo = recordDict[recordInfoKey];
+                if(existingRecordInfo.keywordPos > recordInfo.keywordPos)
+                    recordDict[recordInfoKey]=recordInfo;
+            }
             else
+            {
                 recordDict.Add(recordInfoKey,recordInfo);
+            }
         }
 
         private void DeleteRecordInfo(RecordInfo recordInfoToDelete)
