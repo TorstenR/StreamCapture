@@ -76,9 +76,6 @@ namespace StreamCapture
             //Make sure post minutes are added in there
             DateTime endDT = GetStartDT().AddMinutes(GetDuration());
 
-            //Add offset 
-            int timeOffset=Convert.ToInt32(strDTOffset);
-            endDT=endDT.AddHours(timeOffset);
 
             return endDT;
         }
