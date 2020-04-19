@@ -7,6 +7,7 @@ This program is intended to run largely unattended, recording shows based on key
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ### Updates:
+- Apr 18th,2020: Upgraded to .NET 3.1
 - Nov 22nd,2017: 2.0 has a bug, so reverted to 1.1.  The Mux cmd line is now optional.  Also, took a couple of PR's to clean things up. (see commit history)
 - Oct 18th,2017: Updated project to 2.0 from 1.1  (not sure how I forgot this until now...)
 - Oct 17th,2017: Heuristics update to try and find a better channel when the stream is low bandwidth - also improved logging 
