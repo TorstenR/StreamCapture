@@ -165,26 +165,13 @@ namespace StreamCapture
                 DateTime cutDate=DateTime.Now.AddDays(retentionDays*-1);
                 Console.WriteLine($"{DateTime.Now}: Checking the following folders for files older than {cutDate}");   
             
+                //Remove old logs
                 Console.WriteLine($"{DateTime.Now}:          {logPath}");                
                 RemoveOldFiles(logPath,"*log.txt",cutDate);
-                Console.WriteLine($"{DateTime.Now}:          {outputPath}");
-                RemoveOldFiles(outputPath,"*.ts",cutDate);
-                RemoveOldFiles(outputPath,"*.mp4",cutDate);
-                RemoveOldFiles(outputPath,"*.jpg",cutDate);
-                if(!string.IsNullOrEmpty(nasPath))
-                {
-                    Console.WriteLine($"{DateTime.Now}:          {nasPath}");
-                    //Go throw sub directories too
-                    RemoveOldFiles(nasPath,"*.mp4",cutDate);
-                    RemoveOldFiles(nasPath,"*.jpg",cutDate);
-                    string[] subDirs=Directory.GetDirectories(nasPath);
-                    foreach(string subDir in subDirs)
-                    {
-                        Console.WriteLine($"{DateTime.Now}:          {subDir}");
-                        RemoveOldFiles(subDir,"*.mp4",cutDate);
-                        RemoveOldFiles(subDir,"*.jpg",cutDate);
-                    }
-                }
+
+                //Remove old video files by walking the tree
+                RemoveFilesInSubDir(outputPath,cutDate);
+                RemoveFilesInSubDir(nasPath,cutDate);
             }
             catch(Exception e)
             {
@@ -197,6 +184,23 @@ namespace StreamCapture
                 string body="Problem cleaning up old files with Exception "+e.Message;
                 body=body+"\n"+e.StackTrace;
                 new Mailer().SendErrorMail(config,"StreamCapture Exception! ("+e.Message+")",body);                
+            }
+        }
+
+        static private void RemoveFilesInSubDir(string currentPath,DateTime cutDate)
+        {
+            Console.WriteLine($"{DateTime.Now}:          {currentPath}");
+
+            //Remove video files
+            RemoveOldFiles(currentPath,"*.mp4",cutDate);
+            RemoveOldFiles(currentPath,"*.jpg",cutDate);
+            RemoveOldFiles(currentPath,"*.ts",cutDate);
+
+            //Recurse through dub directories if any
+            string[] subDirs=Directory.GetDirectories(currentPath);
+            foreach(string subDir in subDirs)
+            {
+                RemoveFilesInSubDir(subDir,cutDate);
             }
         }
 
