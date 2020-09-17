@@ -135,7 +135,7 @@ namespace StreamCapture
             concatFile=new VideoFileInfo
             {
                 baseFileName=fileName+"_concat",
-                exten=".ts",
+                exten=".mpg",
                 baseFilePath=_baseFilePath     
             };
 

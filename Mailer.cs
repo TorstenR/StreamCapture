@@ -144,7 +144,7 @@ namespace StreamCapture
                 message.From.Add(new MailboxAddress("StreamCapture", configuration["smtpUser"]));
                 foreach(string address in addresses)
                     message.To.Add(new MailboxAddress(address, address));
-                message.Subject = subjectTest;
+                message.Subject = subjectTest+" (18.04)";
 
                 var bodyBuilder = new BodyBuilder();
                 bodyBuilder.HtmlBody = bodyText;
