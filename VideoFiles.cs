@@ -58,9 +58,11 @@ namespace StreamCapture
             //Delete captured files
             foreach(VideoFileInfo fileInfo in fileCaptureList)
             {
+                string tempPath = configuration["tempPath"];
+
                 if(File.Exists(fileInfo.GetFullFile()))
                 {
-                    DeleteFile(logWriter,fileInfo);
+                    MoveFile(logWriter,fileInfo,tempPath);
                 }
             }
 
@@ -72,23 +74,17 @@ namespace StreamCapture
             }
         }
 
-        public void DeletePublishedFiles(TextWriter logWriter,IConfiguration configuration)
-        {
-            DeleteFile(logWriter,posterFile);
-            DeleteFile(logWriter,fanartFile);
-            DeleteFile(logWriter,publishedFile);
-        }
-
-        private void DeleteFile(TextWriter logWriter,VideoFileInfo fileInfo)
+        private void MoveFile(TextWriter logWriter,VideoFileInfo fileInfo,string tempPath)
         {
             int tryNumber = 0;
 
-            logWriter.WriteLine($"{DateTime.Now}: Deleting file {fileInfo.GetFullFile()}");
+            logWriter.WriteLine($"{DateTime.Now}: Moving file {fileInfo.GetFullFile()} to temp");
             while (true)
             {
                 try
                 {
-                    File.Delete(fileInfo.GetFullFile());
+                    string targetPath=Path.Combine(tempPath,fileInfo.baseFileName);
+                    File.Move(fileInfo.GetFullFile(),targetPath);
                     break;
                 }
                 catch (System.IO.IOException ex)

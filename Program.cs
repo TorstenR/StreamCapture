@@ -218,6 +218,9 @@ namespace StreamCapture
             //Check nas directory
             ValidateDirExist("appsettings.json","nasPath",configuration["nasPath"]);            
 
+            //Check temp directory
+            ValidateDirExist("appsettings.json","tempPath",configuration["tempPath"]);   
+
             //Check if ffmpeg exist
             ValidateFileExist("appsettings.json","ffmpegPath",configuration["ffmpegPath"]);   
         }

@@ -158,6 +158,7 @@ namespace StreamCapture
             string logPath = config["logPath"];
             string outputPath = config["outputPath"];
             string nasPath = config["nasPath"];
+            string tempPath = config["tempPath"];
             int retentionDays = Convert.ToInt16(config["retentionDays"]);
                      
             try
@@ -170,6 +171,7 @@ namespace StreamCapture
                 RemoveOldFiles(logPath,"*log.txt",cutDate);
 
                 //Remove old video files by walking the tree
+                RemoveFilesInSubDir(tempPath,cutDate);
                 RemoveFilesInSubDir(outputPath,cutDate);
                 RemoveFilesInSubDir(nasPath,cutDate);
             }
