@@ -83,7 +83,7 @@ namespace StreamCapture
             {
                 try
                 {
-                    string targetPath=Path.Combine(tempPath,fileInfo.baseFileName);
+                    string targetPath=Path.Combine(tempPath,fileInfo.baseFileName+fileInfo.exten);
                     File.Move(fileInfo.GetFullFile(),targetPath);
                     break;
                 }
