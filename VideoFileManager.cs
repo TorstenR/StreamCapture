@@ -159,21 +159,22 @@ namespace StreamCapture
             string outputPath = config["outputPath"];
             string nasPath = config["nasPath"];
             string tempPath = config["tempPath"];
+
+            //Figure retention days
             int retentionDays = Convert.ToInt16(config["retentionDays"]);
+            int tempRetentionDays = retentionDays / 5;
+            if(tempRetentionDays<1)
+                tempRetentionDays=1;
                      
             try
-            {
-                DateTime cutDate=DateTime.Now.AddDays(retentionDays*-1);
-                Console.WriteLine($"{DateTime.Now}: Checking the following folders for files older than {cutDate}");   
-            
-                //Remove old logs
-                Console.WriteLine($"{DateTime.Now}:          {logPath}");                
-                RemoveOldFiles(logPath,"*log.txt",cutDate);
+            {         
+                //Remove old logs          
+                RemoveOldFiles(logPath,"*log.txt",retentionDays);
 
                 //Remove old video files by walking the tree
-                RemoveFilesInSubDir(tempPath,cutDate);
-                RemoveFilesInSubDir(outputPath,cutDate);
-                RemoveFilesInSubDir(nasPath,cutDate);
+                RemoveFilesInSubDir(tempPath,tempRetentionDays);
+                RemoveFilesInSubDir(outputPath,retentionDays);
+                RemoveFilesInSubDir(nasPath,retentionDays);
             }
             catch(Exception e)
             {
@@ -189,29 +190,31 @@ namespace StreamCapture
             }
         }
 
-        static private void RemoveFilesInSubDir(string currentPath,DateTime cutDate)
+        static private void RemoveFilesInSubDir(string currentPath,int retentionDays)
         {
-            Console.WriteLine($"{DateTime.Now}:          {currentPath}");
 
             //Remove video files
-            RemoveOldFiles(currentPath,"*.mp4",cutDate);
-            RemoveOldFiles(currentPath,"*.jpg",cutDate);
-            RemoveOldFiles(currentPath,"*.ts",cutDate);
+            RemoveOldFiles(currentPath,"*.mp4",retentionDays);
+            RemoveOldFiles(currentPath,"*.jpg",retentionDays);
+            RemoveOldFiles(currentPath,"*.ts",retentionDays);
 
             //Recurse through dub directories if any
             string[] subDirs=Directory.GetDirectories(currentPath);
             foreach(string subDir in subDirs)
             {
-                RemoveFilesInSubDir(subDir,cutDate);
+                RemoveFilesInSubDir(subDir,retentionDays);
             }
         }
 
-        static private void RemoveOldFiles(string path,string filter,DateTime asOfDate)
+        static private void RemoveOldFiles(string path,string filter,int retentionDays)
         {
+            DateTime cutDate=DateTime.Now.AddDays(retentionDays*-1);
+            Console.WriteLine($"{DateTime.Now}: Checking for files older than {cutDate} in {path}");   
+                        
             string[] fileList=Directory.GetFiles(path,filter);
             foreach(string file in fileList)
             {
-                if(File.GetLastWriteTime(file) < asOfDate)
+                if(File.GetLastWriteTime(file) < cutDate)
                 {
                     Console.WriteLine($"{DateTime.Now}: Removing old file {file} as it is too old  ({File.GetLastWriteTime(file)})");
                     File.Delete(file);
