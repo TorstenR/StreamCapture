@@ -7,6 +7,7 @@ This program is intended to run largely unattended, recording shows based on key
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ### Updates:
+- Nov 9th, 2020: Move partial "chunks" of the video to a temp dir in case concat doesn't work
 - Apr 18th,2020: Upgraded to .NET 3.1
 - Nov 22nd,2017: 2.0 has a bug, so reverted to 1.1.  The Mux cmd line is now optional.  Also, took a couple of PR's to clean things up. (see commit history)
 - Oct 18th,2017: Updated project to 2.0 from 1.1  (not sure how I forgot this until now...)
@@ -88,6 +89,7 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 - "logPath" - Puts the capture thread logs here  (one log per capture)
 - "outputPath" - Puts the capture video file here (I capture locally, and then move to my NAS - see next param)
 - "nasPath" - Optional parameter will will copy the final .mp4 file to this location (in my case, my NAS)
+- "tempPath" - Path where pre-concatenated video files are stored in case there's a problem playing the concat file.  (note: retention is 1/5 as long for the temp dir)
 - "scheduleURL" - URL to get the schedule JSON feed
 - "ffmpegPath" - location of ffmpeg.exe
 - "authURL" - URL to get authentication token for stream
