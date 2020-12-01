@@ -37,7 +37,7 @@ namespace StreamCapture
             Timer captureTimer=null;
             if(timeout>0)
             {
-                int interval=10;  //# of seconds between timer/file checks
+                int interval=30;  //# of seconds between timer/file checks
                 long acceptableRate=Convert.ToInt32(configuration["acceptableRate"]);
 
                 //create capture process info
