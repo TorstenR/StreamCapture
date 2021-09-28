@@ -7,6 +7,7 @@ This program is intended to run largely unattended, recording shows based on key
 Note: please don't attempt to use unless you're fairly technically minded.  To state the obvious, if anyone wants to contribute, that'd be great!
 
 ### Updates:
+- Sept 29th, 2021: Added support for modern auth on SMTP send.  This is still a stop-gap measure since smtp will likely be turned off at some point
 - Nov 9th, 2020: Move partial "chunks" of the video to a temp dir in case concat doesn't work
 - Apr 18th,2020: Upgraded to .NET 3.1
 - Nov 22nd,2017: 2.0 has a bug, so reverted to 1.1.  The Mux cmd line is now optional.  Also, took a couple of PR's to clean things up. (see commit history)
@@ -104,6 +105,7 @@ There are multiple config values in appsettings.json.  By looking at these you'l
 - "smtpPort" - port
 - "smtpUser"- smtp username
 - "smtpPass"- smtp password
+- "smtpClientID" - used by Microsoft Graph to perform authentication.  If empty or not there, it simply auth is used.  See https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app and comments in code
 
 **keywords.json**
 If running in Mode 2, keywords.json is how it's decided which shows to record based on the schedule.  More specifically:

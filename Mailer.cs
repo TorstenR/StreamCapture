@@ -1,9 +1,10 @@
 using System;
+using System.Net;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Identity.Client;
 using System.Collections.Generic;
 using MailKit.Net.Smtp;
 using MailKit.Security;
-using MailKit;
 using MimeKit;
 
 namespace StreamCapture
@@ -134,6 +135,10 @@ namespace StreamCapture
             if(string.IsNullOrEmpty(configuration["smtpUser"]) || string.IsNullOrEmpty(configuration["mailAddress"]))
                 return;
 
+            bool modernAuth=true;
+            if(string.IsNullOrEmpty(configuration["smtpClientID"]))
+                modernAuth=false;
+
             Console.WriteLine($"{DateTime.Now}: Sending email...");
 
             try
@@ -148,15 +153,56 @@ namespace StreamCapture
 
                 var bodyBuilder = new BodyBuilder();
                 bodyBuilder.HtmlBody = bodyText;
-                message.Body = bodyBuilder.ToMessageBody();                
+                message.Body = bodyBuilder.ToMessageBody();    
 
+                SaslMechanismOAuth2 oauth2=null;
+                if(modernAuth)
+                {
+                    //oauth2 for microsoft graph
+                    //
+                    // A few notes as this was tough....
+                    // - Setup https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app
+                    // - Be sure and add right permissions under API permission for the app  (in this case, it was smtp)
+                    // - Permissions must be delgated because as of 9/30/21, you couldn't assign smtp to an app
+                    // - You must have admin consent enabled (again part of the api permissions screen)
+                    // - There's a non-zero chance that in the future, smtp will be deprecated entirely
+                    //
+                    // https://github.com/jstedfast/MailKit/blob/master/ExchangeOAuth2.md
+                    // https://github.com/jstedfast/MailKit/issues/989
+                    //
+                    NetworkCredential networkCredential = new NetworkCredential(configuration["smtpUser"], configuration["smtpPass"]);
+                    
+                    var scopes = new string[] {
+                        //"email",
+                        //"offline_access",
+                        //"https://outlook.office.com/IMAP.AccessAsUser.All", // Only needed for IMAP
+                        //"https://outlook.office.com/POP.AccessAsUser.All",  // Only needed for POP
+                        "https://outlook.office.com/SMTP.Send", // Only needed for SMTP
+                    };
+
+                    //Get oauth2 token for smtp client
+                    var app = PublicClientApplicationBuilder.Create(configuration["smtpClientID"]).WithAuthority(AadAuthorityAudience.AzureAdMultipleOrgs).Build();
+                    var Task = app.AcquireTokenByUsernamePassword(scopes,networkCredential.UserName, networkCredential.SecurePassword).ExecuteAsync();
+                    Task.Wait();
+                    var authToken = Task.Result;
+                    oauth2 = new SaslMechanismOAuth2 (authToken.Account.Username, authToken.AccessToken);
+                }
+
+                //Actually send message now
                 using (var client = new SmtpClient())
                 {
-                    client.ServerCertificateValidationCallback = (s, c, h, e) => true;                   
-                    //client.Connect(configuration["smtpServer"], Convert.ToInt16(configuration["smtpPort"]), SecureSocketOptions.SslOnConnect);
-                    client.Connect(configuration["smtpServer"], Convert.ToInt16(configuration["smtpPort"]),false);
-                    client.AuthenticationMechanisms.Remove("XOAUTH2");  
-                    client.Authenticate(configuration["smtpUser"], configuration["smtpPass"]);
+                    client.Connect(configuration["smtpServer"], Convert.ToInt16(configuration["smtpPort"]),false); 
+
+                    if(!modernAuth) //msft is about to turn this option off
+                    {
+                        client.ServerCertificateValidationCallback = (s, c, h, e) => true; 
+                        client.AuthenticationMechanisms.Remove("XOAUTH2");  
+                        client.Authenticate(configuration["smtpUser"], configuration["smtpPass"]);
+                    }
+                    else
+                    {
+                        client.Authenticate(oauth2);
+                    }
                     client.Send(message);
                     client.Disconnect(true);
                 }
