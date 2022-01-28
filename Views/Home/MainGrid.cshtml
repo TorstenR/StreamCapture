@@ -35,14 +35,14 @@
 
       function handleClientLoad() {
 
-        if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+        //if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
             // If local, don't bother authenticating
             displayGrid();
-        }
-        else {
+        //}
+        //else {
             // Load the API client and auth2 library
-            gapi.load('client:auth2', initClient);
-        }
+        //    gapi.load('client:auth2', initClient);
+        //}
       }
 
       function initClient() {

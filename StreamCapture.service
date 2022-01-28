@@ -1,0 +1,13 @@
+[Unit]
+Description=StreamCapture Service
+ 
+[Service]
+ExecStart=/home/pi/.dotnet/dotnet /home/pi/streamcapture/StreamCapture.dll
+WorkingDirectory=/home/pi/streamcapture/
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=pi
+ 
+[Install]
+WantedBy=multi-user.target

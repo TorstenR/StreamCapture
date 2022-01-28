@@ -46,7 +46,7 @@ namespace StreamCapture
 
                 //create timer
                 TimeSpan intervalTime = new TimeSpan(0, 0, interval); 
-                logWriter.WriteLine($"{DateTime.Now}: Settting Timer for {timeout} minutes in the future to kill process.");
+                logWriter.WriteLine($"{DateTime.Now}: Setting Timer for {timeout} minutes in the future to kill process.");
                 captureTimer = new Timer(OnCaptureTimer, captureProcessInfo, intervalTime, intervalTime);
             }
 

@@ -1,140 +1,14 @@
 {
-  "USA and Tournaments": {
-    "starredFlag": true,"emailFlag": true,    
-    "keywords": ["usa","medal","world"],
-    "exclude": ["snooker","tennis","rugby","swimming","track and field","ncaab"],
-    "categories": ["Motor Sports"],
-    "preMinutes": 0, "postMinutes": 30,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+1080I,720p,-HQLQ",
-    "channelPref": ""    
-  },
-  "Soccer1": {
+  "Football": {
     "starredFlag": true, "emailFlag": true,    
     "keywords": [
-      "Borussia Dortmund",
-      "real madrid",
-      "barcelona",
-      "liverpool",
-      "chelsea",
-      "sounders",
-      "seattle",
-      "england",
-      "germany",
-      "spain",
-      "brazil",
-      "colombia",
-      "ecuador"
+      "New York Giants",
+      "Kansas City Chiefs",
+      "Green Bay Packers"
       ],
-    "exclude": ["colombiano","colombian","Paulista","youth","u23","u22","u21","u20","u19"],
-    "categories": ["world football"],
-    "preMinutes": 0,"postMinutes": 15,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+1080I,720p,-HQLQ",
-    "channelPref": ""    
-  },
- "High Pri Motorsports": {
-    "starredFlag": true,"emailFlag": true,   
-    "keywords": ["wrc","f1"],
-    "exclude": ["tennis","practice","post","pre","parade"],"categories": [],
-    "preMinutes": 0,"postMinutes": 10,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+1080I,720p,-HQLQ",
-    "channelPref": ""    
-  },
-  "Soccer2": {
-    "starredFlag": true, "emailFlag": true,    
-    "keywords": [
-      "bayern",
-      "manchester united",
-      "tottenham",
-      "Manchester City",
-      "Arsenal"
-    ],
     "exclude": [],
-    "categories": ["world football"],
-    "preMinutes": 0,"postMinutes": 15,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+1080I,720p,-HQLQ",
-    "channelPref": ""    
-  },
-  "Hockey1": {
-    "starredFlag": true, "emailFlag": true,    
-    "keywords": [
-      "blackhawks",
-      "oilers",
-      "capitals",
-      "iihf"
-      ],
-    "exclude": [], "categories": ["Ice Hockey"],
-    "preMinutes": 0, "postMinutes": 30,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+1080I,720p,-HQLQ",
-    "channelPref": ""  
-  },    
-  "Soccer Tournaments": {
-    "starredFlag": false, "emailFlag": true,    
-    "keywords": [
-      "UCL:",
-      "UEFA",
-      "FA Cup",
-      "CONCACAF",
-      "WCQ:",
-      "WC"
-      ],
-    "exclude": [
-      "sky90",
-      "Konferenz",
-      "Alle Spiele",
-      "skating"
-      ],
-    "categories": ["world football"],
-    "preMinutes": 0, "postMinutes": 15,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+1080I,720p,-HQLQ",
-    "channelPref": ""    
-  },
-  "Hockey2": {
-    "starredFlag": false, "emailFlag": true,    
-    "keywords": [""],
-    "exclude": [], "categories": ["Ice Hockey"],
-    "preMinutes": 0, "postMinutes": 30,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+1080I,720p,-HQLQ",
-    "channelPref": ""  
-  },  
-  "NCAA": {
-    "starredFlag": false, "emailFlag": true,    
-    "keywords": [
-      "NCAAH",
-      "ncaa,final"
-      ],
-    "exclude": [], "categories": [],
-    "preMinutes": 0, "postMinutes": 30,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+1080I,720p,-HQLQ",
-    "channelPref": ""  
-  },
-   "MotorSports": {
-    "starredFlag": false, "emailFlag": true,    
-    "keywords": [""],
-    "exclude": ["nascar","practice","post","pre","parade"],
-    "categories": [
-       "Motor Sports",
-       "formula"
-       ],
-    "preMinutes": 0, "postMinutes": 5,
-    "langPref": "+us,ca,uk,-de,-es",
-    "qualityPref": "+1080I,720p,-HQLQ",
-    "channelPref": ""    
-  },
-   "EPL": {
-    "starredFlag": false, "emailFlag": false,    
-    "keywords": ["epl:"],
-    "exclude": [],
-    "categories": [],
-    "preMinutes": 0,
-    "postMinutes": 0,
+    "categories": ["nfl"],
+    "preMinutes": 15,"postMinutes": 30,
     "langPref": "+us,ca,uk,-de,-es",
     "qualityPref": "+1080I,720p,-HQLQ",
     "channelPref": ""    
